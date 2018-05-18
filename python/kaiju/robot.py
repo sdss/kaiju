@@ -491,7 +491,7 @@ class RobotGrid(object):
                     print("replacing target for robot id %i"%robot.id)
                     robot.setAlphaBetaRand()
                     robot.replacementsTried += 1
-                    if robot.replacementsTried > 1000:
+                    if robot.replacementsTried > 2000:
                         robot.threwAway = True
                         while True:
                             robot.setAlphaBetaRand()
@@ -672,7 +672,7 @@ def run1grid(minSeparation):
     nRobots = 500
     nc = int(numpy.sqrt((nRobots*4-1)/3))
     rg = RobotGrid(nc, minSeparation)
-    failedMinSep = numpy.sum([1 for x in rg.robotList if x.replacementsTried > 1000])
+    failedMinSep = numpy.sum([1 for x in rg.robotList if x.replacementsTried > 2000])
     initialCollisions = rg.nCollisions
     rg.swapIter()
     pairSwapCollisions = rg.nCollisions
@@ -684,7 +684,7 @@ def run1grid(minSeparation):
 
 def runGridSeries(minSeparation):
     results = []
-    for ii in range(1):
+    for ii in range(100):
         results.append(run1grid(minSeparation))
     results = numpy.asarray(results)
     numpy.savetxt("separation_%.2f.txt"%minSeparation, results, fmt="%i")
@@ -692,8 +692,8 @@ def runGridSeries(minSeparation):
 def explodeAndExplore():
     # run a series of grids at various minimum
     # spacings and save the collision results
-    minSpacings = numpy.linspace(4,20,5)
-    p = Pool(5)
+    minSpacings = numpy.linspace(4,20,20)
+    p = Pool(20)
     p.map(runGridSeries, minSpacings)
     print("explode complete!!!")
 
