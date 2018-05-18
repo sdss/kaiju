@@ -671,10 +671,9 @@ def run1grid(minSeparation):
     return initialCollisions, pairSwapCollisions, cycleSwapCollisions, nThrowAway
 
 def runGridSeries(minSeparation):
-    p = Pool(10)
-    inputs = [minSeparation]*10 # run it 10 times
-    results = p.map(run1grid, inputs)
-    # write results to file
+    results = []
+    for ii in range(10):
+        results.append(run1grid(minSeparation))
     results = numpy.asarray(results)
     numpy.savetxt("separation_%.2f.txt", results)
 
