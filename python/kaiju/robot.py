@@ -401,7 +401,7 @@ class RobotGrid(object):
         self.xAll, self.yAll = hexFromDia(nDia)
         self.buildRobotList() # sets self.robotList
         self.buildNeighborList() # sets self.sketchyNeighborList and connects robots to their neighbors
-        self.MinTargSeparation = minTargSeparation
+        self.minTargSeparation = minTargSeparation
         self.enforceMinTargSeparation()
         self._cacheList = []
         # self.swapIter()
