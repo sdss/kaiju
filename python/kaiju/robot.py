@@ -142,6 +142,7 @@ class Robot(object):
         xy in mm
         """
         self.id = robotID
+        self.replacementsTried = 0
         ###############
         # store often computed stuff as underscored vars
         # populated by setter methods
@@ -489,8 +490,18 @@ class RobotGrid(object):
                 if mindist < self.minTargSeparation:
                     print("replacing target for robot id %i"%robot.id)
                     robot.setAlphaBetaRand()
+                    robot.replacementsTried += 1
+                    if robot.replacementsTried > 500:
+                        robot.threwAway = True
+                        while True:
+                            robot.setAlphaBetaRand()
+                            print("finding throw away position in enforcing targ separation")
+                            if not robot.isCollided:
+                                break
+                        break
                 else:
                     break
+
 
     def swapIter(self):
         print("begining collisions: %i"%self.nCollisions)
@@ -672,7 +683,7 @@ def run1grid(minSeparation):
 
 def runGridSeries(minSeparation):
     results = []
-    for ii in range(10):
+    for ii in range(1):
         results.append(run1grid(minSeparation))
     results = numpy.asarray(results)
     numpy.savetxt("separation_%.2f.txt", results)
