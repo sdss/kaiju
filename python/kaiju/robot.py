@@ -687,7 +687,7 @@ def runGridSeries(minSeparation):
     for ii in range(1):
         results.append(run1grid(minSeparation))
     results = numpy.asarray(results)
-    numpy.savetxt("separation_%.2f.txt"%minSeparation, results)
+    numpy.savetxt("separation_%.2f.txt"%minSeparation, results, fmt="%i")
 
 def explodeAndExplore():
     # run a series of grids at various minimum
