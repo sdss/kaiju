@@ -491,7 +491,7 @@ class RobotGrid(object):
                     print("replacing target for robot id %i"%robot.id)
                     robot.setAlphaBetaRand()
                     robot.replacementsTried += 1
-                    if robot.replacementsTried > 500:
+                    if robot.replacementsTried > 1000:
                         robot.threwAway = True
                         while True:
                             robot.setAlphaBetaRand()
@@ -672,6 +672,7 @@ def run1grid(minSeparation):
     nRobots = 500
     nc = int(numpy.sqrt((nRobots*4-1)/3))
     rg = RobotGrid(nc, minSeparation)
+    failedMinSep = numpy.sum([1 for x in rg.robotList if x.replacementsTried > 1000])
     initialCollisions = rg.nCollisions
     rg.swapIter()
     pairSwapCollisions = rg.nCollisions
@@ -679,7 +680,7 @@ def run1grid(minSeparation):
     cycleSwapCollisions = rg.nCollisions
     throwAway(rg)
     nThrowAway = rg.nThrownAway
-    return initialCollisions, pairSwapCollisions, cycleSwapCollisions, nThrowAway
+    return failedMinSep, initialCollisions, pairSwapCollisions, cycleSwapCollisions, nThrowAway
 
 def runGridSeries(minSeparation):
     results = []
