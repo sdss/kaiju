@@ -4,6 +4,7 @@ from shapely.geometry import LineString
 from descartes import PolygonPatch
 import copy
 from networkx import DiGraph, shortest_path, draw, find_cycle, simple_cycles, shortest_simple_paths, has_path
+from multiprocessing import Pool
 
 AlphaArmLength = 7.4 #mm
 AlphaRange = [0, 360]
@@ -21,6 +22,8 @@ MaxReach = BetaArmLength + AlphaArmLength
 
 # https://internal.sdss.org/trac/as4/wiki/FPSLayout
 
+
+PlateScale = 217.7358 / 3600.0 # plug plate scale (mm/arcsecond)
 
 def hexFromDia(nDia):
     """
@@ -391,13 +394,14 @@ class Robot(object):
 
 
 class RobotGrid(object):
-    def __init__(self, nDia):
+    def __init__(self, nDia, minTargSeparation=MinTargSeparation):
         """create a hex-packed grid of robots with a certain pitch.
         nDia describes the number of robots along y=0 axis.
         """
         self.xAll, self.yAll = hexFromDia(nDia)
         self.buildRobotList() # sets self.robotList
         self.buildNeighborList() # sets self.sketchyNeighborList and connects robots to their neighbors
+        self.MinTargSeparation = minTargSeparation
         self.enforceMinTargSeparation()
         self._cacheList = []
         # self.swapIter()
@@ -482,7 +486,7 @@ class RobotGrid(object):
                 # replace this target until there is a minimum separation
                 thisTarg = numpy.tile(robot.xyFiberFocal, nOther).reshape(nOther,2)
                 mindist = numpy.min(numpy.linalg.norm(otherTargs - thisTarg, axis=1))
-                if mindist < MinTargSeparation:
+                if mindist < self.minTargSeparation:
                     print("replacing target for robot id %i"%robot.id)
                     robot.setAlphaBetaRand()
                 else:
@@ -559,6 +563,9 @@ def swapSearch(robotGrid, neighbor="a"):
         # remove any edges to rule out a simple swap solution to the
         # shortest path solution
         for otherRobot in robot.swapList():
+            # reset cache if we're trying path from next robot
+            # the grid has been modified by swapping positions
+            # in the previous loop iteration
             robotGrid.setPosFromCache(bestCache)
             try:
                 dg.remove_edge(otherRobot.id, robot.id)
@@ -600,14 +607,10 @@ def swapSearch(robotGrid, neighbor="a"):
                 print("new best orientation")
                 print("collisions now", bestCollide)
                 break # don't try other paths if we have reduced number of collisions
+
     robotGrid.setPosFromCache(bestCache)
     print("best collide", robotGrid.nCollisions)
 
-def findCircularTrade(robot):
-    # try to build a viable circular trade for a
-    # single colliding robot
-    # build a graph? minimum path search?
-    pass
 
 def throwAway(robotGrid):
     robotAs = []
@@ -621,9 +624,7 @@ def throwAway(robotGrid):
             if not robot.isCollided:
                 break
 
-    # print("throw away collisions: %i"%robotGrid.nCollisions)
-
-if __name__ == "__main__":
+def simpleRun():
     initialCollisions = []
     simpleSwapCollisions = []
     cycleSwapCollisions = []
@@ -654,6 +655,40 @@ if __name__ == "__main__":
     print(cycleSwapCollisions)
     # print(cycleSwapCollisions2)
     print(thrownAway)
+    # print("throw away collisions: %i"%robotGrid.nCollisions)
+
+def run1grid(minSeparation):
+    nRobots = 500
+    nc = int(numpy.sqrt((nRobots*4-1)/3))
+    rg = RobotGrid(nc, minSeparation)
+    initialCollisions = rg.nCollisions
+    rg.swapIter()
+    pairSwapCollisions = rg.nCollisions
+    swapSearch(rg)
+    cycleSwapCollisions = rg.nCollisions
+    throwAway(rg)
+    nThrowAway = rg.nThrownAway
+    return initialCollisions, pairSwapCollisions, cycleSwapCollisions, nThrowAway
+
+def runGridSeries(minSeparation):
+    p = Pool(10)
+    inputs = [minSeparation]*10 # run it 10 times
+    results = p.map(run1grid, inputs)
+    # write results to file
+    results = numpy.asarray(results)
+    numpy.savetxt("separation_%.2f.txt", results)
+
+def explodeAndExplore():
+    # run a series of grids at various minimum
+    # spacings and save the collision results
+    minSpacings = numpy.linspace(4,20,5)
+    p = Pool(5)
+    p.map(runGridSeries, minSpacings)
+    print("explode complete!!!")
+
+
+if __name__ == "__main__":
+    explodeAndExplore()
 
 
 
