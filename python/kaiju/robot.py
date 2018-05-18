@@ -2,14 +2,18 @@ import numpy
 import matplotlib.pyplot as plt
 from shapely.geometry import LineString
 from descartes import PolygonPatch
+import copy
+from networkx import DiGraph, shortest_path, draw, find_cycle, simple_cycles, shortest_simple_paths, has_path
 
 AlphaArmLength = 7.4 #mm
 AlphaRange = [0, 360]
 BetaRange = [0,180]
-BetaArmLength = 13 #mm (15 is quoted length but we're placing the fiber 2 mm from end)
-BetaArmWidth = 4 #mm
+BetaArmLength = 15 #mm, distance to fiber
+BetaArmWidth = 5 #mm
 MinTargSeparation = 8 #mm
 # length mm along beta for which a collision cant happen
+BetaTopCollide = [8.187,16]# box from length 8.187mm to 16mm
+BetaBottomCollide = [0,10.689] #box from 0 to 10.689
 BetaArmLengthSafe = BetaArmLength / 2.0
 Pitch = 22.4 # mm fudge the 01 for neighbors
 MinReach = BetaArmLength - AlphaArmLength
@@ -62,29 +66,39 @@ class SketchyNeighbors(object):
         """
         self.robotA = robotA
         self.robotB = robotB
-        self._intersection = None
+        self._topIntersect = None
+        self._bottomIntersect = None
         self.swapTried = False
         self.id = set([robotA.id, robotB.id])
 
-    @property
-    def isCollided(self):
-        return bool(self.intersection)
+    def getNeighbor(self, robot):
+        """return the other robot
+        """
+        assert robot.id in self.id, "this robot isn't a neighbor!"
+        if robot.id == self.robotA.id:
+            return self.robotB
+        else:
+            return self.robotA
 
     @property
-    def intersection(self):
-        """return True if robots are collided
-        """
-        # first perform a quick check by drawing boxes
-        # around the collision zone and see if they
-        # are non-overlapping
-        if self._intersection is None:
-            # line intersection
-            line1 = LineString([self.robotA.xySafeBetaFocal, self.robotA.xyFiberFocal]).buffer(BetaArmWidth/2.0, cap_style=3)
-            line2 = LineString([self.robotB.xySafeBetaFocal, self.robotB.xyFiberFocal]).buffer(BetaArmWidth/2.0, cap_style=3)
-            self._intersection = line1.intersection(line2)
-            self.robotA._collisionBox = line1
-            self.robotB._collisionBox = line2
-        return self._intersection
+    def isCollided(self):
+        tc = bool(self.topIntersect)
+        bc = bool(self.bottomIntersect)
+        return bc or tc
+
+    @property
+    def topIntersect(self):
+        # do the top of the beta arms collide?
+        if self._topIntersect is None:
+            self._topIntersect = self.robotA.topCollideLine.intersection(self.robotB.topCollideLine)
+        return self._topIntersect
+
+    @property
+    def bottomIntersect(self):
+        # do the top of the beta arms collide?
+        if self._bottomIntersect is None:
+            self._bottomIntersect = self.robotA.bottomCollideLine.intersection(self.robotB.bottomCollideLine)
+        return self._bottomIntersect
 
     def fiberDist(self):
         """distance between fibers (end of beta arm)
@@ -97,7 +111,7 @@ class SketchyNeighbors(object):
         return numpy.linalg.norm(self.robotA.xyAlpha-self.robotB.xyAlpha)
 
     def checkSwap(self):
-        if self.intersection:
+        if self.isCollided:
             x1,y1 = self.robotA.xyFiberFocal
             x2,y2 = self.robotB.xyFiberFocal
             self.swapTried = True
@@ -107,13 +121,10 @@ class SketchyNeighbors(object):
                 a2,b2 = self.robotA.getAlphaBetaFromFocalXY(x2,y2)
                 self.robotB.setAlphaBeta(a1,b1)
                 self.robotA.setAlphaBeta(a2,b2)
-                if not self.intersection:
+                if not self.isCollided:
                     print("swap worked")
                 else:
                     print("swap still intersects")
-                # self._intersection = None intersection is cleared in
-                # set alpha beta
-                # print('swap successful')
             except:
                 pass
                 # print("swap not valid")
@@ -139,9 +150,11 @@ class Robot(object):
         self._sinAlphaBeta = None
         self._xyFiberLocal = None
         self._xyAlphaLocal = None
-        self._xySafeBetaLocal = None
+        self._topCollideLine = None
+        self._bottomCollideLine = None
         self.sketchyNeighbors = []
         self._collisionBox = None # shapely geom populated by neighbor
+        self.threwAway = False
         ##################
         self.xyFocal = None
         if not None in [xFocal, yFocal]:
@@ -149,10 +162,45 @@ class Robot(object):
         if not None in [alphaAng, betaAng]:
             self.setAlphaBeta(alphaAng, betaAng)
 
+
+    def __repr__(self):
+        return ("Robot(id=%i)"%self.id)
+
+    @property
+    def isCollided(self):
+        collided = False
+        for n in self.sketchyNeighbors:
+            if n.isCollided:
+                collided = True
+                break
+        return collided
+
     def addSkectchyNeighbor(self, sketchyNeighbor):
         # maybe enforce that this neighbor doesn't already
         # exist?
         self.sketchyNeighbors.append(sketchyNeighbor)
+
+    # def swapList(self):
+    #     """Return list of robots that can reach my target (for swap potential)
+    #     """
+    #     roboList = []
+    #     for n in self.sketchyNeighbors:
+    #         otherRobot = n.getNeighbor(self)
+    #         canReach = otherRobot.checkFocalReach(*self.xyFiberFocal)
+    #         if canReach:
+    #             roboList.append(otherRobot)
+    #     return roboList
+
+    def swapList(self):
+        """Return list of robots whose target I can reach (for swap potential)
+        """
+        roboList = []
+        for n in self.sketchyNeighbors:
+            otherRobot = n.getNeighbor(self)
+            canReach = self.checkFocalReach(*otherRobot.xyFiberFocal)
+            if canReach:
+                roboList.append(otherRobot)
+        return roboList
 
     @property
     def alphaBeta(self):
@@ -175,12 +223,13 @@ class Robot(object):
         self._preComputeTrig()
         # clear cached positions, if any
         self._xyAlphaLocal = None
-        self._xySafeBetaLocal = None
+        self._topCollideLine = None
+        self._bottomCollideLine = None
         self._xyFiberLocal = None
         # clear any precomputed collisions
-        self._collisionBox = None
         for n in self.sketchyNeighbors:
-            n._intersection = None
+            n._topIntersect = None
+            n._bottomIntersect = None
 
     def setXYFocal(self, xFocal, yFocal):
         """position in focal plane mm
@@ -188,7 +237,8 @@ class Robot(object):
         self.xyFocal = numpy.asarray([xFocal, yFocal])
         # clear cached positions, if any
         self._xyAlphaLocal = None
-        self._xySafeBetaLocal = None
+        self._topCollideLine = None
+        self._bottomCollideLine = None
         self._xyFiberLocal = None
 
     def checkLocalReach(self,xLocal,yLocal):
@@ -200,7 +250,7 @@ class Robot(object):
     def checkFocalReach(self,xFocal,yFocal):
         xLocal = self.xyFocal[0] - xFocal
         yLocal = self.xyFocal[1] - yFocal
-        self.checkLocalReach(xLocal, yLocal)
+        return self.checkLocalReach(xLocal, yLocal)
 
     def setAlphaBetaRand(self):
         """Choose random alpha and beta angles
@@ -278,14 +328,10 @@ class Robot(object):
             x = xA + self._cosAlphaBeta*BetaArmLength
             y = yA + self._sinAlphaBeta*BetaArmLength
             self._xyFiberLocal = numpy.array([x,y])
-            x = xA + self._cosAlphaBeta*BetaArmLengthSafe
-            y = yA + self._sinAlphaBeta*BetaArmLengthSafe
-            self._xySafeBetaLocal = numpy.array([x,y])
         return self._xyFiberLocal
 
     @property
     def xyFiberFocal(self):
-        # assumed at the end of the beta arm focal coords
         return self.xyFocal + self.xyFiberLocal
 
     @property
@@ -299,17 +345,36 @@ class Robot(object):
         return self._xyAlphaLocal
 
     @property
-    def xySafeBetaLocal(self):
-        # xy position of beginning of save zone
-        if self._xySafeBetaLocal is None:
-            # make it, shit this is terrible
-            self.xyFiberLocal
-        return self._xySafeBetaLocal
+    def bottomCollideLine(self):
+        if self._bottomCollideLine is None:
+            lineBuffer = BetaArmWidth/2.0
+            x,y = self.xyFiberFocal - self.xyAlphaFocal
+            fTheta = numpy.arctan2(y,x)
+            x1 = numpy.cos(fTheta)*(BetaBottomCollide[0]+lineBuffer) + self.xyAlphaFocal[0]
+            y1 = numpy.sin(fTheta)*(BetaBottomCollide[0]+lineBuffer) + self.xyAlphaFocal[1]
+
+            x2 = numpy.cos(fTheta)*(BetaBottomCollide[1]-lineBuffer) + self.xyAlphaFocal[0]
+            y2 = numpy.sin(fTheta)*(BetaBottomCollide[1]-lineBuffer) + self.xyAlphaFocal[1]
+            self._bottomCollideLine = LineString(
+                [[x1,y1], [x2,y2]]
+                ).buffer(lineBuffer, cap_style=3)
+        return self._bottomCollideLine
 
     @property
-    def xySafeBetaFocal(self):
-        return self.xyFocal + self.xySafeBetaLocal
+    def topCollideLine(self):
+        if self._topCollideLine is None:
+            lineBuffer = BetaArmWidth/2.0
+            x,y = self.xyFiberFocal - self.xyAlphaFocal
+            fTheta = numpy.arctan2(y,x)
+            x1 = numpy.cos(fTheta)*(BetaTopCollide[0]+lineBuffer) + self.xyAlphaFocal[0]
+            y1 = numpy.sin(fTheta)*(BetaTopCollide[0]+lineBuffer) + self.xyAlphaFocal[1]
 
+            x2 = numpy.cos(fTheta)*(BetaTopCollide[1]-lineBuffer) + self.xyAlphaFocal[0]
+            y2 = numpy.sin(fTheta)*(BetaTopCollide[1]-lineBuffer) + self.xyAlphaFocal[1]
+            self._topCollideLine = LineString(
+                [[x1,y1], [x2,y2]]
+                ).buffer(lineBuffer, cap_style=3)
+        return self._topCollideLine
 
 
     @property
@@ -322,8 +387,6 @@ class Robot(object):
         a, b = self.getAlphaBetaFromLocalXY(xLocal,yLocal)
         self.setAlphaBetaFromLocalXY(xLocal,yLocal)
         xLocal2,yLocal2 = self.xyFiberLocal
-        print("alpha,beta err:", alpha-a, beta-b)
-        print("xyLocal err:", xLocal-xLocal2, yLocal-yLocal2)
 
 
 
@@ -336,7 +399,16 @@ class RobotGrid(object):
         self.buildRobotList() # sets self.robotList
         self.buildNeighborList() # sets self.sketchyNeighborList and connects robots to their neighbors
         self.enforceMinTargSeparation()
+        self._cacheList = []
         # self.swapIter()
+
+    @property
+    def nCollisions(self):
+        return numpy.sum([n.isCollided for n in self.sketchyNeighborList])
+
+    @property
+    def nThrownAway(self):
+        return numpy.sum([r.threwAway for r in self.robotList])
 
     def buildRobotList(self):
         # create the list of robots
@@ -347,6 +419,24 @@ class RobotGrid(object):
             robot.setAlphaBetaRand()
             # robot.check2xy()
             self.robotList.append(robot)
+
+    def cachePositions(self):
+        """Save a current list of positions (for trying new ones and potentially
+        reverting)
+        """
+        self._cacheList = []
+        for robot in self.robotList:
+            self._cacheList.append(robot.xyFiberFocal)
+        return copy.deepcopy(self._cacheList) # copy for paranoia!
+
+    def setPosFromCache(self, cacheList=None):
+        """Reset all robots to cached position
+        if cacheList is None, use position in cache
+        """
+        if cacheList is None:
+            cacheList = self._cacheList
+        for xyFiberFocal, robot in zip(cacheList,self.robotList):
+            robot.setAlphaBetaFromFocalXY(xyFiberFocal[0], xyFiberFocal[1])
 
     def buildNeighborList(self):
         # for each robot in list find neighbors
@@ -399,20 +489,15 @@ class RobotGrid(object):
                     break
 
     def swapIter(self):
-        for i in range(1000):
-            nCollide = numpy.sum([n.isCollided for n in self.sketchyNeighborList])
-            print("iter: %i, collisions: %i"%(i, nCollide))
-            if nCollide == 0:
-                break
-            else:
-                for n in self.sketchyNeighborList:
-                    n.checkSwap()
-
+        print("begining collisions: %i"%self.nCollisions)
+        for n in self.sketchyNeighborList:
+            n.checkSwap()
+        print("swap 1 collisions: %i"%self.nCollisions)
 
 
 
     def plotGrid(self):
-        fig = plt.figure(figsize=(9,9))
+        fig = plt.figure(figsize=(10,10))
         ax = plt.gca()
         # ax = fig.add_subplot(111)
         plt.scatter(self.xAll, self.yAll)
@@ -423,39 +508,153 @@ class RobotGrid(object):
                 '-k.', linewidth=3,
                 zorder=8,
             )
-            color = "blue"
+            topcolor = "blue"
+            bottomcolor = "blue"
             # check for collisions, if so plot as red
             for n in robot.sketchyNeighbors:
-                if n.intersection:
-                    color='red'
-            # ax.plot(
-            #     [robot.xyAlphaFocal[0], robot.xyFiberFocal[0]],
-            #     [robot.xyAlphaFocal[1], robot.xyFiberFocal[1]],
-            #     '-', color=color, linewidth=2,
-            # )
-            # safe zone
+                if n.bottomIntersect:
+                    bottomcolor='red'
+                if n.topIntersect:
+                    topcolor="orange"
+            if robot.threwAway:
+                topcolor, bottomcolor = "magenta", "magenta"
             ax.plot(
-                [robot.xyAlphaFocal[0], robot.xySafeBetaFocal[0]],
-                [robot.xyAlphaFocal[1], robot.xySafeBetaFocal[1]],
-                '-c', linewidth=3,
-                zorder=9,
+                [robot.xyAlphaFocal[0], robot.xyFiberFocal[0]],
+                [robot.xyAlphaFocal[1], robot.xyFiberFocal[1]],
+                '-', color="green", linewidth=2,
             )
-            # collision zone
-            patch = PolygonPatch(robot._collisionBox, fc=color, ec=color, alpha=0.5, zorder=10)
+            patch = PolygonPatch(robot._topCollideLine, fc=topcolor, ec=topcolor, alpha=0.5, zorder=10)
+            ax.add_patch(patch)
+            patch = PolygonPatch(robot._bottomCollideLine, fc=bottomcolor, ec=bottomcolor, alpha=0.5, zorder=10)
             ax.add_patch(patch)
         plt.axis('equal')
         # plt.xlim([-150,150])
         # plt.ylim([-150,150])
 
+    def getDirectedGraph(self):
+        """return a directed graph representation for robots that can
+        reach their neighbor's targets, for figuring out circular swaps
+        """
+        dg = DiGraph()
+        for robot in self.robotList:
+            for otherRobot in robot.swapList():
+                dg.add_edge(robot.id, otherRobot.id, label="%i->%i"%(robot.id, otherRobot.id))
+        return dg
+
+
+def swapSearch(robotGrid, neighbor="a"):
+    """search for orientations that reduce number of collisions (3 way swaps etc)
+    """
+    bestCache = robotGrid.cachePositions()
+    bestCollide = robotGrid.nCollisions
+    print("best Collide", bestCollide)
+    sadNeighbors = [n for n in robotGrid.sketchyNeighborList if n.isCollided]
+    for sadNeighbor in sadNeighbors:
+        robotGrid.setPosFromCache(bestCache)
+        if neighbor == "a":
+            robot = sadNeighbor.robotA
+        else:
+            robot = sadNeighbor.robotB
+        dg = robotGrid.getDirectedGraph()
+        # remove any edges to rule out a simple swap solution to the
+        # shortest path solution
+        for otherRobot in robot.swapList():
+            robotGrid.setPosFromCache(bestCache)
+            try:
+                dg.remove_edge(otherRobot.id, robot.id)
+            except:
+                pass
+            else:
+                print("removed back ref edge")
+            try:
+                # print("has path?", has_path(dg, otherRobot.id, robot.id))
+                pathTo = shortest_path(dg, otherRobot.id, robot.id)
+            except:
+                print("swap path not found")
+                continue
+
+            pathFrom = numpy.roll(pathTo,1)
+            # begin swapping positions
+            firstPos = robot.xyFiberFocal
+            for fromRobotID, toRobotID in zip(pathFrom, pathTo):
+                fromRobot = robotGrid.robotList[fromRobotID]
+                toRobot = robotGrid.robotList[toRobotID]
+                print(fromRobotID, toRobotID)
+                print("%i-->%i"%(fromRobot.id,toRobot.id))
+                if toRobot.id==robot.id:
+                    xyFiberFocal = firstPos
+                else:
+                    xyFiberFocal = toRobot.xyFiberFocal
+                try:
+                    fromRobot.setAlphaBetaFromFocalXY(*xyFiberFocal)
+                except:
+                    print("shit!!!")
+                    raise RuntimeError("something is fucked!")
+
+            print("collisions now", robotGrid.nCollisions)
+            robotGrid.swapIter()
+            print("collisions after simple swap", robotGrid.nCollisions)
+            if robotGrid.nCollisions < bestCollide:
+                bestCache = robotGrid.cachePositions()
+                bestCollide = robotGrid.nCollisions
+                print("new best orientation")
+                print("collisions now", bestCollide)
+                break # don't try other paths if we have reduced number of collisions
+    robotGrid.setPosFromCache(bestCache)
+    print("best collide", robotGrid.nCollisions)
+
+def findCircularTrade(robot):
+    # try to build a viable circular trade for a
+    # single colliding robot
+    # build a graph? minimum path search?
+    pass
+
+def throwAway(robotGrid):
+    robotAs = []
+    for n in robotGrid.sketchyNeighborList:
+        if n.isCollided:
+            robotAs.append(n.robotA)
+    for robot in robotAs:
+        while True:
+            robot.setAlphaBetaRand()
+            robot.threwAway = True
+            if not robot.isCollided:
+                break
+
+    # print("throw away collisions: %i"%robotGrid.nCollisions)
 
 if __name__ == "__main__":
-    nRobots = 500
-    nc = int(numpy.sqrt((nRobots*4-1)/3))
-    rg = RobotGrid(nc)
-    rg.plotGrid()
-    rg.swapIter()
-    rg.plotGrid()
-    plt.show()
+    initialCollisions = []
+    simpleSwapCollisions = []
+    cycleSwapCollisions = []
+    # cycleSwapCollisions2 = []
+    thrownAway = []
+    for ii in range(1):
+        nRobots = 500
+        nc = int(numpy.sqrt((nRobots*4-1)/3))
+        rg = RobotGrid(nc)
+        initialCollisions.append(rg.nCollisions)
+        rg.plotGrid()
+        rg.swapIter()
+        simpleSwapCollisions.append(rg.nCollisions)
+        rg.plotGrid()
+        swapSearch(rg)
+        cycleSwapCollisions.append(rg.nCollisions)
+        rg.plotGrid()
+        # swapSearch(rg)
+        # cycleSwapCollisions2.append(rg.nCollisions)
+        # rg.plotGrid()
+        throwAway(rg)
+        thrownAway.append(rg.nThrownAway)
+        rg.plotGrid()
+        print("threw away %i robots"%rg.nThrownAway)
+        plt.show()
+    print(initialCollisions)
+    print(simpleSwapCollisions)
+    print(cycleSwapCollisions)
+    # print(cycleSwapCollisions2)
+    print(thrownAway)
+
 
 
 
