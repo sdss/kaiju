@@ -797,17 +797,17 @@ def separateMoves(doSort=False):
         robotSet = set([robot.id for robot in robotsToMove])
         if robotSet == prevRobotSet:
             break # we arent getting anywhere
-        print("%i robots to move on iter %i"%(len(robotsToMove),ii))
+        # print("%i robots to move on iter %i"%(len(robotsToMove),ii))
         for robot in robotsToMove:
             while True:
                 res = robot.stepTowardTarg()
                 if res is None:
                     continue # continue stepping
                 if res==True:
-                    print("robot %i achieved target"%robot.id)
+                    # print("robot %i achieved target"%robot.id)
                     break
                 else:
-                    print("robot %i stopped before colliding"%(robot.id))
+                    # print("robot %i stopped before colliding"%(robot.id))
                     break
         figStr = "fig%s.png"%(("%i"%ii).zfill(4))
         rg.plotGrid(figStr)
@@ -820,10 +820,19 @@ def separateMoves(doSort=False):
     deadlocks = sum([robot.deadLocked for robot in rg.robotList])
     total = len(rg.robotList)
     perc = (total-deadlocks)/float(total)
-    print("percent success %.2f"%perc)
+    # print("percent success %.2f"%perc)
+    return perc
 
 if __name__ == "__main__":
-    separateMoves(doSort=True)
+    doSort = False
+    if len(sys.argv) > 1:
+        print("do sort")
+        doSort = True
+    percents = []
+    for ii in range(100):
+        print('on iter', ii)
+        percents.append(separateMoves(doSort=doSort))
+    print("found: %.2f (%.2f)"%(numpy.mean(percents), numpy.std(percents)))
 
 
 
