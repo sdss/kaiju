@@ -1,4 +1,6 @@
 import numpy
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from shapely.geometry import LineString
 from descartes import PolygonPatch
