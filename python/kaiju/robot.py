@@ -5,6 +5,8 @@ from descartes import PolygonPatch
 import copy
 from networkx import DiGraph, shortest_path, draw, find_cycle, simple_cycles, shortest_simple_paths, has_path
 from multiprocessing import Pool
+import math
+import sys
 
 AlphaArmLength = 7.4 #mm
 AlphaRange = [0, 360]
@@ -24,6 +26,20 @@ MaxReach = BetaArmLength + AlphaArmLength
 
 
 PlateScale = 217.7358 / 3600.0 # plug plate scale (mm/arcsecond)
+
+def k_sin(x,k=10):
+    # series expand sin
+    sin = 0
+    for kk in range(k):
+        sin += ((-1)**kk)*x**(2*kk+1) / float(math.factorial(2*kk + 1))
+    return sin
+
+def k_cos(x,k=10):
+    # series expand cosine
+    cos = 0
+    for kk in range(k):
+        cos += ((-1)**kk)*x**(2*kk) / float(math.factorial(2*kk))
+    return cos
 
 def hexFromDia(nDia):
     """
@@ -159,8 +175,11 @@ class Robot(object):
         self.sketchyNeighbors = []
         self._collisionBox = None # shapely geom populated by neighbor
         self.threwAway = False
+        self.deadLocked = False
         ##################
         self.xyFocal = None
+        self.betaTarg = None
+        self.betaStep = 0.25 # each step is 0.25 degrees
         if not None in [xFocal, yFocal]:
             self.setXYFocal(xFocal, yFocal)
         if not None in [alphaAng, betaAng]:
@@ -170,6 +189,23 @@ class Robot(object):
     def __repr__(self):
         return ("Robot(id=%i)"%self.id)
 
+    def _preComputeTrig(self):
+        # pre compute some stuff...
+        self._cosAlpha = numpy.cos(self._alphaRad)
+        self._sinAlpha = numpy.sin(self._alphaRad)
+        self._cosAlphaBeta = numpy.cos(self._alphaRad+self._betaRad)
+        self._sinAlphaBeta = numpy.sin(self._alphaRad+self._betaRad)
+
+    @property
+    def onTarget(self):
+        return self.betaTarg == self.alphaBeta[1]
+
+    @property
+    def distToTarget(self):
+        currAlpha, currBeta = self.alphaBeta
+        betaDist = self.betaTarg - currBeta
+        return betaDist
+
     @property
     def isCollided(self):
         collided = False
@@ -178,6 +214,39 @@ class Robot(object):
                 collided = True
                 break
         return collided
+
+    @property
+    def alphaBeta(self):
+        return numpy.array([numpy.degrees(self._alphaRad), numpy.degrees(self._betaRad)])
+
+    def stepTowardTarg(self):
+        # return False if step created collision
+        # return True if step acquired target
+        # return None otherwise
+        stepDir = 1
+        currAlpha, currBeta = self.alphaBeta
+        betaDist = self.betaTarg - currBeta
+        self.deadLocked = False
+        if betaDist == 0:
+            assert False, 'error!'
+        if betaDist < 0:
+            stepDir = -1
+        if numpy.abs(betaDist) < self.betaStep:
+            self.setAlphaBeta(currAlpha, self.betaTarg)
+        else:
+            self.setAlphaBeta(currAlpha, currBeta+stepDir*self.betaStep)
+        # if this step caused a collision, move back
+        if self.isCollided:
+            self.setAlphaBeta(currAlpha, currBeta)
+            self.deadLocked = True
+            return False
+        if self.onTarget:
+            return True
+        else:
+            return None
+
+    def stepAwayTarg(self):
+        pass
 
     def addSkectchyNeighbor(self, sketchyNeighbor):
         # maybe enforce that this neighbor doesn't already
@@ -205,17 +274,6 @@ class Robot(object):
             if canReach:
                 roboList.append(otherRobot)
         return roboList
-
-    @property
-    def alphaBeta(self):
-        return numpy.array([numpy.degrees(self._alphaRad), numpy.degrees(self._betaRad)])
-
-    def _preComputeTrig(self):
-        # pre compute some stuff...
-        self._cosAlpha = numpy.cos(self._alphaRad)
-        self._sinAlpha = numpy.sin(self._alphaRad)
-        self._cosAlphaBeta = numpy.cos(self._alphaRad+self._betaRad)
-        self._sinAlphaBeta = numpy.sin(self._alphaRad+self._betaRad)
 
     def setAlphaBeta(self, alphaAng, betaAng):
         """angle are in degrees
@@ -488,7 +546,7 @@ class RobotGrid(object):
                 thisTarg = numpy.tile(robot.xyFiberFocal, nOther).reshape(nOther,2)
                 mindist = numpy.min(numpy.linalg.norm(otherTargs - thisTarg, axis=1))
                 if mindist < self.minTargSeparation:
-                    print("replacing target for robot id %i"%robot.id)
+                    #print("replacing target for robot id %i"%robot.id)
                     robot.setAlphaBetaRand()
                     robot.replacementsTried += 1
                     if robot.replacementsTried > 2000:
@@ -511,7 +569,7 @@ class RobotGrid(object):
 
 
 
-    def plotGrid(self):
+    def plotGrid(self, title=None):
         fig = plt.figure(figsize=(10,10))
         ax = plt.gca()
         # ax = fig.add_subplot(111)
@@ -533,6 +591,8 @@ class RobotGrid(object):
                     topcolor="orange"
             if robot.threwAway:
                 topcolor, bottomcolor = "magenta", "magenta"
+            if robot.deadLocked:
+                topcolor, bottomcolor = "green", "green"
             ax.plot(
                 [robot.xyAlphaFocal[0], robot.xyFiberFocal[0]],
                 [robot.xyAlphaFocal[1], robot.xyFiberFocal[1]],
@@ -543,6 +603,8 @@ class RobotGrid(object):
             patch = PolygonPatch(robot._bottomCollideLine, fc=bottomcolor, ec=bottomcolor, alpha=0.5, zorder=10)
             ax.add_patch(patch)
         plt.axis('equal')
+        if title is not None:
+            plt.title(title)
         # plt.xlim([-150,150])
         # plt.ylim([-150,150])
 
@@ -646,21 +708,25 @@ def simpleRun():
         nc = int(numpy.sqrt((nRobots*4-1)/3))
         rg = RobotGrid(nc)
         initialCollisions.append(rg.nCollisions)
-        rg.plotGrid()
+        rg.plotGrid("Naive Assignment")
+        plt.savefig("naive.png")
         rg.swapIter()
         simpleSwapCollisions.append(rg.nCollisions)
-        rg.plotGrid()
+        rg.plotGrid("Pairwise Swap")
+        plt.savefig("pairwise.png")
         swapSearch(rg)
         cycleSwapCollisions.append(rg.nCollisions)
-        rg.plotGrid()
+        rg.plotGrid("Circular Swap")
+        plt.savefig("circular.png")
         # swapSearch(rg)
         # cycleSwapCollisions2.append(rg.nCollisions)
         # rg.plotGrid()
         throwAway(rg)
         thrownAway.append(rg.nThrownAway)
-        rg.plotGrid()
+        rg.plotGrid("Thrown Away")
+        plt.savefig("thrown.png")
         print("threw away %i robots"%rg.nThrownAway)
-        plt.show()
+        # plt.show()
     print(initialCollisions)
     print(simpleSwapCollisions)
     print(cycleSwapCollisions)
@@ -697,9 +763,70 @@ def explodeAndExplore():
     p.map(runGridSeries, minSpacings)
     print("explode complete!!!")
 
+def motionPlan():
+    minSeparation = 14
+    # nRobots = 255
+    # nc = int(numpy.sqrt((nRobots*4-1)/3))
+    nc = 11
+    rg = RobotGrid(nc, minSeparation)
+    throwAway(rg)
+    return rg
+
+def separateMoves(doSort=False):
+    rg = motionPlan()
+    for robot in rg.robotList:
+        if robot.threwAway:
+            robot.threwAway = False
+    rg.plotGrid("target")
+    plt.savefig("target.png")
+    for robot in rg.robotList:
+        a,b = robot.alphaBeta
+        robot.betaTarg = b
+        robot.setAlphaBeta(a,180)
+    rg.plotGrid("start")
+    plt.savefig("start.png")
+    ii = 0
+    prevRobotSet = set([])
+    while True:
+        ii+=1
+        robotsToMove = [robot for robot in rg.robotList if not robot.onTarget]
+        if doSort:
+            robotsToMove = sorted(robotsToMove, key=lambda robot: (numpy.linalg.norm(robot.xyFocal), robot.distToTarget))
+        robotSet = set([robot.id for robot in robotsToMove])
+        if robotSet == prevRobotSet:
+            break # we arent getting anywhere
+        print("%i robots to move on iter %i"%(len(robotsToMove),ii))
+        for robot in robotsToMove:
+            while True:
+                res = robot.stepTowardTarg()
+                if res is None:
+                    continue # continue stepping
+                if res==True:
+                    print("robot %i achieved target"%robot.id)
+                    break
+                else:
+                    print("robot %i stopped before colliding"%(robot.id))
+                    break
+        figStr = "fig%s.png"%(("%i"%ii).zfill(4))
+        rg.plotGrid(figStr)
+        plt.savefig(figStr)
+        prevRobotSet = robotSet
+
+    rg.plotGrid("end")
+    plt.savefig("end.png")
+
+    deadlocks = sum([robot.deadLocked for robot in rg.robotList])
+    total = len(rg.robotList)
+    perc = (total-deadlocks)/float(total)
+    print("percent success %.2f"%perc)
 
 if __name__ == "__main__":
-    explodeAndExplore()
+    separateMoves(doSort=True)
+
+
+
+
+
 
 
 
