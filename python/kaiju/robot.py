@@ -9,6 +9,7 @@ from networkx import DiGraph, shortest_path, draw, find_cycle, simple_cycles, sh
 from multiprocessing import Pool
 import math
 import sys
+from functools import partial
 
 AlphaArmLength = 7.4 #mm
 AlphaRange = [0, 360]
@@ -774,7 +775,7 @@ def motionPlan():
     throwAway(rg)
     return rg
 
-def separateMoves(doSort=False):
+def separateMoves(dummy, doSort=False):
     rg = motionPlan()
     for robot in rg.robotList:
         if robot.threwAway:
@@ -828,8 +829,9 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         print("do sort")
         doSort = True
-    p = Pool(10)
-    percents = p.map(separateMoves(doSort=doSort), range(100))
+    p = Pool(2)
+    pSeparateMoves = partial(separateMoves, doSort=doSort)
+    percents = p.map(pSeparateMoves, range(2))
     print("found: %.2f (%.2f)"%(numpy.mean(percents), numpy.std(percents)))
 
 
