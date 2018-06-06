@@ -828,10 +828,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         print("do sort")
         doSort = True
-    percents = []
-    for ii in range(100):
-        print('on iter', ii)
-        percents.append(separateMoves(doSort=doSort))
+    p = Pool(10)
+    percents = p.map(separateMoves(doSort=doSort), range(100))
     print("found: %.2f (%.2f)"%(numpy.mean(percents), numpy.std(percents)))
 
 
