@@ -182,7 +182,8 @@ class Robot(object):
         ##################
         self.xyFocal = None
         self.betaTarg = None
-        self.betaStep = 1 # each step is 0.25 degrees
+        self.alphaTarg = None
+        self.angStep = 1 # each step is 1 degrees
         if not None in [xFocal, yFocal]:
             self.setXYFocal(xFocal, yFocal)
         if not None in [alphaAng, betaAng]:
@@ -201,13 +202,27 @@ class Robot(object):
 
     @property
     def onTarget(self):
-        return self.betaTarg == self.alphaBeta[1]
+        a,b = self.alphaBeta
+        return self.betaTarg == b and self.alphaTarg == a
 
     @property
-    def distToTarget(self):
+    def angDistToTarget(self):
         currAlpha, currBeta = self.alphaBeta
         betaDist = self.betaTarg - currBeta
-        return betaDist
+        alphaDist = self.alphaTarg - currAlpha
+        return alphaDist, betaDist
+
+    @property
+    def xyFocalTarg(self):
+        xA = numpy.cos(numpy.radians(self.alphaTarg))*AlphaArmLength
+        yA = numpy.cos(numpy.radians(self.alphaTarg))*AlphaArmLength
+        x = xA + numpy.cos(numpy.radians(self.betaTarg))*BetaArmLength
+        y = yA + numpy.sin(numpy.radians(self.betaTarg))*BetaArmLength
+        return numpy.array([x,y]) + self.xyFocal
+
+    @property
+    def xyFocalVecToTarget(self):
+        return self.xyFocalTarg - self.xyFiberFocal
 
     @property
     def isCollided(self):
@@ -226,23 +241,57 @@ class Robot(object):
         # return False if step created collision
         # return True if step acquired target
         # return None otherwise
+        assert not self.isCollided, "wtf????"
         stepDir = 1
         currAlpha, currBeta = self.alphaBeta
-        betaDist = self.betaTarg - currBeta
+        alphaDist, betaDist = self.angDistToTarget
         self.deadLocked = False
-        if betaDist == 0:
-            assert False, 'error!'
         if betaDist < 0:
             stepDir = -1
-        if numpy.abs(betaDist) < self.betaStep:
-            self.setAlphaBeta(currAlpha, self.betaTarg)
+        if numpy.abs(betaDist) < self.angStep:
+            nextBeta = self.betaTarg
         else:
-            self.setAlphaBeta(currAlpha, currBeta+stepDir*self.betaStep)
-        # if this step caused a collision, move back
+            nextBeta = currBeta+stepDir*self.angStep
+        self.setAlphaBeta(currAlpha, nextBeta)
+        # if this step caused a collision, move alpha back
         if self.isCollided:
-            self.setAlphaBeta(currAlpha, currBeta)
-            self.deadLocked = True
-            return False
+            # move alpha until not collided
+            prevAlpha = currAlpha
+            while True:
+                print("relaxing alpha robot:%i"%self.id)
+                nextAlpha = prevAlpha+stepDir*self.angStep
+                try:
+                    self.setAlphaBeta(nextAlpha, nextBeta)
+                except:
+                    print("alpha move out of range robot:%i"%(self.id))
+                    self.setAlphaBeta(currAlpha, currBeta)
+                    assert not self.isCollided
+                    self.deadLocked = True
+                    return False
+                if self.isCollided:
+                    prevAlpha = nextAlpha
+                else:
+                    print("relaxed alpha robot:%i"%self.id)
+                    break
+        elif numpy.abs(alphaDist)>0:
+            # not collided check if we need to step alpha towards
+            # goal
+            print("moving alpha back robot:%i"%self.id)
+            if alphaDist < 0:
+                stepDir = -1
+            else:
+                stepDir = 1
+            if numpy.abs(alphaDist) < self.angStep:
+                nextAlpha = self.alphaTarg
+            else:
+                nextAlpha = currAlpha + stepDir*self.angStep
+            self.setAlphaBeta(nextAlpha, nextBeta)
+            if self.isCollided:
+                self.setAlphaBeta(currAlpha, nextBeta)
+                self.deadLocked = True
+                return False
+
+
         if self.onTarget:
             return True
         else:
@@ -786,6 +835,7 @@ def separateMoves(dummy, doSort=False):
     for robot in rg.robotList:
         a,b = robot.alphaBeta
         robot.betaTarg = b
+        robot.alphaTarg = a
         robot.setAlphaBeta(a,180)
     #rg.plotGrid("start")
     #plt.savefig("start.png")
@@ -832,37 +882,48 @@ def simulMoves(dummy=None):
     for robot in rg.robotList:
         if robot.threwAway:
             robot.threwAway = False
-    # rg.plotGrid("target")
-    # plt.savefig("target.png")
+    rg.plotGrid("target")
+    plt.xlim([-150,150])
+    plt.ylim([-150,150])
+    plt.savefig("target.png")
+    plt.close()
     for robot in rg.robotList:
         a,b = robot.alphaBeta
         robot.betaTarg = b
+        robot.alphaTarg = a
         robot.setAlphaBeta(a,180)
-    # rg.plotGrid("start")
-    # plt.savefig("start.png")
+    rg.plotGrid("start")
+    plt.savefig("start.png")
+    plt.close()
     ii = 0
     while True:
         ii+=1
-        # print("step", ii)
+        print("step", ii)
         robotsToMove = [robot for robot in rg.robotList if not robot.onTarget]
         for robot in robotsToMove:
             res = robot.stepTowardTarg()
-        # figStr = "fig%s.png"%(("%i"%ii).zfill(4))
-        # rg.plotGrid(figStr)
-        # plt.xlim([-150,150])
-        # plt.ylim([-150,150])
-        # plt.savefig(figStr)
-        # plt.close()
-        if ii>200:
+        figStr = "fig%s.png"%(("%i"%ii).zfill(4))
+        rg.plotGrid(figStr)
+        plt.xlim([-150,150])
+        plt.ylim([-150,150])
+        plt.savefig(figStr)
+        plt.close()
+        if ii>300:
+            break
+        if not robotsToMove:
+            print("finished successfully!")
             break
 
-    # rg.plotGrid("end")
-    # plt.savefig("end.png")
+    rg.plotGrid("end")
+    plt.xlim([-150,150])
+    plt.ylim([-150,150])
+    plt.savefig("end.png")
+    plt.close()
 
     deadlocks = sum([robot.deadLocked for robot in rg.robotList])
     total = len(rg.robotList)
     perc = (total-deadlocks)/float(total)
-    # print("percent success %.2f"%perc)
+    print("percent success %.2f"%perc)
     return perc
 
 def oneByOne():
@@ -876,9 +937,11 @@ def oneByOne():
     print("found: %.2f (%.2f)"%(numpy.mean(percents), numpy.std(percents)))
 
 if __name__ == "__main__":
-    p = Pool(24)
-    percents = p.map(simulMoves, range(400))
-    print("found: %.2f (%.2f)"%(numpy.mean(percents), numpy.std(percents)))
+    # p = Pool(24)
+    # percents = p.map(simulMoves, range(400))
+    # print("found: %.2f (%.2f)"%(numpy.mean(percents), numpy.std(percents)))
+
+    simulMoves()
 
 
 
