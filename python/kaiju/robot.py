@@ -921,7 +921,7 @@ def simulMoves(dummy=None):
     while True:
         ii+=1
         print("step", ii)
-        if ii%30 == 0 and BetaArmWidth > 5:
+        if ii%20 == 0 and BetaArmWidth > 5:
             BetaArmWidth -= 1
         robotsToMove = [robot for robot in rg.robotList if not robot.onTarget]
         for robot in robotsToMove:
