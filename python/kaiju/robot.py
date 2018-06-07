@@ -184,6 +184,7 @@ class Robot(object):
         self.betaTarg = None
         self.alphaTarg = None
         self.angStep = 1 # each step is 1 degrees
+        self.rg = None # set by grid
         if not None in [xFocal, yFocal]:
             self.setXYFocal(xFocal, yFocal)
         if not None in [alphaAng, betaAng]:
@@ -255,7 +256,7 @@ class Robot(object):
         self.setAlphaBeta(currAlpha, nextBeta)
         # if this step caused a collision, move alpha back
         if self.isCollided:
-            # move alpha until not collided
+            # move alpha instead until not collided
             prevAlpha = currAlpha
             while True:
                 print("relaxing alpha robot:%i"%self.id)
@@ -273,32 +274,38 @@ class Robot(object):
                 else:
                     print("relaxed alpha robot:%i"%self.id)
                     break
+                self.rg.plotNext()
+
         elif numpy.abs(alphaDist)>0:
             # not collided check if we need to step alpha towards
             # goal
-            print("moving alpha back robot:%i"%self.id)
             if alphaDist < 0:
                 stepDir = -1
             else:
                 stepDir = 1
-            if numpy.abs(alphaDist) < self.angStep:
-                nextAlpha = self.alphaTarg
-            else:
-                nextAlpha = currAlpha + stepDir*self.angStep
-            self.setAlphaBeta(nextAlpha, nextBeta)
-            if self.isCollided:
-                self.setAlphaBeta(currAlpha, nextBeta)
-                self.deadLocked = True
-                return False
+            prevAlpha = currAlpha
+            while True:
+                print("moving alpha back robot:%i"%self.id)
+                alphaDist = numpy.abs(prevAlpha - self.alphaTarg)
+                if numpy.abs(alphaDist) < self.angStep:
+                    nextAlpha = self.alphaTarg
+                else:
+                    nextAlpha = prevAlpha + stepDir*self.angStep
+                self.setAlphaBeta(nextAlpha, nextBeta)
+                if self.isCollided:
+                    self.setAlphaBeta(prevAlpha, nextBeta)
+                    self.deadLocked = True
+                    return False
+                if nextAlpha == self.alphaTarg:
+                    break
+                prevAlpha = nextAlpha
+                self.rg.plotNext()
 
 
         if self.onTarget:
             return True
         else:
             return None
-
-    def stepAwayTarg(self):
-        pass
 
     def addSkectchyNeighbor(self, sketchyNeighbor):
         # maybe enforce that this neighbor doesn't already
@@ -515,6 +522,9 @@ class RobotGrid(object):
         self.minTargSeparation = minTargSeparation
         self.enforceMinTargSeparation()
         self._cacheList = []
+        self.xlim = None
+        self.ylim = None
+        self.plotIter = 0
         # self.swapIter()
 
     @property
@@ -532,6 +542,7 @@ class RobotGrid(object):
         for robotID, xFocal, yFocal in zip(range(nRobots), self.xAll, self.yAll):
             robot = Robot(robotID, xFocal=xFocal, yFocal=yFocal)
             robot.setAlphaBetaRand()
+            robot.rg = self
             # robot.check2xy()
             self.robotList.append(robot)
 
@@ -621,7 +632,7 @@ class RobotGrid(object):
 
 
 
-    def plotGrid(self, title=None):
+    def plotGrid(self, title=None, xlim=None, ylim=None, save=True):
         fig = plt.figure(figsize=(10,10))
         ax = plt.gca()
         # ax = fig.add_subplot(111)
@@ -657,8 +668,18 @@ class RobotGrid(object):
         plt.axis('equal')
         if title is not None:
             plt.title(title)
-        # plt.xlim([-150,150])
-        # plt.ylim([-150,150])
+        if xlim:
+            plt.xlim(xlim)
+        if ylim:
+            plt.ylim(ylim)
+        if save:
+            plt.savefig(title)
+            plt.close()
+
+    def plotNext(self):
+        self.plotIter += 1
+        pltStr = "fig%s.png"%(("%i"%self.plotIter).zfill(4))
+        self.plotGrid(pltStr, self.xlim, self.ylim, True)
 
     def getDirectedGraph(self):
         """return a directed graph representation for robots that can
@@ -882,19 +903,17 @@ def simulMoves(dummy=None):
     for robot in rg.robotList:
         if robot.threwAway:
             robot.threwAway = False
-    rg.plotGrid("target")
-    plt.xlim([-150,150])
-    plt.ylim([-150,150])
-    plt.savefig("target.png")
-    plt.close()
+    xlim = [-150,150]
+    ylim = [-150,150]
+    rg.xlim = xlim
+    rg.ylim = ylim
+    rg.plotGrid("target.png", xlim, ylim, True)
     for robot in rg.robotList:
         a,b = robot.alphaBeta
         robot.betaTarg = b
         robot.alphaTarg = a
         robot.setAlphaBeta(a,180)
-    rg.plotGrid("start")
-    plt.savefig("start.png")
-    plt.close()
+    rg.plotGrid("start.png", xlim, ylim, True)
     ii = 0
     while True:
         ii+=1
@@ -902,12 +921,7 @@ def simulMoves(dummy=None):
         robotsToMove = [robot for robot in rg.robotList if not robot.onTarget]
         for robot in robotsToMove:
             res = robot.stepTowardTarg()
-        figStr = "fig%s.png"%(("%i"%ii).zfill(4))
-        rg.plotGrid(figStr)
-        plt.xlim([-150,150])
-        plt.ylim([-150,150])
-        plt.savefig(figStr)
-        plt.close()
+        rg.plotNext()
         if ii>300:
             break
         if not robotsToMove:
