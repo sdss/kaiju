@@ -776,18 +776,19 @@ def motionPlan():
     return rg
 
 def separateMoves(dummy, doSort=False):
+    numpy.random.seed()
     rg = motionPlan()
     for robot in rg.robotList:
         if robot.threwAway:
             robot.threwAway = False
-    rg.plotGrid("target")
-    plt.savefig("target.png")
+    #rg.plotGrid("target")
+    #plt.savefig("target.png")
     for robot in rg.robotList:
         a,b = robot.alphaBeta
         robot.betaTarg = b
         robot.setAlphaBeta(a,180)
-    rg.plotGrid("start")
-    plt.savefig("start.png")
+    #rg.plotGrid("start")
+    #plt.savefig("start.png")
     ii = 0
     prevRobotSet = set([])
     while True:
@@ -810,13 +811,13 @@ def separateMoves(dummy, doSort=False):
                 else:
                     # print("robot %i stopped before colliding"%(robot.id))
                     break
-        figStr = "fig%s.png"%(("%i"%ii).zfill(4))
-        rg.plotGrid(figStr)
-        plt.savefig(figStr)
+        #figStr = "fig%s.png"%(("%i"%ii).zfill(4))
+        #rg.plotGrid(figStr)
+        #plt.savefig(figStr)
         prevRobotSet = robotSet
 
-    rg.plotGrid("end")
-    plt.savefig("end.png")
+    #rg.plotGrid("end")
+    #plt.savefig("end.png")
 
     deadlocks = sum([robot.deadLocked for robot in rg.robotList])
     total = len(rg.robotList)
@@ -829,9 +830,9 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         print("do sort")
         doSort = True
-    p = Pool(2)
+    p = Pool(14)
     pSeparateMoves = partial(separateMoves, doSort=doSort)
-    percents = p.map(pSeparateMoves, range(2))
+    percents = p.map(pSeparateMoves, range(200))
     print("found: %.2f (%.2f)"%(numpy.mean(percents), numpy.std(percents)))
 
 
