@@ -908,6 +908,8 @@ def simulMoves(dummy=None):
     rg.xlim = xlim
     rg.ylim = ylim
     rg.plotGrid("target.png", xlim, ylim, True)
+    global BetaArmWidth
+    BetaArmWidth = 9
     for robot in rg.robotList:
         a,b = robot.alphaBeta
         robot.betaTarg = b
@@ -915,9 +917,12 @@ def simulMoves(dummy=None):
         robot.setAlphaBeta(a,180)
     rg.plotGrid("start.png", xlim, ylim, True)
     ii = 0
+
     while True:
         ii+=1
         print("step", ii)
+        if ii%30 == 0 and BetaArmWidth > 5:
+            BetaArmWidth -= 1
         robotsToMove = [robot for robot in rg.robotList if not robot.onTarget]
         for robot in robotsToMove:
             res = robot.stepTowardTarg()
