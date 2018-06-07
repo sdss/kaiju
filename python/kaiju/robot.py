@@ -843,16 +843,16 @@ def simulMoves(dummy=None):
     ii = 0
     while True:
         ii+=1
-        print("step", ii)
+        # print("step", ii)
         robotsToMove = [robot for robot in rg.robotList if not robot.onTarget]
         for robot in robotsToMove:
             res = robot.stepTowardTarg()
         # figStr = "fig%s.png"%(("%i"%ii).zfill(4))
         # rg.plotGrid(figStr)
-        plt.xlim([-150,150])
-        plt.ylim([-150,150])
-        plt.savefig(figStr)
-        plt.close()
+        # plt.xlim([-150,150])
+        # plt.ylim([-150,150])
+        # plt.savefig(figStr)
+        # plt.close()
         if ii>200:
             break
 
