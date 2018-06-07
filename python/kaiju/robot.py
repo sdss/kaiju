@@ -182,7 +182,7 @@ class Robot(object):
         ##################
         self.xyFocal = None
         self.betaTarg = None
-        self.betaStep = 0.25 # each step is 0.25 degrees
+        self.betaStep = 1 # each step is 0.25 degrees
         if not None in [xFocal, yFocal]:
             self.setXYFocal(xFocal, yFocal)
         if not None in [alphaAng, betaAng]:
@@ -825,7 +825,47 @@ def separateMoves(dummy, doSort=False):
     # print("percent success %.2f"%perc)
     return perc
 
-if __name__ == "__main__":
+
+def simulMoves(dummy=None):
+    numpy.random.seed()
+    rg = motionPlan()
+    for robot in rg.robotList:
+        if robot.threwAway:
+            robot.threwAway = False
+    # rg.plotGrid("target")
+    # plt.savefig("target.png")
+    for robot in rg.robotList:
+        a,b = robot.alphaBeta
+        robot.betaTarg = b
+        robot.setAlphaBeta(a,180)
+    # rg.plotGrid("start")
+    # plt.savefig("start.png")
+    ii = 0
+    while True:
+        ii+=1
+        print("step", ii)
+        robotsToMove = [robot for robot in rg.robotList if not robot.onTarget]
+        for robot in robotsToMove:
+            res = robot.stepTowardTarg()
+        # figStr = "fig%s.png"%(("%i"%ii).zfill(4))
+        # rg.plotGrid(figStr)
+        plt.xlim([-150,150])
+        plt.ylim([-150,150])
+        plt.savefig(figStr)
+        plt.close()
+        if ii>200:
+            break
+
+    # rg.plotGrid("end")
+    # plt.savefig("end.png")
+
+    deadlocks = sum([robot.deadLocked for robot in rg.robotList])
+    total = len(rg.robotList)
+    perc = (total-deadlocks)/float(total)
+    # print("percent success %.2f"%perc)
+    return perc
+
+def oneByOne():
     doSort = False
     if len(sys.argv) > 1:
         print("do sort")
@@ -833,6 +873,11 @@ if __name__ == "__main__":
     p = Pool(14)
     pSeparateMoves = partial(separateMoves, doSort=doSort)
     percents = p.map(pSeparateMoves, range(200))
+    print("found: %.2f (%.2f)"%(numpy.mean(percents), numpy.std(percents)))
+
+if __name__ == "__main__":
+    p = Pool(24)
+    percents = p.map(simulMoves, range(400))
     print("found: %.2f (%.2f)"%(numpy.mean(percents), numpy.std(percents)))
 
 
