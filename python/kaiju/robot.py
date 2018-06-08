@@ -275,7 +275,7 @@ class Robot(object):
         if self.isCollided:
             self.deadLocked = True
             self.setAlphaBeta(currAlpha, currBeta)
-            print("fiber %i deadlocked"%self.id)
+            # print("fiber %i deadlocked"%self.id)
 
         # more complicated:
 
@@ -1031,7 +1031,10 @@ def simulMoves(dummy=None):
     return perc
 
 def reverseMove(dummy=None):
-    numpy.random.seed()
+    if dummy is None:
+        numpy.random.seed()
+    else:
+        numpy.random.seed(dummy)
     rg = motionPlan()
     for robot in rg.robotList:
         if robot.threwAway:
@@ -1041,21 +1044,22 @@ def reverseMove(dummy=None):
     rg.xlim = xlim
     rg.ylim = ylim
 
-    rg.plotGrid("target.png",xlim, ylim, True)
+    # rg.plotGrid("target.png",xlim, ylim, True)
     ii = 0
     while True:
         ii+=1
-        print('step', ii)
+        # print('step', ii)
         for robot in rg.robotList:
             robot.stepTowardFold()
-        rg.plotNext()
+        # rg.plotNext()
         if not False in [robot.alphaBeta[1]==180 for robot in rg.robotList]:
-            print("finished!!!!")
+            # print("finished!!!!")
             break
-        if ii == 300:
-            print("failed!")
+        if ii == 400:
+            # print("failed!")
             break
-
+    # seed, iterations took, nSucceed, nTotal
+    return [dummy, ii, sum([robot.alphaBeta[1]==180 for robot in rg.robotList]), len(rg.robotList)]
 
 
 def oneByOne():
@@ -1069,11 +1073,12 @@ def oneByOne():
     print("found: %.2f (%.2f)"%(numpy.mean(percents), numpy.std(percents)))
 
 if __name__ == "__main__":
-    # p = Pool(24)
-    # percents = p.map(simulMoves, range(400))
-    # print("found: %.2f (%.2f)"%(numpy.mean(percents), numpy.std(percents)))
-
-    reverseMove()
+    p = Pool(24)
+    results = p.map(reverseMove, range(1000))
+    with open("results.txt", "w") as f:
+        f.write("seed, steps, ontarget, total\n")
+        for result in results:
+            f.write("%i, %i, %i, %i\n"%tuple(result))
 
 
 
