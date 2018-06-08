@@ -2,7 +2,7 @@ import numpy
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from shapely.geometry import LineString
+from shapely.geometry import LineString, Point
 from descartes import PolygonPatch
 import copy
 from networkx import DiGraph, shortest_path, draw, find_cycle, simple_cycles, shortest_simple_paths, has_path
@@ -185,6 +185,7 @@ class Robot(object):
         self.alphaTarg = None
         self.angStep = 1 # each step is 1 degrees
         self.rg = None # set by grid
+        self.alphaDir = -1
         if not None in [xFocal, yFocal]:
             self.setXYFocal(xFocal, yFocal)
         if not None in [alphaAng, betaAng]:
@@ -237,6 +238,89 @@ class Robot(object):
     @property
     def alphaBeta(self):
         return numpy.array([numpy.degrees(self._alphaRad), numpy.degrees(self._betaRad)])
+
+    def stepTowardFold(self):
+        self.deadLocked = False
+        currAlpha, currBeta = self.alphaBeta
+        # generate list of alpha beta combos to try
+        alphaBetaList = [
+            # betas folding
+            [currAlpha - self.angStep, currBeta + self.angStep], # towards fold best trajectory
+            [currAlpha, currBeta + self.angStep], # towards fold
+            [currAlpha + self.angStep, currBeta + self.angStep], # towards fold
+
+            # beta neutral
+            [currAlpha - self.angStep, currBeta], # towards fold
+            [currAlpha + self.angStep, currBeta], # towards fold
+
+            # beta unfolding
+            [currAlpha - self.angStep, currBeta - self.angStep], # towards fold
+            [currAlpha, currBeta - self.angStep], # towards fold
+            [currAlpha + self.angStep, currBeta - self.angStep] # unfold
+        ]
+
+        for nextAlpha, nextBeta in alphaBetaList:
+            if nextAlpha > 360:
+                nextAlpha = 360
+            if nextAlpha < 0:
+                nextAlpha = 0
+            if nextBeta > 180:
+                nextBeta = 180
+            if nextBeta < 0:
+                nextBeta = 0
+            self.setAlphaBeta(nextAlpha, nextBeta)
+            if not self.isCollided:
+                # try next best orientation
+                break
+        if self.isCollided:
+            self.deadLocked = True
+            self.setAlphaBeta(currAlpha, currBeta)
+            print("fiber %i deadlocked"%self.id)
+
+        # more complicated:
+
+        # if self.isCollided:
+        #     # find net direction for collision avoidance (sum of all collisions)
+        #     self.rg.plotNext("moveTowardsCollide.png")
+        #     colDir = numpy.array([0.,0.])
+        #     nCollide = 0
+        #     for sn in self.sketchyNeighbors:
+        #         for intersect in [sn._bottomIntersect, sn._topIntersect]:
+        #             if bool(intersect):
+        #                 extCoords = numpy.asarray(intersect.exterior.coords)
+        #                 centCoords = numpy.asarray(intersect.centroid.coords)
+        #                 # find closest vertex of polygon (likely the most collided)
+        #                 ceInd = numpy.argmin(numpy.linalg.norm(extCoords-self.xyFiberFocal, axis=1))
+        #                 colDir += extCoords[ceInd].flatten() - centCoords.flatten()
+        #                 nCollide += 1
+
+        #     # move the robot along the component of colDir
+        #     # colDir = colDir*-1 #/ float(nCollide)
+        #     try:
+
+        #         a,b = self.getAlphaBetaFromFocalXY(*(self.xyFiberFocal+colDir))
+        #         alphaDelta = 1
+        #         betaDelta = 1
+        #         if a - currAlpha < 0:
+        #             alphaDelta = -1
+        #         if b - currBeta < 0:
+        #             betaDelta = -1
+        #         nextAlpha = currAlpha + alphaDelta
+        #         nextBeta = currBeta + betaDelta
+        #     except:
+        #         print("fiber %i alpha beta avoid out of range, deadlocked"%self.id)
+        #         self.deadLocked = True
+        #         self.setAlphaBeta(currAlpha,currBeta)
+        #     else:
+        #         print("fiber %i alphaBeta avoid: %.2f, %.2f"%(self.id, nextAlpha,nextBeta))
+        #         self.setAlphaBeta(nextAlpha, nextBeta)
+        #         if self.isCollided:
+        #             self.rg.plotNext("moveAwayCollide.png")
+        #             sys.exit()
+        #             self.setAlphaBeta(currAlpha,currBeta)
+        #             print("fiber %i avoidance move also collides, deadlocked"%self.id)
+        #             self.deadLocked = True
+
 
     def stepTowardTarg(self):
         # return False if step created collision
@@ -676,9 +760,10 @@ class RobotGrid(object):
             plt.savefig(title)
             plt.close()
 
-    def plotNext(self):
-        self.plotIter += 1
-        pltStr = "fig%s.png"%(("%i"%self.plotIter).zfill(4))
+    def plotNext(self, pltStr=None):
+        if pltStr is None:
+            self.plotIter += 1
+            pltStr = "fig%s.png"%(("%i"%self.plotIter).zfill(4))
         self.plotGrid(pltStr, self.xlim, self.ylim, True)
 
     def getDirectedGraph(self):
@@ -837,10 +922,10 @@ def explodeAndExplore():
     print("explode complete!!!")
 
 def motionPlan():
-    minSeparation = 14
-    # nRobots = 255
-    # nc = int(numpy.sqrt((nRobots*4-1)/3))
-    nc = 11
+    minSeparation = 8
+    nRobots = 500
+    nc = int(numpy.sqrt((nRobots*4-1)/3))
+    # nc = 11
     rg = RobotGrid(nc, minSeparation)
     throwAway(rg)
     return rg
@@ -945,6 +1030,34 @@ def simulMoves(dummy=None):
     print("percent success %.2f"%perc)
     return perc
 
+def reverseMove(dummy=None):
+    numpy.random.seed()
+    rg = motionPlan()
+    for robot in rg.robotList:
+        if robot.threwAway:
+            robot.threwAway = False
+    xlim = [-300,300]
+    ylim = [-300,300]
+    rg.xlim = xlim
+    rg.ylim = ylim
+
+    rg.plotGrid("target.png",xlim, ylim, True)
+    ii = 0
+    while True:
+        ii+=1
+        print('step', ii)
+        for robot in rg.robotList:
+            robot.stepTowardFold()
+        rg.plotNext()
+        if not False in [robot.alphaBeta[1]==180 for robot in rg.robotList]:
+            print("finished!!!!")
+            break
+        if ii == 300:
+            print("failed!")
+            break
+
+
+
 def oneByOne():
     doSort = False
     if len(sys.argv) > 1:
@@ -960,7 +1073,7 @@ if __name__ == "__main__":
     # percents = p.map(simulMoves, range(400))
     # print("found: %.2f (%.2f)"%(numpy.mean(percents), numpy.std(percents)))
 
-    simulMoves()
+    reverseMove()
 
 
 
