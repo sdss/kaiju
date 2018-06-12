@@ -10,6 +10,7 @@ from multiprocessing import Pool
 import math
 import sys
 from functools import partial
+import collections
 
 AlphaArmLength = 7.4 #mm
 AlphaRange = [0, 360]
@@ -183,9 +184,10 @@ class Robot(object):
         self.xyFocal = None
         self.betaTarg = None
         self.alphaTarg = None
+        self.alphaDir = 1
         self.angStep = 1 # each step is 1 degrees
         self.rg = None # set by grid
-        self.alphaDir = -1
+        self.movequeue = collections.deque(maxlen=5)
         if not None in [xFocal, yFocal]:
             self.setXYFocal(xFocal, yFocal)
         if not None in [alphaAng, betaAng]:
@@ -236,30 +238,44 @@ class Robot(object):
         return collided
 
     @property
+    def collidedNeighbors(self):
+        robos = []
+        for n in self.sketchyNeighbors:
+            if n.isCollided:
+                robos.append(n.getNeighbor(self))
+        return robos
+
+    @property
     def alphaBeta(self):
         return numpy.array([numpy.degrees(self._alphaRad), numpy.degrees(self._betaRad)])
 
     def stepTowardFold(self):
         self.deadLocked = False
         currAlpha, currBeta = self.alphaBeta
+        # if currAlpha == 0 and currBeta == 180:
+        if currBeta == 180 and currAlpha == 0:
+            # done moving! don't do anything?
+            return
         # generate list of alpha beta combos to try
         alphaBetaList = [
             # betas folding
-            [currAlpha - self.angStep, currBeta + self.angStep], # towards fold best trajectory
+            [currAlpha - self.alphaDir*self.angStep, currBeta + self.angStep], # towards fold best trajectory
             [currAlpha, currBeta + self.angStep], # towards fold
-            [currAlpha + self.angStep, currBeta + self.angStep], # towards fold
+            [currAlpha + self.alphaDir*self.angStep, currBeta + self.angStep], # towards fold
 
             # beta neutral
-            [currAlpha - self.angStep, currBeta], # towards fold
-            [currAlpha + self.angStep, currBeta], # towards fold
+            [currAlpha - self.alphaDir*self.angStep, currBeta], # towards fold
+            [currAlpha + self.alphaDir*self.angStep, currBeta], # towards fold
 
             # beta unfolding
-            [currAlpha - self.angStep, currBeta - self.angStep], # towards fold
+            [currAlpha - self.alphaDir*self.angStep, currBeta - self.angStep], # towards fold
             [currAlpha, currBeta - self.angStep], # towards fold
-            [currAlpha + self.angStep, currBeta - self.angStep] # unfold
+            [currAlpha + self.alphaDir*self.angStep, currBeta - self.angStep] # unfold
         ]
-
+        ii = 0
+        # troubleRobots = []
         for nextAlpha, nextBeta in alphaBetaList:
+            ii += 1
             if nextAlpha > 360:
                 nextAlpha = 360
             if nextAlpha < 0:
@@ -268,14 +284,31 @@ class Robot(object):
                 nextBeta = 180
             if nextBeta < 0:
                 nextBeta = 0
+            # if we're at limit, we need special handling
+            if nextAlpha == currAlpha and nextBeta == currBeta:
+                continue #skip this one, always favor a move.
             self.setAlphaBeta(nextAlpha, nextBeta)
+            # troubleRobots.extend(self.collidedNeighbors)
             if not self.isCollided:
                 # try next best orientation
                 break
+
+        # troubleRobots = set([r.id for r in troubleRobots])
+        # self.movequeue.append(ii)
+        # if not (1 in self.movequeue or 2 in self.movequeue or 3 in self.movequeue):
+        #     for robotID in troubleRobots:
+        #         otherRobot = self.rg.robotList[robotID]
+        #         oa,ob = otherRobot.alphaBeta
+        #         if otherRobot.alphaDir == 1 and ob > 165:
+        #             otherRobot.alphaDir = -1
+        #             print("switching robot %i alpha dir"%otherRobot.id)
+        #     print("fiber %i struggling i=%i"%(self.id, ii))
+
         if self.isCollided:
             self.deadLocked = True
             self.setAlphaBeta(currAlpha, currBeta)
-            # print("fiber %i deadlocked"%self.id)
+            print("fiber %i deadlocked"%self.id)
+            self.rg.plotNext()
 
         # more complicated:
 
@@ -740,6 +773,8 @@ class RobotGrid(object):
                 topcolor, bottomcolor = "magenta", "magenta"
             if robot.deadLocked:
                 topcolor, bottomcolor = "green", "green"
+            if robot.onTarget:
+                topcolor, bottomcolor = "gold", "gold"
             ax.plot(
                 [robot.xyAlphaFocal[0], robot.xyFiberFocal[0]],
                 [robot.xyAlphaFocal[1], robot.xyFiberFocal[1]],
@@ -1012,7 +1047,7 @@ def simulMoves(dummy=None):
         for robot in robotsToMove:
             res = robot.stepTowardTarg()
         rg.plotNext()
-        if ii>300:
+        if ii>250:
             break
         if not robotsToMove:
             print("finished successfully!")
@@ -1039,6 +1074,10 @@ def reverseMove(dummy=None):
     for robot in rg.robotList:
         if robot.threwAway:
             robot.threwAway = False
+    for robot in rg.robotList:
+        a,b = robot.alphaBeta
+        robot.betaTarg = b
+        robot.alphaTarg = a
     xlim = [-300,300]
     ylim = [-300,300]
     rg.xlim = xlim
@@ -1046,16 +1085,18 @@ def reverseMove(dummy=None):
 
     # rg.plotGrid("target.png",xlim, ylim, True)
     ii = 0
+    for jj in range(10):
+        rg.plotNext() # on target plot a few for movie stability
     while True:
         ii+=1
-        # print('step', ii)
+        print('step', ii)
         for robot in rg.robotList:
             robot.stepTowardFold()
-        # rg.plotNext()
+        rg.plotNext()
         if not False in [robot.alphaBeta[1]==180 for robot in rg.robotList]:
             # print("finished!!!!")
             break
-        if ii == 400:
+        if ii == 250:
             # print("failed!")
             break
     # seed, iterations took, nSucceed, nTotal
@@ -1073,12 +1114,14 @@ def oneByOne():
     print("found: %.2f (%.2f)"%(numpy.mean(percents), numpy.std(percents)))
 
 if __name__ == "__main__":
-    p = Pool(24)
-    results = p.map(reverseMove, range(1000))
-    with open("results.txt", "w") as f:
-        f.write("seed, steps, ontarget, total\n")
-        for result in results:
-            f.write("%i, %i, %i, %i\n"%tuple(result))
+    reverseMove(43)
+
+    # p = Pool(24)
+    # results = p.map(reverseMove, range(1000))
+    # with open("results.txt", "w") as f:
+    #     f.write("seed, steps, ontarget, total\n")
+    #     for result in results:
+    #         f.write("%i, %i, %i, %i\n"%tuple(result))
 
 
 
