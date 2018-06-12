@@ -308,7 +308,7 @@ class Robot(object):
             self.deadLocked = True
             self.setAlphaBeta(currAlpha, currBeta)
             print("fiber %i deadlocked"%self.id)
-            self.rg.plotNext()
+            # self.rg.plotNext()
 
         # more complicated:
 
@@ -1085,14 +1085,15 @@ def reverseMove(dummy=None):
 
     # rg.plotGrid("target.png",xlim, ylim, True)
     ii = 0
-    for jj in range(10):
-        rg.plotNext() # on target plot a few for movie stability
+    # for jj in range(10):
+    #     rg.plotNext() # on target plot a few for movie stability
+
     while True:
         ii+=1
         print('step', ii)
         for robot in rg.robotList:
             robot.stepTowardFold()
-        rg.plotNext()
+        # rg.plotNext()
         if not False in [robot.alphaBeta[1]==180 for robot in rg.robotList]:
             # print("finished!!!!")
             break
