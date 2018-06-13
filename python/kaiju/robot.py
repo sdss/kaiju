@@ -257,7 +257,7 @@ class Robot(object):
         currAlpha, currBeta = self.alphaBeta
 
         # if currAlpha == 0 and currBeta == 180:
-        if currBeta == 180 and currAlpha == 0:
+        if currBeta == 180 and currAlpha == 0 and self.alphaDir == 1:
             # done moving! don't do anything?
             return
         if currBeta == 180 and self.alphaDir == 1:
@@ -320,16 +320,20 @@ class Robot(object):
             if nextAlpha == currAlpha and nextBeta == currBeta:
                 continue #skip this one, always favor a move.
             self.setAlphaBeta(nextAlpha, nextBeta)
-            if self.isCollided and nextAlpha==0 and ii == 1:
-                # this is a special case to check that the neighbor to the
-                # right is not causing the collision, if it is
-                # have the right neighbor preferentially open up beta!
-                collNs = [c.id for c in self.collidedNeighbors]
-                if self.id+1 in collNs:
-                    badN = self.rg.robotList[self.id+1]
-                    bada,badb = badN.alphaBeta
-                    if badb > currBeta and bada < 180:
-                        badN.betaDir = -1
+            if self.isCollided and ii == 1:
+                for colN in self.collidedNeighbors:
+                    if nextAlpha==0 and self.id+1 == colN.id:
+                        # check if this is
+                        # this is a special case to check that the neighbor to the
+                        # right is not causing the collision, if it is
+                        # have the right neighbor preferentially open up beta!
+                        bada,badb = colN.alphaBeta
+                        if badb > currBeta and bada < 180:
+                            colN.betaDir = -1
+                    elif colN.alphaBeta[1] == 180:
+                        # neighbor is folded, give it a bump
+                        colN.alphaDir = -1
+
             if not self.isCollided:
                 # try next best orientation
                 break
@@ -1155,7 +1159,7 @@ def oneByOne():
     print("found: %.2f (%.2f)"%(numpy.mean(percents), numpy.std(percents)))
 
 if __name__ == "__main__":
-    # reverseMove(102)
+    # reverseMove(1475)
 
     seeds = [20,21,46,58,84,102,109,119,121,133,147,152,169,171,174,195,207,208,221,234,251,263,288,311,322,326,328,334,335,339,356,368,370,384,387,408,416,444,448,453,458,460,467,475,482,486,511,526,556,596,605,614,616,631,641,655,667,694,704,708,709,712,730,762,763,765,768,775,785,803,806,825,839,840,849,861,862,869,898,913,916,919,958,961,963,971,986,994,1002,1022,1030,1033,1044,1054,1055,1060,1068,1070,1080,1108,1113,1129,1157,1196,1198,1206,1226,1228,1230,1241,1260,1264,1266,1303,1304,1318,1328,1339,1357,1403,1421,1428,1448,1461,1466,1475,1481,1482,1484,1495,1514,1562,1597,1601,1602,1608,1611,1616,1628,1632,1644,1650,1676,1684,1688,1696,1707,1718,1731,1738,1760,1767,1774,1802,1831,1851,1853,1859,1875,1879,1886,1895,1896,1901,1906,1912,1920,1927,1928,1955,1968,1982,1983,1990,2014,2016,2023,2028,2041,2047,2059,2060,2070,2085,2094,2098,2118,2121,2129,2150,2194,2206,2220,2238,2258,2277,2279,2286,2300,2306,2324,2355,2366,2402,2409,2429,2430,2432,2433,2464,2474,2475,2476,2483,2511,2514,2525,2537,2582,2591,2596,2643,2649,2690,2709,2712,2720,2742,2747,2755,2757,2782,2789,2799,2809,2816,2838,2840,2858,2862,2869,2873,2897,2908,2928,2933,2944,2969,2970,2976,2981,2991,2992,3003,3004,3013,3018,3022,3040,3058,3061,3068,3080,3090,3094,3098,3111,3115,3120,3123,3128,3141,3163,3165,3168,3178,3179,3180,3212,3253,3277,3285,3291,3315,3316,3339,3343,3355,3362,3365,3368,3373,3377,3386,3390,3400,3425,3457,3470,3471,3476,3478,3527,3553,3569,3588,3599,3607,3635,3641,3645,3658,3665,3668,3669,3688,3691,3692,3697,3703,3716,3719,3723,3730,3733,3739,3752,3770,3788,3793,3810,3818,3843,3858,3872,3879,3883,3924,3928,3942,3954,3964,3985,3987,3991,3999,4067,4079,4088,4101,4109,4134,4137,4158,4184,4206,4210,4215,4257,4261,4265,4268,4269,4302,4311,4312,4326,4381,4382,4408,4413,4420,4431,4451,4476,4477,4480,4488,4491,4494,4496,4504,4528,4555,4556,4563,4570,4597,4610,4623,4633,4637,4648,4654,4658,4661,4666,4667,4671,4672,4694,4698,4712,4736,4739,4762,4780,4786,4788,4796,4811,4820,4864,4867,4890,4894,4896,4899,4901,4902,4913,4920,4932,4953,4959,4960,4982]
     p = Pool(24)
