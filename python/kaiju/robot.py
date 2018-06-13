@@ -330,7 +330,7 @@ class Robot(object):
                         bada,badb = colN.alphaBeta
                         if badb > currBeta and bada < 180:
                             colN.betaDir = -1
-                    elif colN.alphaBeta[1] == 180:
+                    elif colN.alphaBeta[1] == 180 and colN.xyFocal[1]==self.xyFocal[1]:
                         # neighbor is folded, give it a bump
                         colN.alphaDir = -1
 
