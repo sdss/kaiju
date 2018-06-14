@@ -716,8 +716,7 @@ class RobotGrid(object):
         return copy.deepcopy(self._cacheList) # copy for paranoia!
 
     def cache2file(self, fileName):
-        cacheList = self.cacheList
-        numpy.savetxt(fileName, cacheList, "%.5f")
+        numpy.savetxt(fileName, self.cachePositions, "%.5f")
 
     def setPosFromCache(self, cacheList=None):
         """Reset all robots to cached position
@@ -1147,6 +1146,7 @@ def reverseMove(dummy=None):
         if os.path.exists(outDir):
             # remove it
             shutil.rmtree(outDir)
+        os.mkdir(outDir)
 
 
     while True:
