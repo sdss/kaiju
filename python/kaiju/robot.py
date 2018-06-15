@@ -372,9 +372,6 @@ class Robot(object):
             print("fiber %i deadlocked"%self.id)
             # self.rg.plotNext()
 
-        if self.id == 188:
-            print("fiber 188", ii)
-
         # more complicated:
 
         # if self.isCollided:
@@ -660,7 +657,7 @@ class Robot(object):
             y2 = numpy.sin(fTheta)*(BetaBottomCollide[1]-lineBuffer) + self.xyAlphaFocal[1]
             self._bottomCollideLine = LineString(
                 [[x1,y1], [x2,y2]]
-                ).buffer(lineBuffer, cap_style=3)
+                ).buffer(lineBuffer, cap_style=1)
         return self._bottomCollideLine
 
     @property
@@ -676,7 +673,7 @@ class Robot(object):
             y2 = numpy.sin(fTheta)*(BetaTopCollide[1]-lineBuffer) + self.xyAlphaFocal[1]
             self._topCollideLine = LineString(
                 [[x1,y1], [x2,y2]]
-                ).buffer(lineBuffer, cap_style=3)
+                ).buffer(lineBuffer, cap_style=1)
         return self._topCollideLine
 
 
@@ -1147,7 +1144,7 @@ def simulMoves(dummy=None):
 def inspectFails(runNum):
     # baseDir = "/Users/csayres/Desktop/collisions/collisionCache"
     # runDir = os.join(baseDir,"seed%i"%runNum)
-    fileName = "/Users/csayres/Desktop/collisions/collisionCache/seed%i/step050.txt"%runNum
+    fileName = "/Users/csayres/Desktop/collisions/collisionCache/seed%i/step025.txt"%runNum
     rg = motionPlan()
     for robot in rg.robotList:
         if robot.threwAway:
@@ -1237,7 +1234,7 @@ def oneByOne():
 if __name__ == "__main__":
     # note 1060 is a real bugger!
 
-    # inspectFails(1060)
+    # inspectFails(1068)
 
     # reverseMove(825)
 
