@@ -1176,7 +1176,7 @@ def inspectFails(runNum):
         rg.plotNext()
 
 def reverseMove(dummy=None):
-    saveOutput = True
+    saveOutput = False
     if dummy is None:
         numpy.random.seed()
     else:
@@ -1221,7 +1221,8 @@ def reverseMove(dummy=None):
             outFile = os.path.join(outDir, "step%s.txt"%("%i"%ii).zfill(3))
             rg.alphaBeta2file(outFile)
         else:
-            rg.plotNext()
+            pass
+            #rg.plotNext()
         if not False in [robot.alphaBeta[1]==180 for robot in rg.robotList]:
             print("finished!!!!")
             if saveOutput:
