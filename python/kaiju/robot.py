@@ -166,6 +166,7 @@ class Robot(object):
         """
         self.id = robotID
         self.replacementsTried = 0
+        self.rg = None # set by grid
         ###############
         # store often computed stuff as underscored vars
         # populated by setter methods
@@ -187,13 +188,15 @@ class Robot(object):
         self.xyFocal = None
         self.betaTarg = None
         self.alphaTarg = None
+
+        ##### stepping params #############
         self.alphaDir = 1
         self.betaDir = 1
         self.angStep = 1 # each step is 1 degrees
-        self.rg = None # set by grid
-        self.movequeue = collections.deque(maxlen=5)
         self.alphaRelaxing = 0
         self.betaRelaxing = 0
+        self.deadLockCounter = 0
+        ########################################
         if not None in [xFocal, yFocal]:
             self.setXYFocal(xFocal, yFocal)
         if not None in [alphaAng, betaAng]:
@@ -264,7 +267,6 @@ class Robot(object):
         return numpy.array([numpy.degrees(self._alphaRad), numpy.degrees(self._betaRad)])
 
     def stepTowardFold(self):
-        self.deadLocked = False
         currAlpha, currBeta = self.alphaBeta
 
         # if currAlpha == 0 and currBeta == 180:
@@ -291,7 +293,7 @@ class Robot(object):
                 self.alphaRelaxing+=1
 
         if self.betaDir == -1:
-            if self.betaRelaxing > 30:
+            if self.betaRelaxing > 20:
                 self.betaDir = 1
                 self.betaRelaxing = 0
             else:
@@ -327,16 +329,33 @@ class Robot(object):
                 nextBeta = 180
             if nextBeta < 0:
                 nextBeta = 0
+            if ii == 1:
+                # first move choice put us at a limit if robot is relaxing
+                # then stop
+                if nextAlpha in [0,360] and self.alphaDir == -1:
+                    self.alphaDir = 1
+                    self.alphaRelaxing = 0
+                if nextBeta in [0,180] and self.betaDir == -1:
+                    self.betaDir = 1
+                    self.betaRelaxing = 0
             # if we're at limit, we need special handling
             if nextAlpha == currAlpha and nextBeta == currBeta:
                 continue #skip this one, always favor a move.
             self.setAlphaBeta(nextAlpha, nextBeta)
             if self.isCollided and ii == 1:
+                # if we are relaxing and collided, stop relaxing
+                if self.betaDir == -1:
+                    self.betaDir = 1
+                    self.betaRelaxing = 0
+                if self.alphaDir == -1:
+                    self.alphaDir = 1
+                    self.alphaRelaxing = 0
+
                 for colN,(tIntersect,bIntersect) in zip(self.collidedNeighbors,self.neighborIntersections):
                     nAlpha, nBeta = colN.alphaBeta
-                    if nextAlpha==0 and self.id+1 == colN.id:
-                        print("topIntersect", bool(tIntersect))
-                        print("bottomIntersect", bool(bIntersect))
+                    armwrap = nextAlpha==0 and self.id+1 == colN.id
+                    deadlock = self.deadLockCounter > 5
+                    if armwrap:
                         if bool(tIntersect):
                             colCent = numpy.array(tIntersect.centroid)
                         else:
@@ -352,19 +371,18 @@ class Robot(object):
                             # inside collision
                             # import pdb; pdb.set_trace()
                             # we have a lockup
-                            print("lockup!!!")
+                            print("armwrap!!!")
                             colN.betaDir = -1
                             self.betaDir = -1
+                            self.betaRelaxing = 10 # relax me less than neighbor
 
-                        # # rotate these about my beta, if neighbor's fiber is
-                        # # to right (+x rotated) we don't have a wrap up
-                        # nMidBeta = (colN.xyAlphaFocal + colN.xyFiberFocal)/2.0
-                        # selfMidBeta = (self.xyAlphaFocal + self.xyFiberFocal)/2.0
-                        # # rotate ref frame by beta, find if this collision is left
-                        # # or right (elbow wrapped or not)
-                        # if nAlpha > currBeta and nBeta < 180:
-                        #     colN.betaDir = -1
-
+                    elif deadlock:
+                        # perterb neighbor
+                        print("deadlock bump")
+                        colN.betaDir = -1
+                        colN.alphaDir = -1
+                        colN.alphaRelaxing = 80
+                        colN.betaRelaxing = 10
                     elif nBeta == 180 and nAlpha == 0:
                         # neighbor is blocking, and is in its final position, perterb it.
                         colN.alphaDir = -1
@@ -373,61 +391,16 @@ class Robot(object):
                 # try next best orientation
                 break
 
-        # troubleRobots = set([r.id for r in troubleRobots])
-        # self.movequeue.append(ii)
-        # if not (1 in self.movequeue or 2 in self.movequeue or 3 in self.movequeue):
-        #     if currBeta == 180:
-        #         self.alphaDir = -1
 
         if self.isCollided:
             self.deadLocked = True
+            self.deadLockCounter += 1
             self.setAlphaBeta(currAlpha, currBeta)
             print("fiber %i deadlocked"%self.id)
-            # self.rg.plotNext()
+        else:
+            self.deadLocked = False
+            self.deadLockCounter = 0
 
-        # more complicated:
-
-        # if self.isCollided:
-        #     # find net direction for collision avoidance (sum of all collisions)
-        #     self.rg.plotNext("moveTowardsCollide.png")
-        #     colDir = numpy.array([0.,0.])
-        #     nCollide = 0
-        #     for sn in self.sketchyNeighbors:
-        #         for intersect in [sn._bottomIntersect, sn._topIntersect]:
-        #             if bool(intersect):
-        #                 extCoords = numpy.asarray(intersect.exterior.coords)
-        #                 centCoords = numpy.asarray(intersect.centroid.coords)
-        #                 # find closest vertex of polygon (likely the most collided)
-        #                 ceInd = numpy.argmin(numpy.linalg.norm(extCoords-self.xyFiberFocal, axis=1))
-        #                 colDir += extCoords[ceInd].flatten() - centCoords.flatten()
-        #                 nCollide += 1
-
-        #     # move the robot along the component of colDir
-        #     # colDir = colDir*-1 #/ float(nCollide)
-        #     try:
-
-        #         a,b = self.getAlphaBetaFromFocalXY(*(self.xyFiberFocal+colDir))
-        #         alphaDelta = 1
-        #         betaDelta = 1
-        #         if a - currAlpha < 0:
-        #             alphaDelta = -1
-        #         if b - currBeta < 0:
-        #             betaDelta = -1
-        #         nextAlpha = currAlpha + alphaDelta
-        #         nextBeta = currBeta + betaDelta
-        #     except:
-        #         print("fiber %i alpha beta avoid out of range, deadlocked"%self.id)
-        #         self.deadLocked = True
-        #         self.setAlphaBeta(currAlpha,currBeta)
-        #     else:
-        #         print("fiber %i alphaBeta avoid: %.2f, %.2f"%(self.id, nextAlpha,nextBeta))
-        #         self.setAlphaBeta(nextAlpha, nextBeta)
-        #         if self.isCollided:
-        #             self.rg.plotNext("moveAwayCollide.png")
-        #             sys.exit()
-        #             self.setAlphaBeta(currAlpha,currBeta)
-        #             print("fiber %i avoidance move also collides, deadlocked"%self.id)
-        #             self.deadLocked = True
 
 
     def stepTowardTarg(self):
@@ -1177,6 +1150,7 @@ def inspectFails(runNum):
 
 def reverseMove(dummy=None):
     saveOutput = False
+    plotOutput = False
     if dummy is None:
         numpy.random.seed()
     else:
@@ -1205,7 +1179,7 @@ def reverseMove(dummy=None):
         else:
             seed = dummy
         outDir = "/uufs/chpc.utah.edu/common/home/u0449727/vRound/collisionCache/seed%i"%seed
-        # outDir = "/Users/csayres/Desktop/collisions/collisionCache/seed%i"%seed
+        outDir = "/Users/csayres/Desktop/collisions/collisionCache/seed%i"%seed
         if os.path.exists(outDir):
             # remove it
             shutil.rmtree(outDir)
@@ -1220,9 +1194,9 @@ def reverseMove(dummy=None):
         if saveOutput:
             outFile = os.path.join(outDir, "step%s.txt"%("%i"%ii).zfill(3))
             rg.alphaBeta2file(outFile)
-        else:
-            pass
-            #rg.plotNext()
+        if plotOutput:
+            # pass
+            rg.plotNext()
         if not False in [robot.alphaBeta[1]==180 for robot in rg.robotList]:
             print("finished!!!!")
             if saveOutput:
@@ -1249,16 +1223,14 @@ def oneByOne():
 if __name__ == "__main__":
     # note 1060 is a real bugger!
 
-    # inspectFails(24)
+    # inspectFails(3165)
 
-    # reverseMove(24)
+    # reverseMove(3165)
 
-    seeds = [20,21,46,58,84,102,109,119,121,133,147,152,169,171,174,195,207,208,221,234,251,263,288,311,322,326,328,334,335,339,356,368,370,384,387,408,416,444,448,453,458,460,467,475,482,486,511,526,556,596,605,614,616,631,641,655,667,694,704,708,709,712,730,762,763,765,768,775,785,803,806,825,839,840,849,861,862,869,898,913,916,919,958,961,963,971,986,994,1002,1022,1030,1033,1044,1054,1055,1060,1068,1070,1080,1108,1113,1129,1157,1196,1198,1206,1226,1228,1230,1241,1260,1264,1266,1303,1304,1318,1328,1339,1357,1403,1421,1428,1448,1461,1466,1475,1481,1482,1484,1495,1514,1562,1597,1601,1602,1608,1611,1616,1628,1632,1644,1650,1676,1684,1688,1696,1707,1718,1731,1738,1760,1767,1774,1802,1831,1851,1853,1859,1875,1879,1886,1895,1896,1901,1906,1912,1920,1927,1928,1955,1968,1982,1983,1990,2014,2016,2023,2028,2041,2047,2059,2060,2070,2085,2094,2098,2118,2121,2129,2150,2194,2206,2220,2238,2258,2277,2279,2286,2300,2306,2324,2355,2366,2402,2409,2429,2430,2432,2433,2464,2474,2475,2476,2483,2511,2514,2525,2537,2582,2591,2596,2643,2649,2690,2709,2712,2720,2742,2747,2755,2757,2782,2789,2799,2809,2816,2838,2840,2858,2862,2869,2873,2897,2908,2928,2933,2944,2969,2970,2976,2981,2991,2992,3003,3004,3013,3018,3022,3040,3058,3061,3068,3080,3090,3094,3098,3111,3115,3120,3123,3128,3141,3163,3165,3168,3178,3179,3180,3212,3253,3277,3285,3291,3315,3316,3339,3343,3355,3362,3365,3368,3373,3377,3386,3390,3400,3425,3457,3470,3471,3476,3478,3527,3553,3569,3588,3599,3607,3635,3641,3645,3658,3665,3668,3669,3688,3691,3692,3697,3703,3716,3719,3723,3730,3733,3739,3752,3770,3788,3793,3810,3818,3843,3858,3872,3879,3883,3924,3928,3942,3954,3964,3985,3987,3991,3999,4067,4079,4088,4101,4109,4134,4137,4158,4184,4206,4210,4215,4257,4261,4265,4268,4269,4302,4311,4312,4326,4381,4382,4408,4413,4420,4431,4451,4476,4477,4480,4488,4491,4494,4496,4504,4528,4555,4556,4563,4570,4597,4610,4623,4633,4637,4648,4654,4658,4661,4666,4667,4671,4672,4694,4698,4712,4736,4739,4762,4780,4786,4788,4796,4811,4820,4864,4867,4890,4894,4896,4899,4901,4902,4913,4920,4932,4953,4959,4960,4982]
-
-    seeds2 = [24,26,40,62,65,79,80,81,91,95,98,109,113,121,132,149,155,169,184,187,196,197,199,227,236,241,253,275,277,281,306,307,309,311,348,356,360,372,375,389,401,424,459,472,478,482,487,502,509,515,528,551,555,565,569,571,573,582,592,593,608,622,640,650,663,688,698,721,735,748,750,772,786,815,844,877,878,895,896,901,904,908,920,928,937,955,966,968,969,975,984,992,1009,1017,1020,1035,1050,1055,1085,1091,1102,1103,1104,1111,1129,1146,1149,1155,1160,1188,1207,1224,1228,1251,1261,1270,1272,1288,1292,1294,1297,1304,1326,1332,1348,1356,1378,1382,1416,1417,1424,1427,1432,1438,1439,1448,1464,1470,1522,1528,1529,1580,1582,1594,1600,1604,1607,1608,1620,1629,1634,1652,1653,1665,1668,1684,1698,1701,1712,1748,1750,1791,1805,1858,1860,1864,1873,1892,1906,1915,1916,1932,1945,2008,2010,2022,2075,2112,2145,2151,2158,2160,2193,2199,2211,2225,2268,2277,2284,2298,2301,2308,2319,2326,2333,2342,2371,2403,2410,2414,2416,2456,2476,2497,2515,2523,2527,2530,2534,2556,2564,2591,2593,2601,2606,2625,2628,2640,2677,2727,2758,2790,2798,2808,2821,2828,2831,2841,2861,2872,2896,2905,2906,2909,2918,2961,2981,2995,2996,3039,3044,3047,3075,3092,3093,3103,3111,3165,3178,3184,3185,3214,3228,3234,3238,3239,3248,3264,3268,3281,3287,3291,3298,3316,3330,3342,3371,3374,3381,3384,3448,3466,3470,3483,3495,3498,3501,3516,3553,3560,3586,3614,3617,3629,3634,3649,3655,3658,3689,3697,3705,3715,3727,3733,3738,3741,3783,3823,3837,3846,3859,3870,3879,3894,3897,3906,3914,3938,3950,3955,3960,3967,3977,3984,3990,4002,4043,4062,4072,4091,4107,4156,4157,4165,4185,4188,4191,4192,4196,4206,4212,4221,4228,4236,4237,4243,4244,4255,4260,4269,4282,4302,4306,4307,4315,4336,4357,4364,4378,4397,4402,4403,4405,4423,4428,4433,4460,4511,4513,4514,4542,4548,4587,4603,4606,4614,4617,4620,4634,4640,4682,4713,4734,4744,4759,4766,4772,4790,4801,4860,4863,4865,4873,4880,4883,4895,4899,4903,4904,4908,4914,4930,4935,4936,4944,4945,4951,4952,4956,4964,4991]
-    # seeds = range(5000)
-
-    seeds = list(set(seeds+seeds2))
+    # seeds = [20,21,46,58,84,102,109,119,121,133,147,152,169,171,174,195,207,208,221,234,251,263,288,311,322,326,328,334,335,339,356,368,370,384,387,408,416,444,448,453,458,460,467,475,482,486,511,526,556,596,605,614,616,631,641,655,667,694,704,708,709,712,730,762,763,765,768,775,785,803,806,825,839,840,849,861,862,869,898,913,916,919,958,961,963,971,986,994,1002,1022,1030,1033,1044,1054,1055,1060,1068,1070,1080,1108,1113,1129,1157,1196,1198,1206,1226,1228,1230,1241,1260,1264,1266,1303,1304,1318,1328,1339,1357,1403,1421,1428,1448,1461,1466,1475,1481,1482,1484,1495,1514,1562,1597,1601,1602,1608,1611,1616,1628,1632,1644,1650,1676,1684,1688,1696,1707,1718,1731,1738,1760,1767,1774,1802,1831,1851,1853,1859,1875,1879,1886,1895,1896,1901,1906,1912,1920,1927,1928,1955,1968,1982,1983,1990,2014,2016,2023,2028,2041,2047,2059,2060,2070,2085,2094,2098,2118,2121,2129,2150,2194,2206,2220,2238,2258,2277,2279,2286,2300,2306,2324,2355,2366,2402,2409,2429,2430,2432,2433,2464,2474,2475,2476,2483,2511,2514,2525,2537,2582,2591,2596,2643,2649,2690,2709,2712,2720,2742,2747,2755,2757,2782,2789,2799,2809,2816,2838,2840,2858,2862,2869,2873,2897,2908,2928,2933,2944,2969,2970,2976,2981,2991,2992,3003,3004,3013,3018,3022,3040,3058,3061,3068,3080,3090,3094,3098,3111,3115,3120,3123,3128,3141,3163,3165,3168,3178,3179,3180,3212,3253,3277,3285,3291,3315,3316,3339,3343,3355,3362,3365,3368,3373,3377,3386,3390,3400,3425,3457,3470,3471,3476,3478,3527,3553,3569,3588,3599,3607,3635,3641,3645,3658,3665,3668,3669,3688,3691,3692,3697,3703,3716,3719,3723,3730,3733,3739,3752,3770,3788,3793,3810,3818,3843,3858,3872,3879,3883,3924,3928,3942,3954,3964,3985,3987,3991,3999,4067,4079,4088,4101,4109,4134,4137,4158,4184,4206,4210,4215,4257,4261,4265,4268,4269,4302,4311,4312,4326,4381,4382,4408,4413,4420,4431,4451,4476,4477,4480,4488,4491,4494,4496,4504,4528,4555,4556,4563,4570,4597,4610,4623,4633,4637,4648,4654,4658,4661,4666,4667,4671,4672,4694,4698,4712,4736,4739,4762,4780,4786,4788,4796,4811,4820,4864,4867,4890,4894,4896,4899,4901,4902,4913,4920,4932,4953,4959,4960,4982]
+    # seeds2 = [24,26,40,62,65,79,80,81,91,95,98,109,113,121,132,149,155,169,184,187,196,197,199,227,236,241,253,275,277,281,306,307,309,311,348,356,360,372,375,389,401,424,459,472,478,482,487,502,509,515,528,551,555,565,569,571,573,582,592,593,608,622,640,650,663,688,698,721,735,748,750,772,786,815,844,877,878,895,896,901,904,908,920,928,937,955,966,968,969,975,984,992,1009,1017,1020,1035,1050,1055,1085,1091,1102,1103,1104,1111,1129,1146,1149,1155,1160,1188,1207,1224,1228,1251,1261,1270,1272,1288,1292,1294,1297,1304,1326,1332,1348,1356,1378,1382,1416,1417,1424,1427,1432,1438,1439,1448,1464,1470,1522,1528,1529,1580,1582,1594,1600,1604,1607,1608,1620,1629,1634,1652,1653,1665,1668,1684,1698,1701,1712,1748,1750,1791,1805,1858,1860,1864,1873,1892,1906,1915,1916,1932,1945,2008,2010,2022,2075,2112,2145,2151,2158,2160,2193,2199,2211,2225,2268,2277,2284,2298,2301,2308,2319,2326,2333,2342,2371,2403,2410,2414,2416,2456,2476,2497,2515,2523,2527,2530,2534,2556,2564,2591,2593,2601,2606,2625,2628,2640,2677,2727,2758,2790,2798,2808,2821,2828,2831,2841,2861,2872,2896,2905,2906,2909,2918,2961,2981,2995,2996,3039,3044,3047,3075,3092,3093,3103,3111,3165,3178,3184,3185,3214,3228,3234,3238,3239,3248,3264,3268,3281,3287,3291,3298,3316,3330,3342,3371,3374,3381,3384,3448,3466,3470,3483,3495,3498,3501,3516,3553,3560,3586,3614,3617,3629,3634,3649,3655,3658,3689,3697,3705,3715,3727,3733,3738,3741,3783,3823,3837,3846,3859,3870,3879,3894,3897,3906,3914,3938,3950,3955,3960,3967,3977,3984,3990,4002,4043,4062,4072,4091,4107,4156,4157,4165,4185,4188,4191,4192,4196,4206,4212,4221,4228,4236,4237,4243,4244,4255,4260,4269,4282,4302,4306,4307,4315,4336,4357,4364,4378,4397,4402,4403,4405,4423,4428,4433,4460,4511,4513,4514,4542,4548,4587,4603,4606,4614,4617,4620,4634,4640,4682,4713,4734,4744,4759,4766,4772,4790,4801,4860,4863,4865,4873,4880,4883,4895,4899,4903,4904,4908,4914,4930,4935,4936,4944,4945,4951,4952,4956,4964,4991]
+    # seeds = list(set(seeds+seeds2))
+    seeds = range(5000)
     p = Pool(29)
     results = p.map(reverseMove, seeds)
     with open("results.txt", "w") as f:
