@@ -940,7 +940,8 @@ def swapSearch(robotGrid, neighbor="a"):
     print("best collide", robotGrid.nCollisions)
 
 
-def throwAway(robotGrid):
+def throwAway(robotGrid, markAsTossed=True):
+    markAsTossed = bool(markAsTossed)
     robotAs = []
     for n in robotGrid.sketchyNeighborList:
         if n.isCollided:
@@ -948,7 +949,7 @@ def throwAway(robotGrid):
     for robot in robotAs:
         while True:
             robot.setAlphaBetaRand()
-            robot.threwAway = True
+            robot.threwAway = markAsTossed
             if not robot.isCollided:
                 break
 
