@@ -19,7 +19,6 @@ robotGrid.xlim = xlim
 robotGrid.ylim = ylim
 # begin loop to move all robots towards a fold
 maxIter = 500
-ii = 0
 for ii in range(1,maxIter+1):
     print("step %i"%ii)
     for robot in robotGrid.robotList:
