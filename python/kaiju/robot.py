@@ -1,52 +1,38 @@
-import numpy
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-from shapely.geometry import LineString, Point
-from descartes import PolygonPatch
+
 import copy
-from networkx import DiGraph, shortest_path, draw, find_cycle, simple_cycles, shortest_simple_paths, has_path
 from multiprocessing import Pool
 import math
 import sys
 from functools import partial
-import collections
 import shutil
 import os
-import glob
 
-AlphaArmLength = 7.4 #mm
+import numpy
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from shapely.geometry import LineString
+from descartes import PolygonPatch
+from networkx import DiGraph, shortest_path, draw, find_cycle, simple_cycles, shortest_simple_paths, has_path
+
+AlphaArmLength = 7.4  # mm
 AlphaRange = [0, 360]
-BetaRange = [0,180]
-BetaArmLength = 15 #mm, distance to fiber
-BetaArmWidth = 5 #mm
-MinTargSeparation = 8 #mm
+BetaRange = [0, 180]
+BetaArmLength = 15  # mm, distance to fiber
+BetaArmWidth = 5  # mm
+MinTargSeparation = 8  # mm
 # length mm along beta for which a collision cant happen
-BetaTopCollide = [8.187,16]# box from length 8.187mm to 16mm
-BetaBottomCollide = [0,10.689] #box from 0 to 10.689
+BetaTopCollide = [8.187, 16]  # box from length 8.187mm to 16mm
+BetaBottomCollide = [0, 10.689]  # box from 0 to 10.689
 BetaArmLengthSafe = BetaArmLength / 2.0
-Pitch = 22.4 # mm fudge the 01 for neighbors
+Pitch = 22.4  # mm fudge the 01 for neighbors
 MinReach = BetaArmLength - AlphaArmLength
 MaxReach = BetaArmLength + AlphaArmLength
 
 # https://internal.sdss.org/trac/as4/wiki/FPSLayout
 
+PlateScale = 217.7358 / 3600.0  # plug plate scale (mm/arcsecond)
 
-PlateScale = 217.7358 / 3600.0 # plug plate scale (mm/arcsecond)
-
-def k_sin(x,k=10):
-    # series expand sin
-    sin = 0
-    for kk in range(k):
-        sin += ((-1)**kk)*x**(2*kk+1) / float(math.factorial(2*kk + 1))
-    return sin
-
-def k_cos(x,k=10):
-    # series expand cosine
-    cos = 0
-    for kk in range(k):
-        cos += ((-1)**kk)*x**(2*kk) / float(math.factorial(2*kk))
-    return cos
 
 def hexFromDia(nDia):
     """
@@ -58,26 +44,26 @@ def hexFromDia(nDia):
     position in the hex. Units are mm and the center of hex is 0,0
     """
     # first determine the xy positions for the center line
-    nRad = int((nDia+1) / 2)
-    xPosDia = numpy.arange(-nRad+1, nRad)*Pitch
+    nRad = int((nDia + 1) / 2)
+    xPosDia = numpy.arange(-nRad + 1, nRad) * Pitch
     yPosDia = numpy.zeros(nDia)
 
-    vertShift = numpy.sin(numpy.radians(60.0))*Pitch
-    horizShift = numpy.cos(numpy.radians(60.0))*Pitch
+    vertShift = numpy.sin(numpy.radians(60.0)) * Pitch
+    horizShift = numpy.cos(numpy.radians(60.0)) * Pitch
     # populate the top half of the hex
     # determine number of rows above the diameter row
     xUpperHalf = []
     yUpperHalf = []
-    for row in range(1,nRad):
-        xPos = xPosDia[:-1*row] + row*horizShift
-        yPos = yPosDia[:-1*row] + row*vertShift
+    for row in range(1, nRad):
+        xPos = xPosDia[:-1 * row] + row * horizShift
+        yPos = yPosDia[:-1 * row] + row * vertShift
         xUpperHalf.extend(xPos)
         yUpperHalf.extend(yPos)
     xUpperHalf = numpy.asarray(xUpperHalf).flatten()
     yUpperHalf = numpy.asarray(yUpperHalf).flatten()
 
     xLowerHalf = xUpperHalf[:]
-    yLowerHalf = -1*yUpperHalf[:]
+    yLowerHalf = -1 * yUpperHalf[:]
 
     xAll = numpy.hstack((xLowerHalf, xPosDia, xUpperHalf)).flatten()
     yAll = numpy.hstack((yLowerHalf, yPosDia, yUpperHalf)).flatten()
@@ -85,6 +71,7 @@ def hexFromDia(nDia):
     # last positon is top right
     ind = numpy.lexsort((xAll, yAll))
     return xAll[ind], yAll[ind]
+
 
 class SketchyNeighbors(object):
     def __init__(self, robotA, robotB):
@@ -116,37 +103,41 @@ class SketchyNeighbors(object):
     def topIntersect(self):
         # do the top of the beta arms collide?
         if self._topIntersect is None:
-            self._topIntersect = self.robotA.topCollideLine.intersection(self.robotB.topCollideLine)
+            self._topIntersect = self.robotA.topCollideLine.intersection(
+                self.robotB.topCollideLine
+            )
         return self._topIntersect
 
     @property
     def bottomIntersect(self):
         # do the top of the beta arms collide?
         if self._bottomIntersect is None:
-            self._bottomIntersect = self.robotA.bottomCollideLine.intersection(self.robotB.bottomCollideLine)
+            self._bottomIntersect = self.robotA.bottomCollideLine.intersection(
+                self.robotB.bottomCollideLine
+            )
         return self._bottomIntersect
 
     def fiberDist(self):
         """distance between fibers (end of beta arm)
         """
-        return numpy.linalg.norm(self.robotA.xyFiber-self.robotB.xyFiber)
+        return numpy.linalg.norm(self.robotA.xyFiber - self.robotB.xyFiber)
 
     def alphaDist(self):
         """distance between ends of alpha arms
         """
-        return numpy.linalg.norm(self.robotA.xyAlpha-self.robotB.xyAlpha)
+        return numpy.linalg.norm(self.robotA.xyAlpha - self.robotB.xyAlpha)
 
     def checkSwap(self):
         if self.isCollided:
-            x1,y1 = self.robotA.xyFiberFocal
-            x2,y2 = self.robotB.xyFiberFocal
+            x1, y1 = self.robotA.xyFiberFocal
+            x2, y2 = self.robotB.xyFiberFocal
             self.swapTried = True
             # check that they can reach
             try:
-                a1,b1 = self.robotB.getAlphaBetaFromFocalXY(x1,y1)
-                a2,b2 = self.robotA.getAlphaBetaFromFocalXY(x2,y2)
-                self.robotB.setAlphaBeta(a1,b1)
-                self.robotA.setAlphaBeta(a2,b2)
+                a1, b1 = self.robotB.getAlphaBetaFromFocalXY(x1, y1)
+                a2, b2 = self.robotA.getAlphaBetaFromFocalXY(x2, y2)
+                self.robotB.setAlphaBeta(a1, b1)
+                self.robotA.setAlphaBeta(a2, b2)
                 if not self.isCollided:
                     print("swap worked")
                 else:
@@ -156,9 +147,14 @@ class SketchyNeighbors(object):
                 # print("swap not valid")
 
 
-
 class Robot(object):
-    def __init__(self, robotID, alphaAng=0, betaAng=180, xFocal=None, yFocal=None):
+    def __init__(self,
+                 robotID,
+                 alphaAng=0,
+                 betaAng=180,
+                 xFocal=None,
+                 yFocal=None
+                 ):
         """
         robotID integer, unique to each robot
         Angles in degrees
@@ -166,7 +162,7 @@ class Robot(object):
         """
         self.id = robotID
         self.replacementsTried = 0
-        self.rg = None # set by grid
+        self.rg = None  # set by grid
         ###############
         # store often computed stuff as underscored vars
         # populated by setter methods
@@ -181,7 +177,7 @@ class Robot(object):
         self._topCollideLine = None
         self._bottomCollideLine = None
         self.sketchyNeighbors = []
-        self._collisionBox = None # shapely geom populated by neighbor
+        self._collisionBox = None  # shapely geom populated by neighbor
         self.threwAway = False
         self.deadLocked = False
         ##################
@@ -189,33 +185,33 @@ class Robot(object):
         self.betaTarg = None
         self.alphaTarg = None
 
-        ##### stepping params #############
+        ######################################
+        # stepping params
         self.alphaDir = 1
         self.betaDir = 1
-        self.angStep = 1 # each step is 1 degrees
+        self.angStep = 0.1 #1  # each step is 1 degrees
         self.alphaRelaxing = 0
         self.betaRelaxing = 0
         self.deadLockCounter = 0
         ########################################
-        if not None in [xFocal, yFocal]:
+        if None not in [xFocal, yFocal]:
             self.setXYFocal(xFocal, yFocal)
-        if not None in [alphaAng, betaAng]:
+        if None not in [alphaAng, betaAng]:
             self.setAlphaBeta(alphaAng, betaAng)
 
-
     def __repr__(self):
-        return ("Robot(id=%i)"%self.id)
+        return ("Robot(id=%i)" % self.id)
 
     def _preComputeTrig(self):
         # pre compute some stuff...
         self._cosAlpha = numpy.cos(self._alphaRad)
         self._sinAlpha = numpy.sin(self._alphaRad)
-        self._cosAlphaBeta = numpy.cos(self._alphaRad+self._betaRad)
-        self._sinAlphaBeta = numpy.sin(self._alphaRad+self._betaRad)
+        self._cosAlphaBeta = numpy.cos(self._alphaRad + self._betaRad)
+        self._sinAlphaBeta = numpy.sin(self._alphaRad + self._betaRad)
 
     @property
     def onTarget(self):
-        a,b = self.alphaBeta
+        a, b = self.alphaBeta
         return self.betaTarg == b and self.alphaTarg == a
 
     @property
@@ -227,11 +223,11 @@ class Robot(object):
 
     @property
     def xyFocalTarg(self):
-        xA = numpy.cos(numpy.radians(self.alphaTarg))*AlphaArmLength
-        yA = numpy.cos(numpy.radians(self.alphaTarg))*AlphaArmLength
-        x = xA + numpy.cos(numpy.radians(self.betaTarg))*BetaArmLength
-        y = yA + numpy.sin(numpy.radians(self.betaTarg))*BetaArmLength
-        return numpy.array([x,y]) + self.xyFocal
+        xA = numpy.cos(numpy.radians(self.alphaTarg)) * AlphaArmLength
+        yA = numpy.cos(numpy.radians(self.alphaTarg)) * AlphaArmLength
+        x = xA + numpy.cos(numpy.radians(self.betaTarg)) * BetaArmLength
+        y = yA + numpy.sin(numpy.radians(self.betaTarg)) * BetaArmLength
+        return numpy.array([x, y]) + self.xyFocal
 
     @property
     def xyFocalVecToTarget(self):
@@ -264,7 +260,10 @@ class Robot(object):
 
     @property
     def alphaBeta(self):
-        return numpy.array([numpy.degrees(self._alphaRad), numpy.degrees(self._betaRad)])
+        return numpy.array([
+            numpy.degrees(self._alphaRad),
+            numpy.degrees(self._betaRad)
+        ])
 
     def stepTowardFold(self):
         currAlpha, currBeta = self.alphaBeta
@@ -278,44 +277,57 @@ class Robot(object):
             # but alpha cannot move towards 0.  if so reverse alpha
             # for a number of moves to allow what ever is blocking to
             # pass by
-            aa = currAlpha-self.angStep
+            aa = currAlpha - self.angStep
             if aa < 0:
                 aa = 0
             self.setAlphaBeta(aa, 180)
             if self.isCollided:
-                self.alphaDir = -1 # reverse alpha for 10 steps
+                self.alphaDir = -1  # reverse alpha for 10 steps
 
         if self.alphaDir == -1:
             if self.alphaRelaxing > 90:
                 self.alphaDir = 1
                 self.alphaRelaxing = 0
             else:
-                self.alphaRelaxing+=1
+                self.alphaRelaxing += 1
 
         if self.betaDir == -1:
             if self.betaRelaxing > 20:
                 self.betaDir = 1
                 self.betaRelaxing = 0
             else:
-                self.betaRelaxing+=1
-
-
+                self.betaRelaxing += 1
 
         # generate list of alpha beta combos to try
         alphaBetaList = [
             # betas folding
-            [currAlpha - self.alphaDir*self.angStep, currBeta + self.betaDir*self.angStep], # towards fold best trajectory
-            [currAlpha, currBeta + self.betaDir*self.angStep], # towards fold
-            [currAlpha + self.alphaDir*self.angStep, currBeta + self.betaDir*self.angStep], # towards fold
+            [
+                currAlpha - self.alphaDir * self.angStep,
+                currBeta + self.betaDir * self.angStep
+            ],  # towards fold best trajectory
+            [
+                currAlpha,
+                currBeta + self.betaDir * self.angStep
+            ],  # towards fold
+            [
+                currAlpha + self.alphaDir * self.angStep,
+                currBeta + self.betaDir * self.angStep
+            ],  # towards fold
 
             # beta neutral
-            [currAlpha - self.alphaDir*self.angStep, currBeta], # towards fold
-            [currAlpha + self.alphaDir*self.angStep, currBeta], # towards fold
+            [currAlpha - self.alphaDir * self.angStep, currBeta],  # towards fold
+            [currAlpha + self.alphaDir * self.angStep, currBeta],  # towards fold
 
             # beta unfolding
-            [currAlpha - self.alphaDir*self.angStep, currBeta - self.betaDir*self.angStep], # towards fold
-            [currAlpha, currBeta - self.angStep], # towards fold
-            [currAlpha + self.alphaDir*self.angStep, currBeta - self.betaDir*self.angStep] # unfold
+            [
+                currAlpha - self.alphaDir * self.angStep,
+                currBeta - self.betaDir * self.angStep
+            ],  # towards fold
+            [currAlpha, currBeta - self.angStep],  # towards fold
+            [
+                currAlpha + self.alphaDir * self.angStep,
+                currBeta - self.betaDir * self.angStep
+            ]  # fold
         ]
         ii = 0
         # troubleRobots = []
@@ -332,15 +344,15 @@ class Robot(object):
             if ii == 1:
                 # first move choice put us at a limit if robot is relaxing
                 # then stop
-                if nextAlpha in [0,360] and self.alphaDir == -1:
+                if nextAlpha in [0, 360] and self.alphaDir == -1:
                     self.alphaDir = 1
                     self.alphaRelaxing = 0
-                if nextBeta in [0,180] and self.betaDir == -1:
+                if nextBeta in [0, 180] and self.betaDir == -1:
                     self.betaDir = 1
                     self.betaRelaxing = 0
             # if we're at limit, we need special handling
             if nextAlpha == currAlpha and nextBeta == currBeta:
-                continue #skip this one, always favor a move.
+                continue  # skip this one, always favor a move.
             self.setAlphaBeta(nextAlpha, nextBeta)
             if self.isCollided and ii == 1:
                 # if we are relaxing and collided, stop relaxing
@@ -351,9 +363,9 @@ class Robot(object):
                     self.alphaDir = 1
                     self.alphaRelaxing = 0
 
-                for colN,(tIntersect,bIntersect) in zip(self.collidedNeighbors,self.neighborIntersections):
+                for colN, (tIntersect, bIntersect) in zip(self.collidedNeighbors, self.neighborIntersections):
                     nAlpha, nBeta = colN.alphaBeta
-                    armwrap = nextAlpha==0 and self.id+1 == colN.id
+                    armwrap = nextAlpha == 0 and self.id + 1 == colN.id
                     deadlock = self.deadLockCounter > 5
                     if armwrap:
                         if bool(tIntersect):
@@ -365,7 +377,10 @@ class Robot(object):
 
                         # cross fiber direction with collision direction
                         # if z value is positive, we have an inside collision
-                        xp = numpy.cross([fib[0],fib[1],0],[colCent[0],colCent[1],0])
+                        xp = numpy.cross(
+                            [fib[0], fib[1], 0],
+                            [colCent[0], colCent[1], 0]
+                        )
 
                         if xp[-1] > 0:
                             # inside collision
@@ -374,7 +389,8 @@ class Robot(object):
                             print("armwrap!!!")
                             colN.betaDir = -1
                             self.betaDir = -1
-                            self.betaRelaxing = 10 # relax me less than neighbor
+                            # relax me less than neighbor
+                            self.betaRelaxing = 10
 
                     elif deadlock:
                         # perterb neighbor
@@ -384,24 +400,22 @@ class Robot(object):
                         colN.alphaRelaxing = 80
                         colN.betaRelaxing = 10
                     elif nBeta == 180 and nAlpha == 0:
-                        # neighbor is blocking, and is in its final position, perterb it.
+                        # neighbor is blocking, and is in its final position,
+                        # perterb it.
                         colN.alphaDir = -1
 
             if not self.isCollided:
                 # try next best orientation
                 break
 
-
         if self.isCollided:
             self.deadLocked = True
             self.deadLockCounter += 1
             self.setAlphaBeta(currAlpha, currBeta)
-            print("fiber %i deadlocked"%self.id)
+            print("fiber %i deadlocked" % self.id)
         else:
             self.deadLocked = False
             self.deadLockCounter = 0
-
-
 
     def stepTowardTarg(self):
         # return False if step created collision
@@ -417,19 +431,19 @@ class Robot(object):
         if numpy.abs(betaDist) < self.angStep:
             nextBeta = self.betaTarg
         else:
-            nextBeta = currBeta+stepDir*self.angStep
+            nextBeta = currBeta + stepDir * self.angStep
         self.setAlphaBeta(currAlpha, nextBeta)
         # if this step caused a collision, move alpha back
         if self.isCollided:
             # move alpha instead until not collided
             prevAlpha = currAlpha
             while True:
-                print("relaxing alpha robot:%i"%self.id)
-                nextAlpha = prevAlpha+stepDir*self.angStep
+                print("relaxing alpha robot:%i" % self.id)
+                nextAlpha = prevAlpha + stepDir * self.angStep
                 try:
                     self.setAlphaBeta(nextAlpha, nextBeta)
                 except:
-                    print("alpha move out of range robot:%i"%(self.id))
+                    print("alpha move out of range robot:%i" % (self.id))
                     self.setAlphaBeta(currAlpha, currBeta)
                     assert not self.isCollided
                     self.deadLocked = True
@@ -437,11 +451,11 @@ class Robot(object):
                 if self.isCollided:
                     prevAlpha = nextAlpha
                 else:
-                    print("relaxed alpha robot:%i"%self.id)
+                    print("relaxed alpha robot:%i" % self.id)
                     break
                 self.rg.plotNext()
 
-        elif numpy.abs(alphaDist)>0:
+        elif numpy.abs(alphaDist) > 0:
             # not collided check if we need to step alpha towards
             # goal
             if alphaDist < 0:
@@ -450,12 +464,12 @@ class Robot(object):
                 stepDir = 1
             prevAlpha = currAlpha
             while True:
-                print("moving alpha back robot:%i"%self.id)
+                print("moving alpha back robot:%i" % self.id)
                 alphaDist = numpy.abs(prevAlpha - self.alphaTarg)
                 if numpy.abs(alphaDist) < self.angStep:
                     nextAlpha = self.alphaTarg
                 else:
-                    nextAlpha = prevAlpha + stepDir*self.angStep
+                    nextAlpha = prevAlpha + stepDir * self.angStep
                 self.setAlphaBeta(nextAlpha, nextBeta)
                 if self.isCollided:
                     self.setAlphaBeta(prevAlpha, nextBeta)
@@ -465,7 +479,6 @@ class Robot(object):
                     break
                 prevAlpha = nextAlpha
                 self.rg.plotNext()
-
 
         if self.onTarget:
             return True
@@ -502,8 +515,8 @@ class Robot(object):
     def setAlphaBeta(self, alphaAng, betaAng):
         """angle are in degrees
         """
-        assert AlphaRange[0]<=alphaAng<=AlphaRange[1], "alpha out of range"
-        assert BetaRange[0] <=betaAng <= BetaRange[1], "beta out of range"
+        assert AlphaRange[0] <= alphaAng <= AlphaRange[1], "alpha out of range"
+        assert BetaRange[0] <= betaAng <= BetaRange[1], "beta out of range"
         self._alphaRad = numpy.radians(alphaAng)
         self._betaRad = numpy.radians(betaAng)
         self._preComputeTrig()
@@ -527,13 +540,13 @@ class Robot(object):
         self._bottomCollideLine = None
         self._xyFiberLocal = None
 
-    def checkLocalReach(self,xLocal,yLocal):
+    def checkLocalReach(self, xLocal, yLocal):
         """return true if the robot can reach this position xy mm local coords
         """
         dist = numpy.sqrt(xLocal**2 + yLocal**2)
         return MinReach <= dist <= MaxReach
 
-    def checkFocalReach(self,xFocal,yFocal):
+    def checkFocalReach(self, xFocal, yFocal):
         xLocal = self.xyFocal[0] - xFocal
         yLocal = self.xyFocal[1] - yFocal
         return self.checkLocalReach(xLocal, yLocal)
@@ -546,38 +559,44 @@ class Robot(object):
         https://ridlow.wordpress.com/2014/10/22/uniform-random-points-in-disk-annulus-ring-cylinder-and-sphere/
         """
         # pick r between rmin and rmax
-        rPick = numpy.sqrt((MaxReach**2-MinReach**2)*numpy.random.sample() + MinReach**2)
-        thetaPick = numpy.random.sample()*2*numpy.pi
+        rPick = numpy.sqrt(
+            (MaxReach**2 - MinReach**2) * numpy.random.sample() + MinReach**2
+        )
+        thetaPick = numpy.random.sample() * 2 * numpy.pi
         xLocal = rPick * numpy.cos(thetaPick)
         yLocal = rPick * numpy.sin(thetaPick)
-        alphaAng, betaAng = self.getAlphaBetaFromLocalXY(xLocal,yLocal)
+        alphaAng, betaAng = self.getAlphaBetaFromLocalXY(xLocal, yLocal)
         self.setAlphaBeta(alphaAng, betaAng)
 
-    def getAlphaBetaFromLocalXY(self,xLocal,yLocal):
+    def getAlphaBetaFromLocalXY(self, xLocal, yLocal):
         """x, y are mm, the fiber's local reference frame
         use law of cosines to solve for alpha beta
         http://mathworld.wolfram.com/LawofCosines.html
         """
-        x,y = xLocal, yLocal
+        x, y = xLocal, yLocal
         # check that the xy pos is reachable
-        assert self.checkLocalReach(x,y), "xy local is out of reach"
+        assert self.checkLocalReach(x, y), "xy local is out of reach"
 
         # note: we only have right handed robots
         # because Beta is limited to 0-180
         # strategy: solve for angles using a side
         # with mag(xy) along x axis, then rotate
         # alpha by atan2(y,x) to get solution
-        xyMag = numpy.linalg.norm([x,y])
-        alphaAngRad = numpy.arccos((-BetaArmLength**2 + AlphaArmLength**2 + \
-            xyMag**2)/(2*AlphaArmLength*xyMag))
-        gammaAngRad = numpy.arccos((-xyMag**2 + AlphaArmLength**2 + \
-            BetaArmLength**2)/(2*AlphaArmLength*BetaArmLength))
+        xyMag = numpy.linalg.norm([x, y])
+        alphaAngRad = numpy.arccos(
+            (-BetaArmLength**2 + AlphaArmLength**2 + xyMag**2) /
+            (2 * AlphaArmLength * xyMag)
+        )
+        gammaAngRad = numpy.arccos(
+            (-xyMag**2 + AlphaArmLength**2 + BetaArmLength**2) /
+            (2 * AlphaArmLength * BetaArmLength)
+        )
         # we only have right handed robot so use the -alphaAng
         alphaAngRad = -alphaAngRad
         betaAngRad = numpy.pi - gammaAngRad
         betaAngDeg = numpy.degrees(betaAngRad)
         # next rotate alpha angle from x axis to xy
-        rotAng = numpy.arctan2(y,x) # defined -180 to 180
+        rotAng = numpy.arctan2(y, x)  # defined -180 to 180
         alphaAngRad = alphaAngRad + rotAng
         # wrap to be between 0, 360 degrees
         alphaAngDeg = numpy.degrees(alphaAngRad)
@@ -585,25 +604,24 @@ class Robot(object):
             alphaAngDeg += 360
         return alphaAngDeg, betaAngDeg
 
-    def getAlphaBetaFromFocalXY(self,xFocal,yFocal):
+    def getAlphaBetaFromFocalXY(self, xFocal, yFocal):
         """x,y are mm with orgin at center of focal plane (or hex)
         """
         xLocal = xFocal - self.xyFocal[0]
         yLocal = yFocal - self.xyFocal[1]
         return self.getAlphaBetaFromLocalXY(xLocal, yLocal)
 
-    def setAlphaBetaFromLocalXY(self,xLocal,yLocal):
+    def setAlphaBetaFromLocalXY(self, xLocal, yLocal):
         """x,y are mm with the origin being the robot's center
         """
-        a,b = self.getAlphaBetaFromLocalXY(xLocal,yLocal)
-        self.setAlphaBeta(a,b)
+        a, b = self.getAlphaBetaFromLocalXY(xLocal, yLocal)
+        self.setAlphaBeta(a, b)
 
-    def setAlphaBetaFromFocalXY(self,xFocal,yFocal):
+    def setAlphaBetaFromFocalXY(self, xFocal, yFocal):
         """x,y are mm with origin at center of focal plane
         """
-        alpha,beta = self.getAlphaBetaFromFocalXY(xFocal,yFocal)
-        self.setAlphaBeta(alpha,beta)
-
+        alpha, beta = self.getAlphaBetaFromFocalXY(xFocal, yFocal)
+        self.setAlphaBeta(alpha, beta)
 
     @property
     def xyFiberLocal(self):
@@ -611,9 +629,9 @@ class Robot(object):
         if self._xyFiberLocal is None:
             # compute it now
             xA, yA = self.xyAlphaLocal
-            x = xA + self._cosAlphaBeta*BetaArmLength
-            y = yA + self._sinAlphaBeta*BetaArmLength
-            self._xyFiberLocal = numpy.array([x,y])
+            x = xA + self._cosAlphaBeta * BetaArmLength
+            y = yA + self._sinAlphaBeta * BetaArmLength
+            self._xyFiberLocal = numpy.array([x, y])
         return self._xyFiberLocal
 
     @property
@@ -625,55 +643,61 @@ class Robot(object):
         # end of alpha arm
         if self._xyAlphaLocal is None:
             # compute it now
-            x = self._cosAlpha*AlphaArmLength
-            y = self._sinAlpha*AlphaArmLength
-            self._xyAlphaLocal = numpy.array([x,y])
+            x = self._cosAlpha * AlphaArmLength
+            y = self._sinAlpha * AlphaArmLength
+            self._xyAlphaLocal = numpy.array([x, y])
         return self._xyAlphaLocal
 
     @property
     def bottomCollideLine(self):
         if self._bottomCollideLine is None:
-            lineBuffer = BetaArmWidth/2.0
-            x,y = self.xyFiberFocal - self.xyAlphaFocal
-            fTheta = numpy.arctan2(y,x)
-            x1 = numpy.cos(fTheta)*(BetaBottomCollide[0]+lineBuffer) + self.xyAlphaFocal[0]
-            y1 = numpy.sin(fTheta)*(BetaBottomCollide[0]+lineBuffer) + self.xyAlphaFocal[1]
+            lineBuffer = BetaArmWidth / 2.0
+            x, y = self.xyFiberFocal - self.xyAlphaFocal
+            fTheta = numpy.arctan2(y, x)
+            x1 = numpy.cos(fTheta) * (BetaBottomCollide[0] + lineBuffer) + \
+                self.xyAlphaFocal[0]
+            y1 = numpy.sin(fTheta) * (BetaBottomCollide[0] + lineBuffer) + \
+                self.xyAlphaFocal[1]
 
-            x2 = numpy.cos(fTheta)*(BetaBottomCollide[1]-lineBuffer) + self.xyAlphaFocal[0]
-            y2 = numpy.sin(fTheta)*(BetaBottomCollide[1]-lineBuffer) + self.xyAlphaFocal[1]
+            x2 = numpy.cos(fTheta) * (BetaBottomCollide[1] - lineBuffer) + \
+                self.xyAlphaFocal[0]
+            y2 = numpy.sin(fTheta) * (BetaBottomCollide[1] - lineBuffer) + \
+                self.xyAlphaFocal[1]
             self._bottomCollideLine = LineString(
-                [[x1,y1], [x2,y2]]
-                ).buffer(lineBuffer, cap_style=1)
+                [[x1, y1], [x2, y2]]
+            ).buffer(lineBuffer, cap_style=1)
         return self._bottomCollideLine
 
     @property
     def topCollideLine(self):
         if self._topCollideLine is None:
-            lineBuffer = BetaArmWidth/2.0
-            x,y = self.xyFiberFocal - self.xyAlphaFocal
-            fTheta = numpy.arctan2(y,x)
-            x1 = numpy.cos(fTheta)*(BetaTopCollide[0]+lineBuffer) + self.xyAlphaFocal[0]
-            y1 = numpy.sin(fTheta)*(BetaTopCollide[0]+lineBuffer) + self.xyAlphaFocal[1]
+            lineBuffer = BetaArmWidth / 2.0
+            x, y = self.xyFiberFocal - self.xyAlphaFocal
+            fTheta = numpy.arctan2(y, x)
+            x1 = numpy.cos(fTheta) * (BetaTopCollide[0] + lineBuffer) + \
+                self.xyAlphaFocal[0]
+            y1 = numpy.sin(fTheta) * (BetaTopCollide[0] + lineBuffer) + \
+                self.xyAlphaFocal[1]
 
-            x2 = numpy.cos(fTheta)*(BetaTopCollide[1]-lineBuffer) + self.xyAlphaFocal[0]
-            y2 = numpy.sin(fTheta)*(BetaTopCollide[1]-lineBuffer) + self.xyAlphaFocal[1]
+            x2 = numpy.cos(fTheta) * (BetaTopCollide[1] - lineBuffer) + \
+                self.xyAlphaFocal[0]
+            y2 = numpy.sin(fTheta) * (BetaTopCollide[1] - lineBuffer) + \
+                self.xyAlphaFocal[1]
             self._topCollideLine = LineString(
-                [[x1,y1], [x2,y2]]
-                ).buffer(lineBuffer, cap_style=1)
+                [[x1, y1], [x2, y2]]
+            ).buffer(lineBuffer, cap_style=1)
         return self._topCollideLine
-
 
     @property
     def xyAlphaFocal(self):
         return self.xyFocal + self.xyAlphaLocal
 
     def check2xy(self):
-        xLocal,yLocal = self.xyFiberLocal
+        xLocal, yLocal = self.xyFiberLocal
         alpha, beta = self.alphaBeta
-        a, b = self.getAlphaBetaFromLocalXY(xLocal,yLocal)
-        self.setAlphaBetaFromLocalXY(xLocal,yLocal)
-        xLocal2,yLocal2 = self.xyFiberLocal
-
+        a, b = self.getAlphaBetaFromLocalXY(xLocal, yLocal)
+        self.setAlphaBetaFromLocalXY(xLocal, yLocal)
+        xLocal2, yLocal2 = self.xyFiberLocal
 
 
 class RobotGrid(object):
@@ -682,8 +706,8 @@ class RobotGrid(object):
         nDia describes the number of robots along y=0 axis.
         """
         self.xAll, self.yAll = hexFromDia(nDia)
-        self.buildRobotList() # sets self.robotList
-        self.buildNeighborList() # sets self.sketchyNeighborList and connects robots to their neighbors
+        self.buildRobotList()  # sets self.robotList
+        self.buildNeighborList()  # sets self.sketchyNeighborList and connects robots to their neighbors
         self.minTargSeparation = minTargSeparation
         self.enforceMinTargSeparation()
         self._cacheList = []
@@ -718,7 +742,7 @@ class RobotGrid(object):
         self._cacheList = []
         for robot in self.robotList:
             self._cacheList.append(robot.xyFiberFocal)
-        return copy.deepcopy(self._cacheList) # copy for paranoia!
+        return copy.deepcopy(self._cacheList)  # copy for paranoia!
 
     def cache2file(self, fileName):
         numpy.savetxt(fileName, self.cachePositions(), "%.5f")
@@ -729,8 +753,8 @@ class RobotGrid(object):
 
     def alphaBetaFromFile(self, fileName):
         abList = numpy.loadtxt(fileName)
-        for (a,b), robot in zip(abList, self.robotList):
-            robot.setAlphaBeta(a,b)
+        for (a, b), robot in zip(abList, self.robotList):
+            robot.setAlphaBeta(a, b)
 
     def setPosFromCache(self, cacheList=None):
         """Reset all robots to cached position
@@ -738,7 +762,7 @@ class RobotGrid(object):
         """
         if cacheList is None:
             cacheList = self._cacheList
-        for xyFiberFocal, robot in zip(cacheList,self.robotList):
+        for xyFiberFocal, robot in zip(cacheList, self.robotList):
             robot.setAlphaBetaFromFocalXY(xyFiberFocal[0], xyFiberFocal[1])
 
     def buildNeighborList(self):
@@ -752,7 +776,7 @@ class RobotGrid(object):
                 roboDist = numpy.linalg.norm(robot.xyFocal - otherRobot.xyFocal)
                 # print('roboDist', roboDist)
                 neighborExists = False
-                if roboDist < (2*MaxReach):
+                if roboDist < (2 * MaxReach):
                     # these robots have potential to colide
                     # first verify that they aren't already
                     # in the neighborList
@@ -783,10 +807,10 @@ class RobotGrid(object):
             nOther = len(otherTargs)
             while True:
                 # replace this target until there is a minimum separation
-                thisTarg = numpy.tile(robot.xyFiberFocal, nOther).reshape(nOther,2)
+                thisTarg = numpy.tile(robot.xyFiberFocal, nOther).reshape(nOther, 2)
                 mindist = numpy.min(numpy.linalg.norm(otherTargs - thisTarg, axis=1))
                 if mindist < self.minTargSeparation:
-                    #print("replacing target for robot id %i"%robot.id)
+                    # print("replacing target for robot id %i"%robot.id)
                     robot.setAlphaBetaRand()
                     robot.replacementsTried += 1
                     if robot.replacementsTried > 2000:
@@ -800,17 +824,14 @@ class RobotGrid(object):
                 else:
                     break
 
-
     def swapIter(self):
-        print("begining collisions: %i"%self.nCollisions)
+        print("begining collisions: %i" % self.nCollisions)
         for n in self.sketchyNeighborList:
             n.checkSwap()
-        print("swap 1 collisions: %i"%self.nCollisions)
-
-
+        print("swap 1 collisions: %i" % self.nCollisions)
 
     def plotGrid(self, title=None, xlim=None, ylim=None, save=True):
-        fig = plt.figure(figsize=(10,10))
+        fig = plt.figure(figsize=(10, 10))
         ax = plt.gca()
         # ax = fig.add_subplot(111)
         plt.scatter(self.xAll, self.yAll)
@@ -826,9 +847,9 @@ class RobotGrid(object):
             # check for collisions, if so plot as red
             for n in robot.sketchyNeighbors:
                 if n.bottomIntersect:
-                    bottomcolor='red'
+                    bottomcolor = 'red'
                 if n.topIntersect:
-                    topcolor="orange"
+                    topcolor = "orange"
             if robot.threwAway:
                 topcolor, bottomcolor = "magenta", "magenta"
             if robot.deadLocked:
@@ -860,7 +881,7 @@ class RobotGrid(object):
     def plotNext(self, pltStr=None):
         if pltStr is None:
             self.plotIter += 1
-            pltStr = "fig%s.png"%(("%i"%self.plotIter).zfill(4))
+            pltStr = "fig%s.png" % (("%i" % self.plotIter).zfill(4))
         self.plotGrid(pltStr, self.xlim, self.ylim, True)
 
     def getDirectedGraph(self):
@@ -870,7 +891,7 @@ class RobotGrid(object):
         dg = DiGraph()
         for robot in self.robotList:
             for otherRobot in robot.swapList():
-                dg.add_edge(robot.id, otherRobot.id, label="%i->%i"%(robot.id, otherRobot.id))
+                dg.add_edge(robot.id, otherRobot.id, label="%i->%i" % (robot.id, otherRobot.id))
         return dg
 
 
@@ -908,15 +929,15 @@ def swapSearch(robotGrid, neighbor="a"):
                 print("swap path not found")
                 continue
 
-            pathFrom = numpy.roll(pathTo,1)
+            pathFrom = numpy.roll(pathTo, 1)
             # begin swapping positions
             firstPos = robot.xyFiberFocal
             for fromRobotID, toRobotID in zip(pathFrom, pathTo):
                 fromRobot = robotGrid.robotList[fromRobotID]
                 toRobot = robotGrid.robotList[toRobotID]
                 print(fromRobotID, toRobotID)
-                print("%i-->%i"%(fromRobot.id,toRobot.id))
-                if toRobot.id==robot.id:
+                print("%i-->%i" % (fromRobot.id, toRobot.id))
+                if toRobot.id == robot.id:
                     xyFiberFocal = firstPos
                 else:
                     xyFiberFocal = toRobot.xyFiberFocal
@@ -934,7 +955,7 @@ def swapSearch(robotGrid, neighbor="a"):
                 bestCollide = robotGrid.nCollisions
                 print("new best orientation")
                 print("collisions now", bestCollide)
-                break # don't try other paths if we have reduced number of collisions
+                break  # don't try other paths if we have reduced number of collisions
 
     robotGrid.setPosFromCache(bestCache)
     print("best collide", robotGrid.nCollisions)
@@ -953,6 +974,7 @@ def throwAway(robotGrid, markAsTossed=True):
             if not robot.isCollided:
                 break
 
+
 def simpleRun():
     initialCollisions = []
     simpleSwapCollisions = []
@@ -961,7 +983,7 @@ def simpleRun():
     thrownAway = []
     for ii in range(1):
         nRobots = 500
-        nc = int(numpy.sqrt((nRobots*4-1)/3))
+        nc = int(numpy.sqrt((nRobots * 4 - 1) / 3))
         rg = RobotGrid(nc)
         initialCollisions.append(rg.nCollisions)
         rg.plotGrid("Naive Assignment")
@@ -981,7 +1003,7 @@ def simpleRun():
         thrownAway.append(rg.nThrownAway)
         rg.plotGrid("Thrown Away")
         plt.savefig("thrown.png")
-        print("threw away %i robots"%rg.nThrownAway)
+        print("threw away %i robots" % rg.nThrownAway)
         # plt.show()
     print(initialCollisions)
     print(simpleSwapCollisions)
@@ -990,9 +1012,10 @@ def simpleRun():
     print(thrownAway)
     # print("throw away collisions: %i"%robotGrid.nCollisions)
 
+
 def run1grid(minSeparation):
     nRobots = 500
-    nc = int(numpy.sqrt((nRobots*4-1)/3))
+    nc = int(numpy.sqrt((nRobots * 4 - 1) / 3))
     rg = RobotGrid(nc, minSeparation)
     failedMinSep = numpy.sum([1 for x in rg.robotList if x.replacementsTried > 2000])
     initialCollisions = rg.nCollisions
@@ -1004,154 +1027,60 @@ def run1grid(minSeparation):
     nThrowAway = rg.nThrownAway
     return failedMinSep, initialCollisions, pairSwapCollisions, cycleSwapCollisions, nThrowAway
 
+
 def runGridSeries(minSeparation):
     results = []
     for ii in range(100):
         results.append(run1grid(minSeparation))
     results = numpy.asarray(results)
-    numpy.savetxt("separation_%.2f.txt"%minSeparation, results, fmt="%i")
+    numpy.savetxt("separation_%.2f.txt" % minSeparation, results, fmt="%i")
+
 
 def explodeAndExplore():
     # run a series of grids at various minimum
     # spacings and save the collision results
-    minSpacings = numpy.linspace(4,20,20)
+    minSpacings = numpy.linspace(4, 20, 20)
     p = Pool(20)
     p.map(runGridSeries, minSpacings)
     print("explode complete!!!")
 
+
 def motionPlan():
     minSeparation = 8
     nRobots = 500
-    nc = int(numpy.sqrt((nRobots*4-1)/3))
+    nc = int(numpy.sqrt((nRobots * 4 - 1) / 3))
     # nc = 11
     rg = RobotGrid(nc, minSeparation)
     throwAway(rg)
     return rg
 
-def separateMoves(dummy, doSort=False):
-    numpy.random.seed()
-    rg = motionPlan()
-    for robot in rg.robotList:
-        if robot.threwAway:
-            robot.threwAway = False
-    #rg.plotGrid("target")
-    #plt.savefig("target.png")
-    for robot in rg.robotList:
-        a,b = robot.alphaBeta
-        robot.betaTarg = b
-        robot.alphaTarg = a
-        robot.setAlphaBeta(a,180)
-    #rg.plotGrid("start")
-    #plt.savefig("start.png")
-    ii = 0
-    prevRobotSet = set([])
-    while True:
-        ii+=1
-        robotsToMove = [robot for robot in rg.robotList if not robot.onTarget]
-        if doSort:
-            robotsToMove = sorted(robotsToMove, key=lambda robot: (numpy.linalg.norm(robot.xyFocal), robot.distToTarget))
-        robotSet = set([robot.id for robot in robotsToMove])
-        if robotSet == prevRobotSet:
-            break # we arent getting anywhere
-        # print("%i robots to move on iter %i"%(len(robotsToMove),ii))
-        for robot in robotsToMove:
-            while True:
-                res = robot.stepTowardTarg()
-                if res is None:
-                    continue # continue stepping
-                if res==True:
-                    # print("robot %i achieved target"%robot.id)
-                    break
-                else:
-                    # print("robot %i stopped before colliding"%(robot.id))
-                    break
-        #figStr = "fig%s.png"%(("%i"%ii).zfill(4))
-        #rg.plotGrid(figStr)
-        #plt.savefig(figStr)
-        prevRobotSet = robotSet
-
-    #rg.plotGrid("end")
-    #plt.savefig("end.png")
-
-    deadlocks = sum([robot.deadLocked for robot in rg.robotList])
-    total = len(rg.robotList)
-    perc = (total-deadlocks)/float(total)
-    # print("percent success %.2f"%perc)
-    return perc
-
-
-def simulMoves(dummy=None):
-    numpy.random.seed()
-    rg = motionPlan()
-    for robot in rg.robotList:
-        if robot.threwAway:
-            robot.threwAway = False
-    xlim = [-150,150]
-    ylim = [-150,150]
-    rg.xlim = xlim
-    rg.ylim = ylim
-    rg.plotGrid("target.png", xlim, ylim, True)
-    global BetaArmWidth
-    BetaArmWidth = 9
-    for robot in rg.robotList:
-        a,b = robot.alphaBeta
-        robot.betaTarg = b
-        robot.alphaTarg = a
-        robot.setAlphaBeta(a,180)
-    rg.plotGrid("start.png", xlim, ylim, True)
-    ii = 0
-
-    while True:
-        ii+=1
-        print("step", ii)
-        if ii%20 == 0 and BetaArmWidth > 5:
-            BetaArmWidth -= 1
-        robotsToMove = [robot for robot in rg.robotList if not robot.onTarget]
-        for robot in robotsToMove:
-            res = robot.stepTowardTarg()
-        rg.plotNext()
-        if ii>250:
-            break
-        if not robotsToMove:
-            print("finished successfully!")
-            break
-
-    rg.plotGrid("end")
-    plt.xlim([-150,150])
-    plt.ylim([-150,150])
-    plt.savefig("end.png")
-    plt.close()
-
-    deadlocks = sum([robot.deadLocked for robot in rg.robotList])
-    total = len(rg.robotList)
-    perc = (total-deadlocks)/float(total)
-    print("percent success %.2f"%perc)
-    return perc
 
 def inspectFails(runNum):
     # baseDir = "/Users/csayres/Desktop/collisions/collisionCache"
     # runDir = os.join(baseDir,"seed%i"%runNum)
-    fileName = "/Users/csayres/Desktop/collisions/collisionCache/seed%i/step106.txt"%runNum
+    fileName = "/Users/csayres/Desktop/collisions/collisionCache/seed%i/step106.txt" % runNum
     rg = motionPlan()
     for robot in rg.robotList:
         if robot.threwAway:
             robot.threwAway = False
     rg.alphaBetaFromFile(fileName)
-    xlim = [-300,300]
-    ylim = [-300,300]
+    xlim = [-300, 300]
+    ylim = [-300, 300]
     rg.xlim = xlim
     rg.ylim = ylim
     ii = 0
     while True:
         ii += 1
-        print("step %i"%ii)
+        print("step %i" % ii)
         for robot in rg.robotList:
             robot.stepTowardFold()
         rg.plotNext()
 
+
 def reverseMove(dummy=None):
+    maxIter = 500*10
     saveOutput = False
-    plotOutput = False
+    plotOutput = True
     if dummy is None:
         numpy.random.seed()
     else:
@@ -1161,11 +1090,11 @@ def reverseMove(dummy=None):
         if robot.threwAway:
             robot.threwAway = False
     for robot in rg.robotList:
-        a,b = robot.alphaBeta
+        a, b = robot.alphaBeta
         robot.betaTarg = b
         robot.alphaTarg = a
-    xlim = [-300,300]
-    ylim = [-300,300]
+    xlim = [-300, 300]
+    ylim = [-300, 300]
     rg.xlim = xlim
     rg.ylim = ylim
 
@@ -1179,47 +1108,42 @@ def reverseMove(dummy=None):
             seed = 0
         else:
             seed = dummy
-        outDir = "/uufs/chpc.utah.edu/common/home/u0449727/vRound/collisionCache/seed%i"%seed
-        outDir = "/Users/csayres/Desktop/collisions/collisionCache/seed%i"%seed
+        outDir = "/uufs/chpc.utah.edu/common/home/u0449727/vRound/collisionCache/seed%i" % seed
+        outDir = "/Users/csayres/Desktop/collisions/collisionCache/seed%i" % seed
         if os.path.exists(outDir):
             # remove it
             shutil.rmtree(outDir)
         os.mkdir(outDir)
 
-
     while True:
-        ii+=1
+        ii += 1
         print('step', ii)
         for robot in rg.robotList:
             robot.stepTowardFold()
         if saveOutput:
-            outFile = os.path.join(outDir, "step%s.txt"%("%i"%ii).zfill(3))
+            outFile = os.path.join(outDir, "step%s.txt" % ("%i" % ii).zfill(3))
             rg.alphaBeta2file(outFile)
         if plotOutput:
             # pass
-            rg.plotNext()
-        if not False in [robot.alphaBeta[1]==180 for robot in rg.robotList]:
+            if ii % 10 == 0:
+                rg.plotNext()
+        if False not in [robot.alphaBeta[1] == 180 for robot in rg.robotList]:
             print("finished!!!!")
             if saveOutput:
                 shutil.rmtree(outDir)
             break
-        if ii == 500:
+        if ii == maxIter:
             # print("failed!")
-            rg.plotGrid("failed%i.png"%dummy, xlim=xlim, ylim=ylim, save=True)
+            rg.plotGrid("failed%i.png" % dummy, xlim=xlim, ylim=ylim, save=True)
             break
     # seed, iterations took, nSucceed, nTotal
-    return [dummy, ii, sum([robot.alphaBeta[1]==180 for robot in rg.robotList]), len(rg.robotList)]
+    return [
+        dummy,
+        ii,
+        sum([robot.alphaBeta[1] == 180 for robot in rg.robotList]),
+        len(rg.robotList)
+    ]
 
-
-def oneByOne():
-    doSort = False
-    if len(sys.argv) > 1:
-        print("do sort")
-        doSort = True
-    p = Pool(14)
-    pSeparateMoves = partial(separateMoves, doSort=doSort)
-    percents = p.map(pSeparateMoves, range(200))
-    print("found: %.2f (%.2f)"%(numpy.mean(percents), numpy.std(percents)))
 
 if __name__ == "__main__":
     # note 1060 is a real bugger!
@@ -1231,13 +1155,19 @@ if __name__ == "__main__":
     # seeds = [20,21,46,58,84,102,109,119,121,133,147,152,169,171,174,195,207,208,221,234,251,263,288,311,322,326,328,334,335,339,356,368,370,384,387,408,416,444,448,453,458,460,467,475,482,486,511,526,556,596,605,614,616,631,641,655,667,694,704,708,709,712,730,762,763,765,768,775,785,803,806,825,839,840,849,861,862,869,898,913,916,919,958,961,963,971,986,994,1002,1022,1030,1033,1044,1054,1055,1060,1068,1070,1080,1108,1113,1129,1157,1196,1198,1206,1226,1228,1230,1241,1260,1264,1266,1303,1304,1318,1328,1339,1357,1403,1421,1428,1448,1461,1466,1475,1481,1482,1484,1495,1514,1562,1597,1601,1602,1608,1611,1616,1628,1632,1644,1650,1676,1684,1688,1696,1707,1718,1731,1738,1760,1767,1774,1802,1831,1851,1853,1859,1875,1879,1886,1895,1896,1901,1906,1912,1920,1927,1928,1955,1968,1982,1983,1990,2014,2016,2023,2028,2041,2047,2059,2060,2070,2085,2094,2098,2118,2121,2129,2150,2194,2206,2220,2238,2258,2277,2279,2286,2300,2306,2324,2355,2366,2402,2409,2429,2430,2432,2433,2464,2474,2475,2476,2483,2511,2514,2525,2537,2582,2591,2596,2643,2649,2690,2709,2712,2720,2742,2747,2755,2757,2782,2789,2799,2809,2816,2838,2840,2858,2862,2869,2873,2897,2908,2928,2933,2944,2969,2970,2976,2981,2991,2992,3003,3004,3013,3018,3022,3040,3058,3061,3068,3080,3090,3094,3098,3111,3115,3120,3123,3128,3141,3163,3165,3168,3178,3179,3180,3212,3253,3277,3285,3291,3315,3316,3339,3343,3355,3362,3365,3368,3373,3377,3386,3390,3400,3425,3457,3470,3471,3476,3478,3527,3553,3569,3588,3599,3607,3635,3641,3645,3658,3665,3668,3669,3688,3691,3692,3697,3703,3716,3719,3723,3730,3733,3739,3752,3770,3788,3793,3810,3818,3843,3858,3872,3879,3883,3924,3928,3942,3954,3964,3985,3987,3991,3999,4067,4079,4088,4101,4109,4134,4137,4158,4184,4206,4210,4215,4257,4261,4265,4268,4269,4302,4311,4312,4326,4381,4382,4408,4413,4420,4431,4451,4476,4477,4480,4488,4491,4494,4496,4504,4528,4555,4556,4563,4570,4597,4610,4623,4633,4637,4648,4654,4658,4661,4666,4667,4671,4672,4694,4698,4712,4736,4739,4762,4780,4786,4788,4796,4811,4820,4864,4867,4890,4894,4896,4899,4901,4902,4913,4920,4932,4953,4959,4960,4982]
     # seeds2 = [24,26,40,62,65,79,80,81,91,95,98,109,113,121,132,149,155,169,184,187,196,197,199,227,236,241,253,275,277,281,306,307,309,311,348,356,360,372,375,389,401,424,459,472,478,482,487,502,509,515,528,551,555,565,569,571,573,582,592,593,608,622,640,650,663,688,698,721,735,748,750,772,786,815,844,877,878,895,896,901,904,908,920,928,937,955,966,968,969,975,984,992,1009,1017,1020,1035,1050,1055,1085,1091,1102,1103,1104,1111,1129,1146,1149,1155,1160,1188,1207,1224,1228,1251,1261,1270,1272,1288,1292,1294,1297,1304,1326,1332,1348,1356,1378,1382,1416,1417,1424,1427,1432,1438,1439,1448,1464,1470,1522,1528,1529,1580,1582,1594,1600,1604,1607,1608,1620,1629,1634,1652,1653,1665,1668,1684,1698,1701,1712,1748,1750,1791,1805,1858,1860,1864,1873,1892,1906,1915,1916,1932,1945,2008,2010,2022,2075,2112,2145,2151,2158,2160,2193,2199,2211,2225,2268,2277,2284,2298,2301,2308,2319,2326,2333,2342,2371,2403,2410,2414,2416,2456,2476,2497,2515,2523,2527,2530,2534,2556,2564,2591,2593,2601,2606,2625,2628,2640,2677,2727,2758,2790,2798,2808,2821,2828,2831,2841,2861,2872,2896,2905,2906,2909,2918,2961,2981,2995,2996,3039,3044,3047,3075,3092,3093,3103,3111,3165,3178,3184,3185,3214,3228,3234,3238,3239,3248,3264,3268,3281,3287,3291,3298,3316,3330,3342,3371,3374,3381,3384,3448,3466,3470,3483,3495,3498,3501,3516,3553,3560,3586,3614,3617,3629,3634,3649,3655,3658,3689,3697,3705,3715,3727,3733,3738,3741,3783,3823,3837,3846,3859,3870,3879,3894,3897,3906,3914,3938,3950,3955,3960,3967,3977,3984,3990,4002,4043,4062,4072,4091,4107,4156,4157,4165,4185,4188,4191,4192,4196,4206,4212,4221,4228,4236,4237,4243,4244,4255,4260,4269,4282,4302,4306,4307,4315,4336,4357,4364,4378,4397,4402,4403,4405,4423,4428,4433,4460,4511,4513,4514,4542,4548,4587,4603,4606,4614,4617,4620,4634,4640,4682,4713,4734,4744,4759,4766,4772,4790,4801,4860,4863,4865,4873,4880,4883,4895,4899,4903,4904,4908,4914,4930,4935,4936,4944,4945,4951,4952,4956,4964,4991]
     # seeds = list(set(seeds+seeds2))
-    seeds = range(5000)
-    p = Pool(29)
-    results = p.map(reverseMove, seeds)
-    with open("results.txt", "w") as f:
-        f.write("seed, steps, ontarget, total\n")
-        for result in results:
-            f.write("%i, %i, %i, %i\n"%tuple(result))
+
+    # seeds = range(5000)
+    # p = Pool(29)
+    # results = p.map(reverseMove, seeds)
+    # with open("results.txt", "w") as f:
+    #     f.write("seed, steps, ontarget, total\n")
+    #     for result in results:
+    #         f.write("%i, %i, %i, %i\n"%tuple(result))
+
+
+    # known fails failed14109.png  failed6486.png  failed7117.png
+
+    reverseMove(14109)
 
 
 
