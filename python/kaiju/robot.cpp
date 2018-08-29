@@ -24,14 +24,17 @@ const double top_collide_x2 = 16.0;
 const double bottom_collide_x1 = 0;
 const double bottom_collide_x2 = 10.689;
 const double pitch = 22.4;
+const double min_reach = beta_arm_len - alpha_arm_len;
+const double max_reach = beta_arm_len + alpha_arm_len;
+const double ang_step = 1; // step 1 degree
 
 typedef double coordinate_type;
 typedef boost::geometry::model::d2::point_xy<coordinate_type> point;
 typedef boost::geometry::model::polygon<point> polygon;
-typedef boost::multi_array<double, 2> hexArray;
+typedef boost::multi_array<double, 2> nx2Array;
 typedef boost::geometry::model::linestring<point> linestring_t;
 typedef boost::geometry::model::multi_polygon<polygon> boost_poly;
-// typedef hexArray::index index;
+// typedef nx2Array::index index;
 
 boost::geometry::strategy::buffer::distance_symmetric<coordinate_type> distance_strategy(buffer_distance);
 boost::geometry::strategy::buffer::join_round join_strategy(points_per_circle);
@@ -39,13 +42,53 @@ boost::geometry::strategy::buffer::end_round end_strategy(points_per_circle);
 boost::geometry::strategy::buffer::point_circle circle_strategy(points_per_circle);
 boost::geometry::strategy::buffer::side_straight side_strategy;
 
-hexArray getHexPositions(int nDia){
+double randomSample(){
+    // return between 0 and 1
+    return static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+}
+
+std::array<double, 2> alphaBetaFromXY(double x, double y){
+    double xyMag = hypot(x, y);
+    double alphaAngRad = acos(
+        (-1*beta_arm_len*beta_arm_len + alpha_arm_len*alpha_arm_len + xyMag*xyMag)/(2*alpha_arm_len*xyMag)
+    );
+    double gammaAngRad = acos(
+        (-1*xyMag*xyMag + alpha_arm_len*alpha_arm_len + beta_arm_len*beta_arm_len)/
+        (2*alpha_arm_len*beta_arm_len)
+    );
+    alphaAngRad = -1*alphaAngRad;
+    double betaAngRad = M_PI - gammaAngRad;
+    double betaAngDeg = betaAngRad * 180 / M_PI;
+    double rotAng = atan2(y, x);
+    alphaAngRad = alphaAngRad + rotAng;
+    double alphaAngDeg = alphaAngRad * 180 / M_PI;
+    while (alphaAngDeg < 0){
+        alphaAngDeg += 360;
+    }
+    std::array<double, 2> outArr;
+    outArr[0] = alphaAngDeg;
+    outArr[1] = betaAngDeg;
+    return outArr;
+}
+
+std::array<double, 2> sampleAnnulus(){
+    // random anululs sampling:
+    // https://ridlow.wordpress.com/2014/10/22/uniform-random-points-in-disk-annulus-ring-cylinder-and-sphere/
+    double rPick = sqrt((max_reach*max_reach - min_reach*min_reach)*randomSample() + min_reach*min_reach);
+    double thetaPick = randomSample() * 2 * M_PI;
+    std::array<double, 2> outArr;
+    outArr[0] = rPick * cos(thetaPick);
+    outArr[1] = rPick * sin(thetaPick);
+    return outArr;
+}
+
+nx2Array getHexPositions(int nDia){
     // returns a 2d array populated with xy positions
     // for a hex packed grid
     // nDia must be odd (not caught)
     int nHex = 0.25*(3*nDia*nDia + 1);
     int nEdge = 0.5*(nDia + 1);
-    hexArray A(boost::extents[nHex][2]);
+    nx2Array A(boost::extents[nHex][2]);
     double vertShift = sin(60*M_PI/180.0)*pitch;
     double horizShift = cos(60*M_PI/180.0)*pitch;
     int hexInd = 0;
@@ -56,7 +99,7 @@ hexArray getHexPositions(int nDia){
     double nextY = 0;
 
     // first fill in equator
-    // 0,0 is leftmost
+    // 0,0 is center
     for (int ii = 0; ii < nDia; ii++){
         A[hexInd][0] = nextX;
         A[hexInd][1] = nextY;
@@ -84,11 +127,11 @@ hexArray getHexPositions(int nDia){
 
 class Robot {
 private:
-    boost_poly collideZone(double, double);
+    boost_poly collideZone(std::array<double, 4>);
     std::array<double, 4> collideCoords(double, double);
 public:
     int id;
-    double xPos, yPos, alpha, beta;
+    double xPos, yPos, alpha, beta, xTarget, yTarget;
     boost_poly tcz, bcz;
     std::array<double, 4> tcCoords, bcCoords;
     std::list<Robot *> neighbors;
@@ -96,12 +139,14 @@ public:
     void setAlphaBeta (double, double);
     void setAlphaBetaRand();
     void addNeighbor(Robot *);
-    std::array<double, 4> topCollideCoords();
-    std::array<double, 4> bottomCollideCoords();
-    boost_poly topCollideZone();
-    boost_poly bottomCollideZone();
+    void topCollideZone();
+    void bottomCollideZone();
     bool isCollided();
+    bool isTopCollided();
+    bool isBottomCollided();
     void decollide();
+    void setXYUniform();
+    void stepTowardFold();
 };
 
 Robot::Robot(int myid, double myxPos, double myyPos) {
@@ -117,55 +162,30 @@ void Robot::addNeighbor(Robot * rNeighbor){
 void Robot::setAlphaBeta(double newAlpha, double newBeta){
     alpha = newAlpha;
     beta = newBeta;
-    tcz = topCollideZone();
-    bcz = bottomCollideZone();
+    topCollideZone();
+    bottomCollideZone();
 }
 
 void Robot::setAlphaBetaRand(){
-    double a = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX)) * 359.99999;
-    double b = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX)) * 180.0;
+    double a = randomSample() * 359.99999;
+    double b = randomSample() * 180.0;
     setAlphaBeta(a, b);
 }
 
-std::array<double, 4> collideCoords(double betaX1, double betaX2){
-    double pt1x, pt1y, pt2x, pt2y, alphaRad, betaRad;
-    pt1x = betaX1;
-    pt1y = 0;
-    pt2x = betaX2;
-    pt2y = 0;
-    alphaRad = alpha * M_PI / 180.0;
-    betaRad = beta * M_PI / 180;
-
-    // first rotate about beta
-
-    double pt1xb = cos(betaRad) * pt1x - sin(betaRad) * pt1y;
-    double pt1yb = sin(betaRad) * pt1x + cos(betaRad) * pt1y;
-    double pt2xb = cos(betaRad) * pt2x - sin(betaRad) * pt2y;
-    double pt2yb = sin(betaRad) * pt2x + cos(betaRad) * pt2y;
-
-    // offset x by alpha arm length
-    pt1xb += alpha_arm_len;
-    pt2xb += alpha_arm_len;
-
-    // next rotate about alpha
-    double pt1xa = cos(alphaRad) * pt1xb - sin(alphaRad) * pt1yb;
-    double pt1ya = sin(alphaRad) * pt1xb + cos(alphaRad) * pt1yb;
-    double pt2xa = cos(alphaRad) * pt2xb - sin(alphaRad) * pt2yb;
-    double pt2ya = sin(alphaRad) * pt2xb + cos(alphaRad) * pt2yb;
-
-    // offset by robot's zero position
-    pt1xa += xPos;
-    pt2xa += xPos;
-    pt1yb += yPos;
-    pt2yb += yPos;
+void Robot::setXYUniform(){
+    std::array<double, 2> xy = sampleAnnulus();
+    std::array<double, 2> ab = alphaBetaFromXY(xy[0], xy[1]);
+    setAlphaBeta(ab[0], ab[1]);
 }
 
-boost_poly Robot::collideZone(double betaX1, double betaX2){
-    double pt1x, pt1y, pt2x, pt2y, alphaRad, betaRad;
+std::array<double, 4> Robot::collideCoords(double betaX1, double betaX2){
+    double pt1x, pt1y, pt2x, pt2y, pt3x, pt3y, alphaRad, betaRad;
     pt1x = betaX1;
     pt1y = 0;
     pt2x = betaX2;
     pt2y = 0;
+    pt3x = beta_arm_len; // distance to fiber
+    pt3y = 0;
     alphaRad = alpha * M_PI / 180.0;
     betaRad = beta * M_PI / 180;
 
@@ -175,27 +195,48 @@ boost_poly Robot::collideZone(double betaX1, double betaX2){
     double pt1yb = sin(betaRad) * pt1x + cos(betaRad) * pt1y;
     double pt2xb = cos(betaRad) * pt2x - sin(betaRad) * pt2y;
     double pt2yb = sin(betaRad) * pt2x + cos(betaRad) * pt2y;
+    double pt3xb = cos(betaRad) * pt3x - sin(betaRad) * pt3y;
+    double pt3yb = sin(betaRad) * pt3x + cos(betaRad) * pt3y;
 
     // offset x by alpha arm length
     pt1xb += alpha_arm_len;
     pt2xb += alpha_arm_len;
+    pt3xb += alpha_arm_len;
 
     // next rotate about alpha
     double pt1xa = cos(alphaRad) * pt1xb - sin(alphaRad) * pt1yb;
     double pt1ya = sin(alphaRad) * pt1xb + cos(alphaRad) * pt1yb;
     double pt2xa = cos(alphaRad) * pt2xb - sin(alphaRad) * pt2yb;
     double pt2ya = sin(alphaRad) * pt2xb + cos(alphaRad) * pt2yb;
+    double pt3xa = cos(alphaRad) * pt3xb - sin(alphaRad) * pt3yb;
+    double pt3ya = sin(alphaRad) * pt3xb + cos(alphaRad) * pt3yb;
 
     // offset by robot's zero position
     pt1xa += xPos;
     pt2xa += xPos;
-    pt1yb += yPos;
-    pt2yb += yPos;
+    pt3xa += xPos;
+    pt1ya += yPos;
+    pt2ya += yPos;
+    pt3ya += yPos;
 
+    // this is written each time the funct is called. not ideal
+    // but innocuous.
+    xTarget = pt3xa;
+    yTarget = pt3ya;
+
+    std::array<double, 4> outArr;
+    outArr[0] = pt1xa;
+    outArr[1] = pt1ya;
+    outArr[2] = pt2xa;
+    outArr[3] = pt2ya;
+    return outArr;
+}
+
+boost_poly Robot::collideZone(std::array<double, 4> ptArr){
     // create linestring
     linestring_t ls;
-    boost::geometry::append(ls, point(pt1xa, pt1ya));
-    boost::geometry::append(ls, point(pt2xa, pt2ya));
+    boost::geometry::append(ls, point(ptArr[0], ptArr[1]));
+    boost::geometry::append(ls, point(ptArr[2], ptArr[3]));
 
     // Declare output
     boost_poly result;
@@ -208,20 +249,45 @@ boost_poly Robot::collideZone(double betaX1, double betaX2){
     return result;
 }
 
-boost_poly Robot::topCollideZone(){
-    return collideZone(top_collide_x1, top_collide_x2);
+void Robot::topCollideZone(){
+    tcCoords = collideCoords(top_collide_x1, top_collide_x2);
+    tcz = collideZone(tcCoords);
 }
 
-boost_poly Robot::bottomCollideZone(){
-    return collideZone(bottom_collide_x1, bottom_collide_x2);
+void Robot::bottomCollideZone(){
+    bcCoords = collideCoords(bottom_collide_x1, bottom_collide_x2);
+    bcz = collideZone(bcCoords);
 }
 
 bool Robot::isCollided(){
+    if (isTopCollided()){
+        return true;
+    }
+    else if (isBottomCollided()){
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+bool Robot::isTopCollided(){
     bool iAmCollided = false;
     for (Robot * robot : neighbors){
         bool tc = boost::geometry::intersects(tcz, robot->tcz);
+        if (tc){
+            iAmCollided = true;
+            break;
+        }
+    }
+    return iAmCollided;
+}
+
+bool Robot::isBottomCollided(){
+    bool iAmCollided = false;
+    for (Robot * robot : neighbors){
         bool bc = boost::geometry::intersects(bcz, robot->bcz);
-        if (tc or bc){
+        if (bc){
             iAmCollided = true;
             break;
         }
@@ -232,14 +298,86 @@ bool Robot::isCollided(){
 void Robot::decollide(){
     // randomly replace alpha beta values until collisions vanish
     int ii;
-    std::cout << "decoliding robot " << id << std::endl;
     for (ii=0; ii<300; ii++){
-        setAlphaBetaRand();
-        if (isCollided()){
+        setXYUniform();
+        if (!isCollided()){
             break;
         }
     }
-    std::cout << "decolided robot " << id << " " << ii << " iters" << std::endl;
+}
+
+void Robot::stepTowardFold(){
+    double currAlpha = alpha;
+    double currBeta = beta;
+    if (currBeta==180 and currAlpha==0){
+        // done folding don't move
+        return;
+    }
+    int nMoves = 8; // total number of moves to try
+    // build a list of alpha and beta combos to try
+    nx2Array alphaBetaArr(boost::extents[nMoves][2]);
+
+    // beta folding
+    alphaBetaArr[0][0] = currAlpha - ang_step;
+    alphaBetaArr[0][1] = currBeta + ang_step;
+
+    alphaBetaArr[1][0] = currAlpha;
+    alphaBetaArr[1][1] = currBeta + ang_step;
+
+    alphaBetaArr[2][0] = currAlpha + ang_step;
+    alphaBetaArr[2][1] = currBeta + ang_step;
+
+    // beta static
+    alphaBetaArr[3][0] = currAlpha - ang_step;
+    alphaBetaArr[3][1] = currBeta;
+
+    alphaBetaArr[4][0] = currAlpha + ang_step;
+    alphaBetaArr[4][1] = currBeta;
+
+    // beta unfolding
+    alphaBetaArr[5][0] = currAlpha - ang_step;
+    alphaBetaArr[5][1] = currBeta - ang_step;
+
+    alphaBetaArr[6][0] = currAlpha;
+    alphaBetaArr[6][1] = currBeta - ang_step;
+
+    alphaBetaArr[7][0] = currAlpha + ang_step;
+    alphaBetaArr[7][1] = currBeta - ang_step;
+
+    // begin trying options pick first that works
+    for (int ii=0; ii<nMoves; ii++){
+        double nextAlpha = alphaBetaArr[ii][0];
+        double nextBeta = alphaBetaArr[ii][1];
+        if (nextAlpha > 360){
+            nextAlpha = 360;
+        }
+        if (nextAlpha < 0){
+            nextAlpha = 0;
+        }
+        if (nextBeta > 180){
+            nextBeta = 180;
+        }
+        if (nextBeta < 0){
+            nextBeta = 0;
+        }
+        // if next choice results in no move skip it
+        // always favor a move
+        if (nextBeta==currBeta and nextAlpha==currAlpha){
+            continue;
+        }
+        setAlphaBeta(nextAlpha, nextBeta);
+        if (!isCollided()){
+            return;
+        }
+    }
+
+    // no move options worked,
+    // settle for a non-move
+    setAlphaBeta(currAlpha, currBeta);
+}
+
+bool robotSort(const Robot& robot1, const Robot& robot2){
+    return (robot1.alpha < robot2.alpha);
 }
 
 class RobotGrid {
@@ -249,12 +387,13 @@ public:
     RobotGrid (int);
     void decollide();
     int getNCollisions();
-    void toFile();
+    void toFile(const char*);
+    void pathGen();
 };
 
 RobotGrid::RobotGrid(int nDia){
     // nDia is number of robots along equator of grid
-    hexArray xyHexPos = getHexPositions(25);
+    nx2Array xyHexPos = getHexPositions(nDia);
     nRobots = boost::size(xyHexPos);
     // populate list of robots
     for (int ii=0; ii<nRobots; ii++){
@@ -264,7 +403,7 @@ RobotGrid::RobotGrid(int nDia){
     // for each robot, give it access to its neighbors
     // and initialze to random alpha betas
     for (Robot &r1 : allRobots){
-        r1.setAlphaBetaRand();
+        r1.setXYUniform();
         for (Robot &r2 : allRobots){
             if (r1.id==r2.id){
                 continue;
@@ -284,10 +423,9 @@ RobotGrid::RobotGrid(int nDia){
 void RobotGrid::decollide(){
     // iterate over robots and resolve collisions
     while(getNCollisions()){
-        std::cout << "n collisions " << getNCollisions() << std::endl;
         for (Robot &r : allRobots){
             if (r.isCollided()){
-                r.decollide();  // only tries a few times
+                r.decollide();
             }
         }
     }
@@ -305,23 +443,70 @@ int RobotGrid::getNCollisions(){
     return nCollide;
 }
 
-void RobotGrid::toFile(){
+void RobotGrid::toFile(const char* filename){
     FILE * pFile;
-    pFile = fopen("robotGrid.txt", "w");
-    fprintf(pFile, "# robotID, xPos, yPos, alpha, beta\n");
+    pFile = fopen(filename, "w");
+    fprintf(pFile, "# robotID, xPos, yPos, alpha, beta, tcx1, tcy1, tcx2, tcy2, bcx1, bcy1, bcx2, bcy2, isTopCollided, isBottomCollided\n");
     for (Robot &r : allRobots){
-        fprintf(pFile, "%i, %.8f, %.8f, %.8f, %.8f\n", r.id, r.xPos, r.yPos, r.alpha, r.beta);
+        fprintf(pFile,
+            "%i, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %i, %i\n",
+            r.id, r.xPos, r.yPos, r.alpha, r.beta,
+            r.tcCoords[0], r.tcCoords[1], r.tcCoords[2], r.tcCoords[3],
+            r.bcCoords[0], r.bcCoords[1], r.bcCoords[2], r.bcCoords[3],
+            r.isTopCollided(), r.isBottomCollided()
+        );
     }
     fclose(pFile);
+}
+
+void RobotGrid::pathGen(){
+    // first prioritize robots based on their alpha positions
+    // robots closest to alpha = 0 are at highest risk with extended
+    // betas for getting locked, so try to move those first
+    int maxIter = 500;
+    for (int ii=0; ii<maxIter; ii++){
+        std::cout << "iter " << ii << std::endl;
+        // char buffer[50];
+        // sprintf(buffer, "step_%d.txt", ii);
+        // toFile(buffer);
+        // allRobots.sort(robotSort);
+        for (Robot &r: allRobots){
+            r.stepTowardFold();
+        }
+    }
 }
 
 int main()
 {
     srand (time(NULL));
     RobotGrid rg (25);
-    rg.toFile();
+    std::cout << "n robots: " << rg.allRobots.size() << std::endl;
+    rg.toFile("preCollide.txt");
     std::cout << "nCollisions " << rg.getNCollisions() << std::endl;
-    // rg.decollide();
+    rg.decollide();
     std::cout << "nCollisions " << rg.getNCollisions() << std::endl;
+    rg.toFile("postCollide.txt");
+    rg.pathGen();
+    rg.toFile("pathGen.txt");
 
 }
+
+
+// example: https://stackoverflow.com/questions/22281962/c11-sorting-list-using-lambda
+// #include <iostream>
+// #include <list>
+// #include <string>
+
+// using namespace std;
+
+// int main()
+// {
+//    list<pair <string, int>> s = {{"two", 2}, {"one", 1}, {"three", 3}};
+//    s.sort( []( const pair<string,int> &a, const pair<string,int> &b ) { return a.second > b.second; } );
+
+// for ( const auto &p : s )
+// {
+//     cout << p.first << " " << p.second << endl;
+// }
+
+// }

@@ -189,7 +189,7 @@ class Robot(object):
         # stepping params
         self.alphaDir = 1
         self.betaDir = 1
-        self.angStep = 0.1 #1  # each step is 1 degrees
+        self.angStep = 1  # each step is 1 degrees
         self.alphaRelaxing = 0
         self.betaRelaxing = 0
         self.deadLockCounter = 0
@@ -1049,8 +1049,9 @@ def motionPlan():
     minSeparation = 8
     nRobots = 500
     nc = int(numpy.sqrt((nRobots * 4 - 1) / 3))
-    # nc = 11
+    nc = 25
     rg = RobotGrid(nc, minSeparation)
+    print("n robots: ", len(rg.robotList))
     throwAway(rg)
     return rg
 
@@ -1078,9 +1079,9 @@ def inspectFails(runNum):
 
 
 def reverseMove(dummy=None):
-    maxIter = 500*10
+    maxIter = 500
     saveOutput = False
-    plotOutput = True
+    plotOutput = False
     if dummy is None:
         numpy.random.seed()
     else:
@@ -1125,8 +1126,7 @@ def reverseMove(dummy=None):
             rg.alphaBeta2file(outFile)
         if plotOutput:
             # pass
-            if ii % 10 == 0:
-                rg.plotNext()
+            rg.plotNext()
         if False not in [robot.alphaBeta[1] == 180 for robot in rg.robotList]:
             print("finished!!!!")
             if saveOutput:
