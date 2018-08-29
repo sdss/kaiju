@@ -127,13 +127,15 @@ nx2Array getHexPositions(int nDia){
 
 class Robot {
 private:
-    boost_poly collideZone(std::array<double, 4>);
-    std::array<double, 4> collideCoords(double, double);
+    boost_poly getCollideZone(std::array<double, 2>, std::array<double, 2>);
+    std::array<double, 2> getXYAlongBeta(double);
 public:
     int id;
-    double xPos, yPos, alpha, beta, xTarget, yTarget;
+    double xPos, yPos, alpha, beta;
+    double sinAlpha, sinBeta, cosAlpha, cosBeta;
     boost_poly tcz, bcz;
     std::array<double, 4> tcCoords, bcCoords;
+    std::array<double, 2> xyTarget, xyAlphaArm;
     std::list<Robot *> neighbors;
     Robot (int, double, double);
     void setAlphaBeta (double, double);
@@ -159,11 +161,63 @@ void Robot::addNeighbor(Robot * rNeighbor){
     neighbors.push_back(rNeighbor);
 }
 
+std::array<double, 2> Robot::getXYAlongBeta(double xBeta){
+    // return xy global position from a distance along beta arm
+    double y = 0;
+    double x = xBeta;
+
+    // first rotate about beta
+    double x_b = cosBeta * x - sinBeta * y;
+    double y_b = sinBeta * x + cosBeta * y;
+
+    // offset by alpha arm length
+    x_b += alpha_arm_len;
+
+    // next rotate about alpha
+    double x_a = cosAlpha * x_b - sinAlpha * y_b;
+    double y_a = sinAlpha * x_b + cosAlpha * y_b;
+
+    // offset by robot's zero position
+    x_a += xPos;
+    y_a += yPos;
+
+    std::array<double, 2> outArr;
+    outArr[0] = x_a;
+    outArr[1] = y_a;
+    return outArr;
+}
+
 void Robot::setAlphaBeta(double newAlpha, double newBeta){
     alpha = newAlpha;
     beta = newBeta;
-    topCollideZone();
-    bottomCollideZone();
+    double alphaRad = alpha * M_PI / 180.0;
+    double betaRad = beta * M_PI / 180.0;
+    // precompute
+    sinAlpha = sin(alphaRad);
+    sinBeta = sin(betaRad);
+    cosAlpha = cos(alphaRad);
+    cosBeta = cos(betaRad);
+
+    // update targetXY pos (end of beta arm)
+    xyTarget = getXYAlongBeta(beta_arm_len);
+    xyAlphaArm = getXYAlongBeta(0); // could just rotate about alpha...but whatever
+
+    std::array<double, 2> tcpt1 = getXYAlongBeta(top_collide_x1);
+    std::array<double, 2> tcpt2 = getXYAlongBeta(top_collide_x2);
+    std::array<double, 2> bcpt2 = getXYAlongBeta(bottom_collide_x2);
+
+    tcCoords[0] = tcpt1[0]; // get rid of tcCoords eventually? they get printed to files
+    tcCoords[1] = tcpt1[1];
+    tcCoords[2] = tcpt2[0];
+    tcCoords[3] = tcpt2[1];
+
+    bcCoords[0] = xyAlphaArm[0];
+    bcCoords[1] = xyAlphaArm[1];
+    bcCoords[2] = bcpt2[0];
+    bcCoords[3] = bcpt2[1];
+
+    tcz = getCollideZone(tcpt1, tcpt2);
+    bcz = getCollideZone(xyAlphaArm, bcpt2);
 }
 
 void Robot::setAlphaBetaRand(){
@@ -178,65 +232,13 @@ void Robot::setXYUniform(){
     setAlphaBeta(ab[0], ab[1]);
 }
 
-std::array<double, 4> Robot::collideCoords(double betaX1, double betaX2){
-    double pt1x, pt1y, pt2x, pt2y, pt3x, pt3y, alphaRad, betaRad;
-    pt1x = betaX1;
-    pt1y = 0;
-    pt2x = betaX2;
-    pt2y = 0;
-    pt3x = beta_arm_len; // distance to fiber
-    pt3y = 0;
-    alphaRad = alpha * M_PI / 180.0;
-    betaRad = beta * M_PI / 180;
 
-    // first rotate about beta
-
-    double pt1xb = cos(betaRad) * pt1x - sin(betaRad) * pt1y;
-    double pt1yb = sin(betaRad) * pt1x + cos(betaRad) * pt1y;
-    double pt2xb = cos(betaRad) * pt2x - sin(betaRad) * pt2y;
-    double pt2yb = sin(betaRad) * pt2x + cos(betaRad) * pt2y;
-    double pt3xb = cos(betaRad) * pt3x - sin(betaRad) * pt3y;
-    double pt3yb = sin(betaRad) * pt3x + cos(betaRad) * pt3y;
-
-    // offset x by alpha arm length
-    pt1xb += alpha_arm_len;
-    pt2xb += alpha_arm_len;
-    pt3xb += alpha_arm_len;
-
-    // next rotate about alpha
-    double pt1xa = cos(alphaRad) * pt1xb - sin(alphaRad) * pt1yb;
-    double pt1ya = sin(alphaRad) * pt1xb + cos(alphaRad) * pt1yb;
-    double pt2xa = cos(alphaRad) * pt2xb - sin(alphaRad) * pt2yb;
-    double pt2ya = sin(alphaRad) * pt2xb + cos(alphaRad) * pt2yb;
-    double pt3xa = cos(alphaRad) * pt3xb - sin(alphaRad) * pt3yb;
-    double pt3ya = sin(alphaRad) * pt3xb + cos(alphaRad) * pt3yb;
-
-    // offset by robot's zero position
-    pt1xa += xPos;
-    pt2xa += xPos;
-    pt3xa += xPos;
-    pt1ya += yPos;
-    pt2ya += yPos;
-    pt3ya += yPos;
-
-    // this is written each time the funct is called. not ideal
-    // but innocuous.
-    xTarget = pt3xa;
-    yTarget = pt3ya;
-
-    std::array<double, 4> outArr;
-    outArr[0] = pt1xa;
-    outArr[1] = pt1ya;
-    outArr[2] = pt2xa;
-    outArr[3] = pt2ya;
-    return outArr;
-}
-
-boost_poly Robot::collideZone(std::array<double, 4> ptArr){
+boost_poly Robot::getCollideZone(std::array<double, 2> pt1, std::array<double, 2> pt2){
+    // pt1 and pt2 describe a line segment
     // create linestring
     linestring_t ls;
-    boost::geometry::append(ls, point(ptArr[0], ptArr[1]));
-    boost::geometry::append(ls, point(ptArr[2], ptArr[3]));
+    boost::geometry::append(ls, point(pt1[0], pt1[1]));
+    boost::geometry::append(ls, point(pt2[0], pt2[1]));
 
     // Declare output
     boost_poly result;
@@ -245,19 +247,9 @@ boost_poly Robot::collideZone(std::array<double, 4> ptArr){
     boost::geometry::buffer(ls, result,
                 distance_strategy, side_strategy,
                 join_strategy, end_strategy, circle_strategy);
-
     return result;
 }
 
-void Robot::topCollideZone(){
-    tcCoords = collideCoords(top_collide_x1, top_collide_x2);
-    tcz = collideZone(tcCoords);
-}
-
-void Robot::bottomCollideZone(){
-    bcCoords = collideCoords(bottom_collide_x1, bottom_collide_x2);
-    bcz = collideZone(bcCoords);
-}
 
 bool Robot::isCollided(){
     if (isTopCollided()){
@@ -478,7 +470,7 @@ void RobotGrid::pathGen(){
 
 int main()
 {
-    srand (time(NULL));
+    srand (0);
     RobotGrid rg (25);
     std::cout << "n robots: " << rg.allRobots.size() << std::endl;
     rg.toFile("preCollide.txt");
@@ -486,7 +478,11 @@ int main()
     rg.decollide();
     std::cout << "nCollisions " << rg.getNCollisions() << std::endl;
     rg.toFile("postCollide.txt");
+    clock_t t;
+    t = clock();
     rg.pathGen();
+    t = clock() -t;
+    std::cout << "took " << float(t)/CLOCKS_PER_SEC << " seconds" << std::endl;
     rg.toFile("pathGen.txt");
 
 }
