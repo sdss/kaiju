@@ -13,6 +13,8 @@
 
 // https://stackoverflow.com/questions/28208965/how-to-have-a-class-contain-a-list-of-pointers-to-itself
 // https://internal.sdss.org/trac/as4/wiki/FPSLayout
+// http://paulbourke.net/geometry/pointlineplane/
+// http://geomalgorithms.com/a07-_distance.html#dist3D_Segment_to_Segment()
 
 // constants
 const double buffer_distance = 2.5; // robot width is 5
@@ -274,8 +276,8 @@ bool Robot::isTopCollided(){
         if (dist > 2*(top_collide_x2 - top_collide_x1 + buffer_distance)){
             continue;
         }
-        bool tc = boost::geometry::intersects(tcz, robot->tcz);
-        if (tc){
+        bool tc = boost::geometry::disjoint(tcz, robot->tcz);
+        if (!tc){
             iAmCollided = true;
             break;
         }
@@ -292,8 +294,8 @@ bool Robot::isBottomCollided(){
         if (dist > 2*(bottom_collide_x2 - bottom_collide_x1 + buffer_distance)){
             continue;
         }
-        bool bc = boost::geometry::intersects(bcz, robot->bcz);
-        if (bc){
+        bool bc = boost::geometry::disjoint(bcz, robot->bcz);
+        if (!bc){
             iAmCollided = true;
             break;
         }
