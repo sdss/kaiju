@@ -266,6 +266,14 @@ bool Robot::isCollided(){
 bool Robot::isTopCollided(){
     bool iAmCollided = false;
     for (Robot * robot : neighbors){
+        // do inexpensive check first find midpoint of top
+        // collide coord
+        double dx = (tcCoords[0] + tcCoords[3])/2.0 - (robot->tcCoords[0] + robot->tcCoords[3])/2.0;
+        double dy = (tcCoords[1] + tcCoords[4])/2.0 - (robot->tcCoords[1] + robot->tcCoords[4])/2.0;
+        double dist = hypot(dx, dy);
+        if (dist > 2*(top_collide_x2 - top_collide_x1 + buffer_distance)){
+            continue;
+        }
         bool tc = boost::geometry::intersects(tcz, robot->tcz);
         if (tc){
             iAmCollided = true;
@@ -278,6 +286,12 @@ bool Robot::isTopCollided(){
 bool Robot::isBottomCollided(){
     bool iAmCollided = false;
     for (Robot * robot : neighbors){
+        double dx = (bcCoords[0] + bcCoords[3])/2.0 - (robot->bcCoords[0] + robot->bcCoords[3])/2.0;
+        double dy = (bcCoords[1] + bcCoords[4])/2.0 - (robot->bcCoords[1] + robot->bcCoords[4])/2.0;
+        double dist = hypot(dx, dy);
+        if (dist > 2*(bottom_collide_x2 - bottom_collide_x1 + buffer_distance)){
+            continue;
+        }
         bool bc = boost::geometry::intersects(bcz, robot->bcz);
         if (bc){
             iAmCollided = true;
