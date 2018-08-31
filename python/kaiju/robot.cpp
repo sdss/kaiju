@@ -19,6 +19,7 @@
 // constants
 const double buffer_distance = 2.5; // robot width is 5
 const double beta_arm_width = 5;
+const double collide_dist_squared = beta_arm_width * beta_arm_width;
 const int points_per_circle = 36*2;
 const double alpha_arm_len = 7.4;
 const double beta_arm_len = 15; // mm to fiber
@@ -35,110 +36,40 @@ typedef boost::multi_array<double, 2> nx2Array;
 
 #define SMALL_NUM   0.00000001 // anything that avoids division overflow
 // dot product (3D) which allows vector operations in arguments
-#define dot(u,v)   ((u).x * (v).x + (u).y * (v).y + (u).z * (v).z)
-#define norm(v)    sqrt(dot(v,v))  // norm = length of  vector
-#define d(u,v)     norm(u-v)        // distance = norm of difference
 #define abs(x)     ((x) >= 0 ? (x) : -(x))   //  absolute value
 
-class Point;
 
-class Vector {
-public:
-    float x, y, z;
-    Vector();
-    Vector(float, float, float);
-    Vector operator+(const Vector&);
-    Vector operator-(const Vector&);
-    Vector operator*(float);
-};
-
-Vector::Vector() : x(0), y(0), z(0) {}
-
-Vector::Vector(float xx, float yy, float zz){
-    x = xx;
-    y = yy;
-    z = zz;
-}
-
-Vector Vector::operator+(const Vector& v){
-    return Vector(x+v.x, y+v.y, z+v.z);
-}
-
-Vector Vector::operator-(const Vector& v){
-    return Vector(x-v.x, y-v.y, z-v.z);
-}
-
-
-Vector Vector::operator*(float scalar){
-    return Vector(x*scalar, y*scalar, z*scalar);
-}
-
-
-class Point {
-public:
-    float x,y,z;
-    Point();
-    Point(float, float, float);
-    Vector operator-(const Point&);
-    Point operator+(const Vector&);
-    Point operator-(const Vector&);
-};
-
-Point::Point() : x(0), y(0), z(0){}
-
-Point::Point(float xx, float yy, float zz){
-    x = xx;
-    y = yy;
-    z = zz;
-}
-
-Vector Point::operator-(const Point& p){
-    return Vector(x-p.x, y-p.y, z-p.z);
-}
-
-Point Point::operator+(const Vector& v){
-    return Point(x+v.x, y+v.y, z+v.z);
-}
-
-Point Point::operator-(const Vector& v){
-    return Point(x-v.x, y-v.y, z-v.z);
-}
-
-
-class Segment{
-public:
-    Point P0, P1;
-    Segment();
-    Segment(Point, Point);
-};
-
-Segment::Segment(){
-    Point P0;
-    Point P1;
-}
-
-Segment::Segment(Point pp0, Point pp1){
-    P0 = pp0;
-    P1 = pp1;
-}
-
+// Copyright 2001 softSurfer, 2012 Dan Sunday (modified by CS)
+// This code may be freely used, distributed and modified for any purpose
+// providing that this copyright notice is included with it.
+// SoftSurfer makes no warranty for this code, and cannot be held
+// liable for any real or imagined damage resulting from its use.
+// Users of this code must verify correctness for their application.
 // dist3D_Segment_to_Segment(): get the 3D minimum distance between 2 segments
 //    Input:  two 3D line segments S1 and S2
 //    Return: the shortest distance between S1 and S2
-float
-dist3D_Segment_to_Segment( Segment S1, Segment S2)
+double
+squaredDist(std::array<double, 4> segCoords1, std::array<double, 4> segCoords2)
 {
-    Vector   u = S1.P1 - S1.P0;
-    Vector   v = S2.P1 - S2.P0;
-    Vector   w = S1.P0 - S2.P0;
-    float    a = dot(u,u);         // always >= 0
-    float    b = dot(u,v);
-    float    c = dot(v,v);         // always >= 0
-    float    d = dot(u,w);
-    float    e = dot(v,w);
-    float    D = a*c - b*b;        // always >= 0
-    float    sc, sN, sD = D;       // sc = sN / sD, default sD = D >= 0
-    float    tc, tN, tD = D;       // tc = tN / tD, default tD = D >= 0
+    double   ux = segCoords1[2] - segCoords1[0];
+    double   uy = segCoords1[3] - segCoords1[1];
+
+    double   vx = segCoords2[2] - segCoords2[0];
+    double   vy = segCoords2[3] - segCoords2[1];
+
+    double   wx = segCoords2[0] - segCoords1[0];
+    double   wy = segCoords2[1] - segCoords1[1];
+
+    double   a = ux*ux + uy*uy;
+    double   b = ux*vx + uy*vy;
+    double   c = vx*vx + vy*vy;
+    double   d = ux*wx + uy*wy;
+    double   e = vx*wx + vy*wy;
+
+
+    double    D = a*c - b*b;        // always >= 0
+    double    sc, sN, sD = D;       // sc = sN / sD, default sD = D >= 0
+    double    tc, tN, tD = D;       // tc = tN / tD, default tD = D >= 0
 
     // compute the line parameters of the two closest points
     if (D < SMALL_NUM) { // the lines are almost parallel
@@ -190,11 +121,10 @@ dist3D_Segment_to_Segment( Segment S1, Segment S2)
     sc = (abs(sN) < SMALL_NUM ? 0.0 : sN / sD);
     tc = (abs(tN) < SMALL_NUM ? 0.0 : tN / tD);
 
-    // get the difference of the two closest points
-    // Vector   dP = w + (sc * u) - (tc * v);  // =  S1(sc) - S2(tc)
-    Vector   dP = w + (u * sc) - (v * tc);  // =  S1(sc) - S2(tc)
+    double dPx = wx + (ux * sc) - (vx * tc);
+    double dPy = wy + (uy * sc) - (vy * tc);
 
-    return norm(dP);   // return the closest distance
+    return dPx*dPx + dPy*dPy;   // return the closest distance squared
 }
 
 double randomSample(){
@@ -287,7 +217,6 @@ public:
     int id;
     double xPos, yPos, alpha, beta;
     double sinAlpha, sinBeta, cosAlpha, cosBeta;
-    Segment tcz, bcz;
     std::array<double, 4> tcCoords, bcCoords;
     std::array<double, 2> xyTarget, xyAlphaArm;
     std::list<Robot *> neighbors;
@@ -369,9 +298,6 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
     bcCoords[1] = xyAlphaArm[1];
     bcCoords[2] = bcpt2[0];
     bcCoords[3] = bcpt2[1];
-
-    tcz = Segment(Point(tcpt1[0], tcpt1[1], 0), Point(tcpt2[0], tcpt2[1], 0));
-    bcz = Segment(Point(xyAlphaArm[0], xyAlphaArm[1], 0), Point(bcpt2[0], bcpt2[1], 0));
 }
 
 void Robot::setAlphaBetaRand(){
@@ -403,16 +329,7 @@ bool Robot::isCollided(){
 bool Robot::isTopCollided(){
     bool iAmCollided = false;
     for (Robot * robot : neighbors){
-        // do inexpensive check first find midpoint of top
-        // collide coord
-
-        // double dx = (tcCoords[0] + tcCoords[3])/2.0 - (robot->tcCoords[0] + robot->tcCoords[3])/2.0;
-        // double dy = (tcCoords[1] + tcCoords[4])/2.0 - (robot->tcCoords[1] + robot->tcCoords[4])/2.0;
-        // double dist = hypot(dx, dy);
-        // if (dist > 2*(top_collide_x2 - top_collide_x1 + buffer_distance)){
-        //     continue;
-        // }
-        if (dist3D_Segment_to_Segment(tcz, robot->tcz) < beta_arm_width){
+        if (squaredDist(tcCoords, robot->tcCoords) < collide_dist_squared){
             iAmCollided = true;
             break;
         }
@@ -423,14 +340,7 @@ bool Robot::isTopCollided(){
 bool Robot::isBottomCollided(){
     bool iAmCollided = false;
     for (Robot * robot : neighbors){
-        // double dx = (bcCoords[0] + bcCoords[3])/2.0 - (robot->bcCoords[0] + robot->bcCoords[3])/2.0;
-        // double dy = (bcCoords[1] + bcCoords[4])/2.0 - (robot->bcCoords[1] + robot->bcCoords[4])/2.0;
-        // double dist = hypot(dx, dy);
-        // if (dist > 2*(bottom_collide_x2 - bottom_collide_x1 + buffer_distance)){
-        //     continue;
-        // }
-
-        if (dist3D_Segment_to_Segment(bcz, robot->bcz) < beta_arm_width){
+        if (squaredDist(bcCoords, robot->bcCoords) < collide_dist_squared){
             iAmCollided = true;
             break;
         }
@@ -609,9 +519,9 @@ void RobotGrid::pathGen(){
     int maxIter = 500;
     for (int ii=0; ii<maxIter; ii++){
         std::cout << "iter " << ii << std::endl;
-        char buffer[50];
-        sprintf(buffer, "step_%d.txt", ii);
-        toFile(buffer);
+        // char buffer[50];
+        // sprintf(buffer, "step_%d.txt", ii);
+        // toFile(buffer);
         // allRobots.sort(robotSort);
         for (Robot &r: allRobots){
             r.stepTowardFold();
