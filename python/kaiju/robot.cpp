@@ -48,8 +48,7 @@ typedef boost::multi_array<double, 2> nx2Array;
 // dist3D_Segment_to_Segment(): get the 3D minimum distance between 2 segments
 //    Input:  two 3D line segments S1 and S2
 //    Return: the shortest distance between S1 and S2
-double
-squaredDist(std::array<double, 4> segCoords1, std::array<double, 4> segCoords2)
+double squaredDist(const std::array<double, 4> & segCoords1, const std::array<double, 4> & segCoords2)
 {
     double   ux = segCoords1[2] - segCoords1[0];
     double   uy = segCoords1[3] - segCoords1[1];
@@ -57,8 +56,8 @@ squaredDist(std::array<double, 4> segCoords1, std::array<double, 4> segCoords2)
     double   vx = segCoords2[2] - segCoords2[0];
     double   vy = segCoords2[3] - segCoords2[1];
 
-    double   wx = segCoords2[0] - segCoords1[0];
-    double   wy = segCoords2[1] - segCoords1[1];
+    double   wx = segCoords1[0] - segCoords2[0];
+    double   wy = segCoords1[1] - segCoords2[1];
 
     double   a = ux*ux + uy*uy;
     double   b = ux*vx + uy*vy;
@@ -519,9 +518,9 @@ void RobotGrid::pathGen(){
     int maxIter = 500;
     for (int ii=0; ii<maxIter; ii++){
         std::cout << "iter " << ii << std::endl;
-        // char buffer[50];
-        // sprintf(buffer, "step_%d.txt", ii);
-        // toFile(buffer);
+        char buffer[50];
+        sprintf(buffer, "step_%d.txt", ii);
+        toFile(buffer);
         // allRobots.sort(robotSort);
         for (Robot &r: allRobots){
             r.stepTowardFold();

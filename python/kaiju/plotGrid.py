@@ -6,6 +6,7 @@ import sys
 from functools import partial
 import shutil
 import os
+import multiprocessing
 
 import numpy
 import matplotlib
@@ -112,14 +113,15 @@ def plotGrid(robotList, title=None, xlim=None, ylim=None, save=True):
 
 
 if __name__ == "__main__":
-    i = 0
-    while True:
-        filename = "step_%i.txt" % i
-        if os.path.exists(filename):
-            roboList = getRobotList(filename)
-            zeropad = ("%i" % i).zfill(4)
-            plotGrid(roboList, xlim=[-300,300], ylim=[-300,300], title="step_%s.png" % zeropad, save=True)
-        else:
-            break
-        i += 1
+    def doGrid(imgNum):
+        filename = "step_%i.txt" % imgNum
+        roboList = getRobotList(filename)
+        zeropad = ("%i" % imgNum).zfill(4)
+        plotGrid(roboList, xlim=[-300,300], ylim=[-300,300], title="step_%s.png" % zeropad, save=True)
+
+    nImg = 500
+    imgNums = range(nImg)
+    p = multiprocessing.Pool(10)
+    p.map(doGrid, imgNums)
+
 
