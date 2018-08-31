@@ -19,6 +19,9 @@
 //            {Point P0;  Vector v;}
 //===================================================================
 
+#include <iostream>
+#include <stdio.h>      /* printf, scanf, puts, NULL */
+#include <cmath>
 
 #define SMALL_NUM   0.00000001 // anything that avoids division overflow
 // dot product (3D) which allows vector operations in arguments
@@ -27,8 +30,87 @@
 #define d(u,v)     norm(u-v)        // distance = norm of difference
 #define abs(x)     ((x) >= 0 ? (x) : -(x))   //  absolute value
 
+class Point;
+
+class Vector {
+public:
+    float x, y, z;
+    Vector();
+    Vector(float, float, float);
+    Vector operator+(const Vector&);
+    Vector operator-(const Vector&);
+    Vector operator*(float);
+};
+
+Vector::Vector() : x(0), y(0), z(0) {}
+
+Vector::Vector(float xx, float yy, float zz){
+    x = xx;
+    y = yy;
+    z = zz;
+}
+
+Vector Vector::operator+(const Vector& v){
+    return Vector(x+v.x, y+v.y, z+v.z);
+}
+
+Vector Vector::operator-(const Vector& v){
+    return Vector(x-v.x, y-v.y, z-v.z);
+}
 
 
+Vector Vector::operator*(float scalar){
+    return Vector(x*scalar, y*scalar, z*scalar);
+}
+
+
+class Point {
+public:
+    float x,y,z;
+    Point();
+    Point(float, float, float);
+    Vector operator-(const Point&);
+    Point operator+(const Vector&);
+    Point operator-(const Vector&);
+};
+
+Point::Point() : x(0), y(0), z(0){}
+
+Point::Point(float xx, float yy, float zz){
+    x = xx;
+    y = yy;
+    z = zz;
+}
+
+Vector Point::operator-(const Point& p){
+    return Vector(x-p.x, y-p.y, z-p.z);
+}
+
+Point Point::operator+(const Vector& v){
+    return Point(x+v.x, y+v.y, z+v.z);
+}
+
+Point Point::operator-(const Vector& v){
+    return Point(x-v.x, y-v.y, z-v.z);
+}
+
+
+class Segment{
+public:
+    Point P0, P1;
+    Segment();
+    Segment(Point, Point);
+};
+
+Segment::Segment(){
+    Point P0;
+    Point P1;
+}
+
+Segment::Segment(Point pp0, Point pp1){
+    P0 = pp0;
+    P1 = pp1;
+}
 
 // dist3D_Segment_to_Segment(): get the 3D minimum distance between 2 segments
 //    Input:  two 3D line segments S1 and S2
@@ -99,7 +181,18 @@ dist3D_Segment_to_Segment( Segment S1, Segment S2)
     tc = (abs(tN) < SMALL_NUM ? 0.0 : tN / tD);
 
     // get the difference of the two closest points
-    Vector   dP = w + (sc * u) - (tc * v);  // =  S1(sc) - S2(tc)
+    // Vector   dP = w + (sc * u) - (tc * v);  // =  S1(sc) - S2(tc)
+    Vector   dP = w + (u * sc) - (v * tc);  // =  S1(sc) - S2(tc)
 
     return norm(dP);   // return the closest distance
+}
+
+int main(){
+    Point P1 = Point(1,2,0);
+    Point P2 = Point(5,2,0);
+    Point P3 = Point(0,0,0);
+    Point P4 = Point(-4,8,0);
+    Segment Seg1 = Segment(P1, P2);
+    Segment Seg2 = Segment(P3, P4);
+    std::cout << "dist between segs " << dist3D_Segment_to_Segment(Seg1, Seg2) << std::endl;
 }

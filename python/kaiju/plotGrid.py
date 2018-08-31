@@ -114,20 +114,12 @@ def plotGrid(robotList, title=None, xlim=None, ylim=None, save=True):
 if __name__ == "__main__":
     i = 0
     while True:
-        if os.path.exists("step_%i.txt" % i):
-            roboList = getRobotList("preCollide.txt")
+        filename = "step_%i.txt" % i
+        if os.path.exists(filename):
+            roboList = getRobotList(filename)
             zeropad = ("%i" % i).zfill(4)
-            plotGrid(roboList, title="step_%s.png" % zeropad, save=True)
+            plotGrid(roboList, xlim=[-300,300], ylim=[-300,300], title="step_%s.png" % zeropad, save=True)
         else:
             break
         i += 1
-
-
-
-
-
-
-
-
-
 
