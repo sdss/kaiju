@@ -17,14 +17,15 @@
 // http://geomalgorithms.com/a07-_distance.html#dist3D_Segment_to_Segment()
 
 // constants
-const double buffer_distance = 2.5; // robot width is 5
+const double buffer_distance = 2.6; // robot width is 5
 const double beta_arm_width = 5;
 const double collide_dist_squared = beta_arm_width * beta_arm_width;
 const int points_per_circle = 36*2;
 const double alpha_arm_len = 7.4;
 const double beta_arm_len = 15; // mm to fiber
 const double top_collide_x1 = 8.187;
-const double top_collide_x2 = 16.0;
+// const double top_collide_x2 = 16.0;
+const double top_collide_x2 = 19.3 - 3 - buffer_distance;
 const double bottom_collide_x1 = 0;
 const double bottom_collide_x2 = 10.689;
 const double pitch = 22.4;
@@ -432,9 +433,32 @@ bool robotSort(const Robot& robot1, const Robot& robot2){
     return (robot1.alpha < robot2.alpha);
 }
 
+// return if robot1 is less than robot2
+// bool robotSort(const Robot & robot1, const Robot & robot2){
+//     if (robot2.beta == 180 and robot1.beta < 180){
+//         return true;
+//     }
+//     if (robot1.alpha < robot2.alpha){
+//         return true;
+//     }
+//     else {
+//         return false;
+//     }
+// }
+
+// sort by total steps to go
+// bool robotSort(const Robot & robot1, const Robot & robot2){
+//     double robot1dist = (360 - robot1.alpha)*(360 - robot1.alpha)*(180 - robot1.beta);
+//     double robot2dist = (360 - robot2.alpha)*(360 - robot1.alpha)*(180 - robot2.beta);
+//     // if robot 1 dist is greater than robot2 2 return
+//     // true, we want this robot placed in front
+//     return robot1dist > robot2dist;
+// }
+
 class RobotGrid {
 public:
     int nRobots;
+    bool didFail;
     std::list<Robot> allRobots;
     RobotGrid (int);
     void decollide();
@@ -516,53 +540,59 @@ void RobotGrid::pathGen(){
     // robots closest to alpha = 0 are at highest risk with extended
     // betas for getting locked, so try to move those first
     int maxIter = 500;
+    didFail = true;
     for (int ii=0; ii<maxIter; ii++){
-        std::cout << "iter " << ii << std::endl;
-        char buffer[50];
-        sprintf(buffer, "step_%d.txt", ii);
-        toFile(buffer);
-        // allRobots.sort(robotSort);
+        bool allFolded = true;
+        // std::cout << "iter " << ii << std::endl;
+        // char buffer[50];
+        // sprintf(buffer, "step_%d.txt", ii);
+        // toFile(buffer);
+        allRobots.sort(robotSort);
         for (Robot &r: allRobots){
+            // std::cout << "alpha beta " << r.alpha << " " << r.beta << std::endl;
             r.stepTowardFold();
+            if (allFolded and r.beta!=180){
+                allFolded = false;
+            }
         }
+        // std::cout << "------------------" << std::endl;
+        // std::cout << "------------------" << std::endl;
+        if (allFolded){
+            didFail = false;
+            break;
+        }
+        // exit of all robots
     }
+}
+
+RobotGrid doOne(){
+    RobotGrid rg (25);
+    rg.decollide();
+    rg.pathGen();
+    return rg;
 }
 
 int main()
 {
-    srand (0);
-    RobotGrid rg (25);
-    std::cout << "n robots: " << rg.allRobots.size() << std::endl;
-    rg.toFile("preCollide.txt");
-    std::cout << "nCollisions " << rg.getNCollisions() << std::endl;
-    rg.decollide();
-    std::cout << "nCollisions " << rg.getNCollisions() << std::endl;
-    rg.toFile("postCollide.txt");
-    clock_t t;
-    t = clock();
-    rg.pathGen();
-    t = clock() -t;
-    std::cout << "took " << float(t)/CLOCKS_PER_SEC << " seconds" << std::endl;
-    rg.toFile("pathGen.txt");
+    int nFails = 0;
+    int maxTries = 100;
+    char buffer[50];
+    srand(0);
+    for (int ii=0; ii<maxTries; ii++){
+        std::cout << "trial " << ii << std::endl;
+        RobotGrid rg = doOne();
+        if(rg.didFail){
+            sprintf(buffer, "fail_%d.txt", ii);
+            rg.toFile(buffer);
+            nFails++;
+        }
+    }
+    std::cout << "nFails " << nFails << std::endl;
 
 }
 
-
-// example: https://stackoverflow.com/questions/22281962/c11-sorting-list-using-lambda
-// #include <iostream>
-// #include <list>
-// #include <string>
-
-// using namespace std;
-
 // int main()
 // {
-//    list<pair <string, int>> s = {{"two", 2}, {"one", 1}, {"three", 3}};
-//    s.sort( []( const pair<string,int> &a, const pair<string,int> &b ) { return a.second > b.second; } );
-
-// for ( const auto &p : s )
-// {
-//     cout << p.first << " " << p.second << endl;
+//     RobotGrid rg = doOne();
 // }
 
-// }
