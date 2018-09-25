@@ -109,7 +109,7 @@ def plotGrid(robotList, title=None, xlim=None, ylim=None, save=True):
     if ylim:
         plt.ylim(ylim)
     if save:
-        plt.savefig(title)
+        plt.savefig(title, dpi=500)
         plt.close()
 
 def doGrid(filename):

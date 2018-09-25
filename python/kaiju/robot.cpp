@@ -1,10 +1,10 @@
-// g++ compiler
-
+// clang++ --std=c++11 robot.cpp
 #include <iostream>
 #include <stdio.h>      /* printf, scanf, puts, NULL */
 #include <stdlib.h>     /* srand, rand */
 #include <time.h>       /* time */
 #include <cmath>
+#include <thread>
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
@@ -32,6 +32,7 @@ const double pitch = 22.4;
 const double min_reach = beta_arm_len - alpha_arm_len;
 const double max_reach = beta_arm_len + alpha_arm_len;
 const double ang_step = 1; // step 1 degree
+const int maxPathIter = 500;
 
 typedef boost::multi_array<double, 2> nx2Array;
 
@@ -49,7 +50,7 @@ typedef boost::multi_array<double, 2> nx2Array;
 // dist3D_Segment_to_Segment(): get the 3D minimum distance between 2 segments
 //    Input:  two 3D line segments S1 and S2
 //    Return: the shortest distance between S1 and S2
-double squaredDist(const std::array<double, 4> & segCoords1, const std::array<double, 4> & segCoords2)
+double segSquaredDist(const std::array<double, 4> & segCoords1, const std::array<double, 4> & segCoords2)
 {
     double   ux = segCoords1[2] - segCoords1[0];
     double   uy = segCoords1[3] - segCoords1[1];
@@ -219,6 +220,7 @@ public:
     double sinAlpha, sinBeta, cosAlpha, cosBeta;
     std::array<double, 4> tcCoords, bcCoords;
     std::array<double, 2> xyTarget, xyAlphaArm;
+    std::array<double, maxPathIter> alphaPath, betaPath;
     std::list<Robot *> neighbors;
     Robot (int, double, double);
     void setAlphaBeta (double, double);
@@ -231,13 +233,25 @@ public:
     bool isBottomCollided();
     void decollide();
     void setXYUniform();
-    void stepTowardFold();
+    void stepTowardFold(int stepNum);
+    void pathToFile(int nSteps);
 };
 
 Robot::Robot(int myid, double myxPos, double myyPos) {
     xPos = myxPos;
     yPos = myyPos;
     id = myid;
+}
+
+void Robot::pathToFile(int nSteps){
+    FILE * pFile;
+    char buffer[50];
+    sprintf(buffer, "path_%04d.txt", id);
+    pFile = fopen(buffer, "w");
+    for (int ii=0;ii<nSteps;ii++){
+        fprintf(pFile, "%.8f %.8f\n", alphaPath[ii], betaPath[ii]);
+    }
+    fclose(pFile);
 }
 
 void Robot::addNeighbor(Robot * rNeighbor){
@@ -329,7 +343,7 @@ bool Robot::isCollided(){
 bool Robot::isTopCollided(){
     bool iAmCollided = false;
     for (Robot * robot : neighbors){
-        if (squaredDist(tcCoords, robot->tcCoords) < collide_dist_squared){
+        if (segSquaredDist(tcCoords, robot->tcCoords) < collide_dist_squared){
             iAmCollided = true;
             break;
         }
@@ -340,7 +354,7 @@ bool Robot::isTopCollided(){
 bool Robot::isBottomCollided(){
     bool iAmCollided = false;
     for (Robot * robot : neighbors){
-        if (squaredDist(bcCoords, robot->bcCoords) < collide_dist_squared){
+        if (segSquaredDist(bcCoords, robot->bcCoords) < collide_dist_squared){
             iAmCollided = true;
             break;
         }
@@ -359,11 +373,13 @@ void Robot::decollide(){
     }
 }
 
-void Robot::stepTowardFold(){
+void Robot::stepTowardFold(int stepNum){
     double currAlpha = alpha;
     double currBeta = beta;
     if (currBeta==180 and currAlpha==0){
         // done folding don't move
+        alphaPath[stepNum] = currAlpha;
+        betaPath[stepNum] = currBeta;
         return;
     }
     int nMoves = 8; // total number of moves to try
@@ -419,6 +435,8 @@ void Robot::stepTowardFold(){
             continue;
         }
         setAlphaBeta(nextAlpha, nextBeta);
+        alphaPath[stepNum] = nextAlpha;
+        betaPath[stepNum] = nextBeta;
         if (!isCollided()){
             return;
         }
@@ -427,10 +445,31 @@ void Robot::stepTowardFold(){
     // no move options worked,
     // settle for a non-move
     setAlphaBeta(currAlpha, currBeta);
+    alphaPath[stepNum] = currAlpha;
+    betaPath[stepNum] = currBeta;
 }
 
 bool robotSort(const Robot& robot1, const Robot& robot2){
-    return (robot1.alpha < robot2.alpha);
+    if (robot1.beta == 180.0 and robot2.beta < 180.0){
+        return false;
+    }
+    else if (robot1.beta < 180.0 and robot2.beta == 180.0) {
+        return true;
+    }
+
+    // if (robot1.alpha == 0 and robot2.alpha > 0){
+    //     return true;
+    // }
+
+    // if (robot1.alpha > 0 and robot2.alpha == 0){
+    //     return false;
+    // }
+
+
+    // steps to go
+    double r1steps = robot1.alpha + 180 - robot1.beta;
+    double r2steps = robot2.alpha + 180 - robot2.beta;
+    return (r1steps > r2steps);
 }
 
 // return if robot1 is less than robot2
@@ -459,7 +498,8 @@ class RobotGrid {
 public:
     int nRobots;
     bool didFail;
-    std::list<Robot> allRobots;
+    int nSteps;
+    double xFocalMax, yFocalMax, xFocalMin, yFocalMin;
     RobotGrid (int);
     void decollide();
     int getNCollisions();
@@ -471,11 +511,34 @@ RobotGrid::RobotGrid(int nDia){
     // nDia is number of robots along equator of grid
     nx2Array xyHexPos = getHexPositions(nDia);
     nRobots = boost::size(xyHexPos);
-    // populate list of robots
+    // populate list of robots and determine xyFocalBounds
+    xFocalMax, yFocalMax = -1e9
+    xFocalMin, yFocalMin = 1e9
+    double xPos, yPos
     for (int ii=0; ii<nRobots; ii++){
-        Robot robot(ii, xyHexPos[ii][0], xyHexPos[ii][1]);
+        xPos = xyHexPos[ii][0];
+        yPos = xyHexPos[ii][1];
+        if (xPos < xFocalMin){
+            xFocalMin = xPos;
+        }
+        if (yPos < yFocalMin){
+            yFocalMin = yPos;
+        }
+        if (xPos > xFocalMax){
+            xFocalMax = xPos;
+        }
+        if (yPos > yFocalMax){
+            yFocalMax = yPos;
+        }
+        Robot robot(ii, xPos, yPos);
         allRobots.push_back(robot);
+
     }
+    // add in robot reach to xyFocalBox
+    xFocalMax += max_reach;
+    yFocalMax += max_reach;
+    xFocalMin -= max_reach;
+    yFocalMin -= max_reach;
     // for each robot, give it access to its neighbors
     // and initialze to random alpha betas
     for (Robot &r1 : allRobots){
@@ -495,6 +558,7 @@ RobotGrid::RobotGrid(int nDia){
     }
 
 }
+
 
 void RobotGrid::decollide(){
     // iterate over robots and resolve collisions
@@ -539,9 +603,9 @@ void RobotGrid::pathGen(){
     // first prioritize robots based on their alpha positions
     // robots closest to alpha = 0 are at highest risk with extended
     // betas for getting locked, so try to move those first
-    int maxIter = 500;
     didFail = true;
-    for (int ii=0; ii<maxIter; ii++){
+    int ii;
+    for (ii=0; ii<maxPathIter; ii++){
         bool allFolded = true;
         // std::cout << "iter " << ii << std::endl;
         // char buffer[50];
@@ -550,7 +614,7 @@ void RobotGrid::pathGen(){
         allRobots.sort(robotSort);
         for (Robot &r: allRobots){
             // std::cout << "alpha beta " << r.alpha << " " << r.beta << std::endl;
-            r.stepTowardFold();
+            r.stepTowardFold(ii);
             if (allFolded and r.beta!=180){
                 allFolded = false;
             }
@@ -563,6 +627,7 @@ void RobotGrid::pathGen(){
         }
         // exit of all robots
     }
+    nSteps = ii;
 }
 
 RobotGrid doOne(){
@@ -572,27 +637,81 @@ RobotGrid doOne(){
     return rg;
 }
 
-int main()
-{
-    int nFails = 0;
-    int maxTries = 100;
+void doOneThread(int threadNum){
+    int maxIter = 100;
+    int seed = threadNum * maxIter;
     char buffer[50];
-    srand(0);
-    for (int ii=0; ii<maxTries; ii++){
-        std::cout << "trial " << ii << std::endl;
-        RobotGrid rg = doOne();
-        if(rg.didFail){
-            sprintf(buffer, "fail_%d.txt", ii);
+    for (int ii = 0; ii<maxIter; ii++){
+        std::cout << "seed " << seed << std::endl;
+        srand(seed);
+        RobotGrid rg (25);
+        rg.decollide();
+        rg.pathGen();
+        if (rg.didFail){
+            sprintf(buffer, "fail_%04d.txt", seed);
             rg.toFile(buffer);
-            nFails++;
         }
+        seed++;
     }
-    std::cout << "nFails " << nFails << std::endl;
 
 }
 
+// int main(){
+//     int maxIter = 1000;
+//     char buffer[50];
+//     for (int ii = 0; ii<maxIter; ii++){
+//         std::cout << "seed " << ii << std::endl;
+//         srand(ii);
+//         RobotGrid rg (25);
+//         rg.decollide();
+//         rg.pathGen();
+//         sprintf(buffer, "end_%04d.txt", ii);
+//         rg.toFile(buffer);
+//     }
+// }
+
 // int main()
 // {
-//     RobotGrid rg = doOne();
+//     int nThreads = 10;
+//     std::thread t[10];
+//     clock_t tStart;
+//     clock_t tEnd;
+//     tStart = clock();
+//     for (int i = 0; i<10; ++i){
+//         t[i] = std::thread(doOneThread, i);
+//     }
+//     for (int i=0; i<10; ++i){
+//         t[i].join();
+//     }
+//     tEnd = clock();
+//     std::cout << "time took: " << (double)(tEnd - tStart)/CLOCKS_PER_SEC << std::endl;
 // }
+
+// int main()
+// {
+//     int nFails = 0;
+//     int maxTries = 500;
+//     char buffer[50];
+//     for (int ii=0; ii<maxTries; ii++){
+//         srand(ii);
+//         std::cout << "trial " << ii << std::endl;
+//         RobotGrid rg = doOne();
+//         if(rg.didFail){
+//             sprintf(buffer, "fail_%d.txt", ii);
+//             rg.toFile(buffer);
+//             nFails++;
+//         }
+//     }
+//     std::cout << "nFails " << nFails << std::endl;
+//
+// }
+
+int main()
+{
+    srand(0);
+    RobotGrid rg = doOne();
+    for (Robot &robot : rg.allRobots){
+        robot.pathToFile(rg.nSteps);
+    }
+}
 
