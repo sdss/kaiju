@@ -10,6 +10,7 @@
 #include <boost/geometry/geometries/polygon.hpp>
 #include "boost/multi_array.hpp"
 #include <boost/range.hpp>
+#include <eigen3/Eigen/Dense>
 
 // https://stackoverflow.com/questions/28208965/how-to-have-a-class-contain-a-list-of-pointers-to-itself
 // https://internal.sdss.org/trac/as4/wiki/FPSLayout
@@ -17,7 +18,7 @@
 // http://geomalgorithms.com/a07-_distance.html#dist3D_Segment_to_Segment()
 
 // constants
-const double buffer_distance = 2.6; // robot width is 5
+const double buffer_distance = 2.5; // robot width is 5
 const double beta_arm_width = 5;
 const double collide_dist_squared = beta_arm_width * beta_arm_width;
 const int points_per_circle = 36*2;
@@ -500,6 +501,7 @@ public:
     bool didFail;
     int nSteps;
     double xFocalMax, yFocalMax, xFocalMin, yFocalMin;
+    std::list<Robot> allRobots;
     RobotGrid (int);
     void decollide();
     int getNCollisions();
@@ -512,9 +514,9 @@ RobotGrid::RobotGrid(int nDia){
     nx2Array xyHexPos = getHexPositions(nDia);
     nRobots = boost::size(xyHexPos);
     // populate list of robots and determine xyFocalBounds
-    xFocalMax, yFocalMax = -1e9
-    xFocalMin, yFocalMin = 1e9
-    double xPos, yPos
+    xFocalMax, yFocalMax = -1e9;
+    xFocalMin, yFocalMin = 1e9;
+    double xPos, yPos;
     for (int ii=0; ii<nRobots; ii++){
         xPos = xyHexPos[ii][0];
         yPos = xyHexPos[ii][1];
@@ -586,7 +588,7 @@ int RobotGrid::getNCollisions(){
 void RobotGrid::toFile(const char* filename){
     FILE * pFile;
     pFile = fopen(filename, "w");
-    fprintf(pFile, "# robotID, xPos, yPos, alpha, beta, tcx1, tcy1, tcx2, tcy2, bcx1, bcy1, bcx2, bcy2, isTopCollided, isBottomCollided\n");
+    fprintf(pFile, "# robotID, xPos, yPos, alpha, beta, tcx1, tcy1, tcx2, tcy2, bcx1, bcy1, bcx2, bcy2, isTopCollided, isBottomCollided (step=%d)\n", nSteps);
     for (Robot &r : allRobots){
         fprintf(pFile,
             "%i, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %i, %i\n",
@@ -638,7 +640,7 @@ RobotGrid doOne(){
 }
 
 void doOneThread(int threadNum){
-    int maxIter = 100;
+    int maxIter = 200;
     int seed = threadNum * maxIter;
     char buffer[50];
     for (int ii = 0; ii<maxIter; ii++){
@@ -647,8 +649,8 @@ void doOneThread(int threadNum){
         RobotGrid rg (25);
         rg.decollide();
         rg.pathGen();
-        if (rg.didFail){
-            sprintf(buffer, "fail_%04d.txt", seed);
+        if (!rg.didFail){
+            sprintf(buffer, "success_%04d.txt", seed);
             rg.toFile(buffer);
         }
         seed++;
