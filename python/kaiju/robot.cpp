@@ -28,7 +28,7 @@ const double top_collide_x1 = 8.187;
 // const double top_collide_x2 = 16.0;
 const double top_collide_x2 = 19.3 - 3 - buffer_distance;
 const double bottom_collide_x1 = 0;
-const double bottom_collide_x2 = 10.689;
+// const double bottom_collide_x2 = 10.689;
 const double pitch = 22.4;
 const double min_reach = beta_arm_len - alpha_arm_len;
 const double max_reach = beta_arm_len + alpha_arm_len;
@@ -219,7 +219,7 @@ public:
     int id;
     double xPos, yPos, alpha, beta;
     double sinAlpha, sinBeta, cosAlpha, cosBeta;
-    std::array<double, 4> tcCoords, bcCoords;
+    std::array<double, 4> tcCoords; //, bcCoords;
     std::array<double, 2> xyTarget, xyAlphaArm;
     std::array<double, maxPathIter> alphaPath, betaPath;
     std::list<Robot *> neighbors;
@@ -231,7 +231,7 @@ public:
     void bottomCollideZone();
     bool isCollided();
     bool isTopCollided();
-    bool isBottomCollided();
+    // bool isBottomCollided();
     void decollide();
     void setXYUniform();
     void stepTowardFold(int stepNum);
@@ -302,17 +302,17 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
 
     std::array<double, 2> tcpt1 = getXYAlongBeta(top_collide_x1);
     std::array<double, 2> tcpt2 = getXYAlongBeta(top_collide_x2);
-    std::array<double, 2> bcpt2 = getXYAlongBeta(bottom_collide_x2);
+    // std::array<double, 2> bcpt2 = getXYAlongBeta(bottom_collide_x2);
 
     tcCoords[0] = tcpt1[0]; // get rid of tcCoords eventually? they get printed to files
     tcCoords[1] = tcpt1[1];
     tcCoords[2] = tcpt2[0];
     tcCoords[3] = tcpt2[1];
 
-    bcCoords[0] = xyAlphaArm[0];
-    bcCoords[1] = xyAlphaArm[1];
-    bcCoords[2] = bcpt2[0];
-    bcCoords[3] = bcpt2[1];
+    // bcCoords[0] = xyAlphaArm[0];
+    // bcCoords[1] = xyAlphaArm[1];
+    // bcCoords[2] = bcpt2[0];
+    // bcCoords[3] = bcpt2[1];
 }
 
 void Robot::setAlphaBetaRand(){
@@ -333,9 +333,9 @@ bool Robot::isCollided(){
     if (isTopCollided()){
         return true;
     }
-    else if (isBottomCollided()){
-        return true;
-    }
+    // else if (isBottomCollided()){
+    //     return true;
+    // }
     else {
         return false;
     }
@@ -352,16 +352,16 @@ bool Robot::isTopCollided(){
     return iAmCollided;
 }
 
-bool Robot::isBottomCollided(){
-    bool iAmCollided = false;
-    for (Robot * robot : neighbors){
-        if (segSquaredDist(bcCoords, robot->bcCoords) < collide_dist_squared){
-            iAmCollided = true;
-            break;
-        }
-    }
-    return iAmCollided;
-}
+// bool Robot::isBottomCollided(){
+//     bool iAmCollided = false;
+//     for (Robot * robot : neighbors){
+//         if (segSquaredDist(bcCoords, robot->bcCoords) < collide_dist_squared){
+//             iAmCollided = true;
+//             break;
+//         }
+//     }
+//     return iAmCollided;
+// }
 
 void Robot::decollide(){
     // randomly replace alpha beta values until collisions vanish
@@ -594,8 +594,9 @@ void RobotGrid::toFile(const char* filename){
             "%i, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %i, %i\n",
             r.id, r.xPos, r.yPos, r.alpha, r.beta,
             r.tcCoords[0], r.tcCoords[1], r.tcCoords[2], r.tcCoords[3],
-            r.bcCoords[0], r.bcCoords[1], r.bcCoords[2], r.bcCoords[3],
-            r.isTopCollided(), r.isBottomCollided()
+            // r.bcCoords[0], r.bcCoords[1], r.bcCoords[2], r.bcCoords[3],
+            -999.0, -999.0, -999.0, -999.0,
+            r.isTopCollided(), 0
         );
     }
     fclose(pFile);
