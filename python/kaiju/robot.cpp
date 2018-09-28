@@ -5,11 +5,8 @@
 #include <time.h>       /* time */
 #include <cmath>
 #include <thread>
-#include <boost/geometry.hpp>
-#include <boost/geometry/geometries/point_xy.hpp>
-#include <boost/geometry/geometries/polygon.hpp>
-#include "boost/multi_array.hpp"
-#include <boost/range.hpp>
+#include <array>
+#include <list>
 #include <eigen3/Eigen/Dense>
 
 // https://stackoverflow.com/questions/28208965/how-to-have-a-class-contain-a-list-of-pointers-to-itself
@@ -34,8 +31,6 @@ const double min_reach = beta_arm_len - alpha_arm_len;
 const double max_reach = beta_arm_len + alpha_arm_len;
 const double ang_step = 1; // step 1 degree
 const int maxPathIter = 500;
-
-typedef boost::multi_array<double, 2> nx2Array;
 
 #define SMALL_NUM   0.00000001 // anything that avoids division overflow
 // dot product (3D) which allows vector operations in arguments
@@ -169,13 +164,13 @@ std::array<double, 2> sampleAnnulus(){
     return outArr;
 }
 
-nx2Array getHexPositions(int nDia){
+Eigen::MatrixXd getHexPositions(int nDia){
     // returns a 2d array populated with xy positions
     // for a hex packed grid
     // nDia must be odd (not caught)
     int nHex = 0.25*(3*nDia*nDia + 1);
     int nEdge = 0.5*(nDia + 1);
-    nx2Array A(boost::extents[nHex][2]);
+    Eigen::MatrixXd A(nHex, 2);
     double vertShift = sin(60*M_PI/180.0)*pitch;
     double horizShift = cos(60*M_PI/180.0)*pitch;
     int hexInd = 0;
@@ -188,8 +183,8 @@ nx2Array getHexPositions(int nDia){
     // first fill in equator
     // 0,0 is center
     for (int ii = 0; ii < nDia; ii++){
-        A[hexInd][0] = nextX;
-        A[hexInd][1] = nextY;
+        A(hexInd,0) = nextX;
+        A(hexInd, 1) = nextY;
         nextX += pitch;
         hexInd++;
     }
@@ -199,11 +194,11 @@ nx2Array getHexPositions(int nDia){
         nextY = row * vertShift;
         nextX = xStart + row * horizShift;
         for (int jj = 0; jj < nDia - row; jj++){
-            A[hexInd][0] = nextX;
-            A[hexInd][1] = nextY;
+            A(hexInd, 0) = nextX;
+            A(hexInd, 1) = nextY;
             hexInd++;
-            A[hexInd][0] = nextX;
-            A[hexInd][1] = -1*nextY;
+            A(hexInd, 0) = nextX;
+            A(hexInd, 1) = -1*nextY;
             hexInd++;
             nextX += pitch;
         }
@@ -385,39 +380,39 @@ void Robot::stepTowardFold(int stepNum){
     }
     int nMoves = 8; // total number of moves to try
     // build a list of alpha and beta combos to try
-    nx2Array alphaBetaArr(boost::extents[nMoves][2]);
+    Eigen::MatrixXd alphaBetaArr(nMoves, 2);
 
     // beta folding
-    alphaBetaArr[0][0] = currAlpha - ang_step;
-    alphaBetaArr[0][1] = currBeta + ang_step;
+    alphaBetaArr(0, 0) = currAlpha - ang_step;
+    alphaBetaArr(0, 1) = currBeta + ang_step;
 
-    alphaBetaArr[1][0] = currAlpha;
-    alphaBetaArr[1][1] = currBeta + ang_step;
+    alphaBetaArr(1, 0) = currAlpha;
+    alphaBetaArr(1, 1) = currBeta + ang_step;
 
-    alphaBetaArr[2][0] = currAlpha + ang_step;
-    alphaBetaArr[2][1] = currBeta + ang_step;
+    alphaBetaArr(2, 0) = currAlpha + ang_step;
+    alphaBetaArr(2, 1) = currBeta + ang_step;
 
     // beta static
-    alphaBetaArr[3][0] = currAlpha - ang_step;
-    alphaBetaArr[3][1] = currBeta;
+    alphaBetaArr(3, 0) = currAlpha - ang_step;
+    alphaBetaArr(3, 1) = currBeta;
 
-    alphaBetaArr[4][0] = currAlpha + ang_step;
-    alphaBetaArr[4][1] = currBeta;
+    alphaBetaArr(4, 0) = currAlpha + ang_step;
+    alphaBetaArr(4, 1) = currBeta;
 
     // beta unfolding
-    alphaBetaArr[5][0] = currAlpha - ang_step;
-    alphaBetaArr[5][1] = currBeta - ang_step;
+    alphaBetaArr(5, 0) = currAlpha - ang_step;
+    alphaBetaArr(5, 1) = currBeta - ang_step;
 
-    alphaBetaArr[6][0] = currAlpha;
-    alphaBetaArr[6][1] = currBeta - ang_step;
+    alphaBetaArr(6, 0) = currAlpha;
+    alphaBetaArr(6, 1) = currBeta - ang_step;
 
-    alphaBetaArr[7][0] = currAlpha + ang_step;
-    alphaBetaArr[7][1] = currBeta - ang_step;
+    alphaBetaArr(7, 0) = currAlpha + ang_step;
+    alphaBetaArr(7, 1) = currBeta - ang_step;
 
     // begin trying options pick first that works
     for (int ii=0; ii<nMoves; ii++){
-        double nextAlpha = alphaBetaArr[ii][0];
-        double nextBeta = alphaBetaArr[ii][1];
+        double nextAlpha = alphaBetaArr(ii, 0);
+        double nextBeta = alphaBetaArr(ii, 1);
         if (nextAlpha > 360){
             nextAlpha = 360;
         }
@@ -511,15 +506,16 @@ public:
 
 RobotGrid::RobotGrid(int nDia){
     // nDia is number of robots along equator of grid
-    nx2Array xyHexPos = getHexPositions(nDia);
-    nRobots = boost::size(xyHexPos);
+    Eigen::MatrixXd xyHexPos = getHexPositions(nDia);
+    nRobots = xyHexPos.rows();
+    // nRobots = boost::size(xyHexPos);
     // populate list of robots and determine xyFocalBounds
     xFocalMax, yFocalMax = -1e9;
     xFocalMin, yFocalMin = 1e9;
     double xPos, yPos;
     for (int ii=0; ii<nRobots; ii++){
-        xPos = xyHexPos[ii][0];
-        yPos = xyHexPos[ii][1];
+        xPos = xyHexPos(ii, 0);
+        yPos = xyHexPos(ii, 1);
         if (xPos < xFocalMin){
             xFocalMin = xPos;
         }
@@ -712,7 +708,12 @@ void doOneThread(int threadNum){
 int main()
 {
     srand(0);
+    clock_t tStart;
+    clock_t tEnd;
+    tStart = clock();
     RobotGrid rg = doOne();
+    tEnd = clock();
+    std::cout << "time took: " << (double)(tEnd - tStart)/CLOCKS_PER_SEC << std::endl;
     for (Robot &robot : rg.allRobots){
         robot.pathToFile(rg.nSteps);
     }
