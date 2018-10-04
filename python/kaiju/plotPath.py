@@ -20,6 +20,23 @@ def plotOne(filename):
     plt.savefig(fname, dpi=500)
     plt.close()
 
+def plotVelocity(filename):
+    fig = plt.figure(figsize=(9, 9))
+    alphaBeta_ = numpy.loadtxt(filename)
+    alphaBeta = numpy.diff(alphaBeta_, axis=0)
+    tsteps = range(alphaBeta.shape[0])
+    plt.plot(tsteps, alphaBeta[:,0], label="alpha")
+    plt.plot(tsteps, alphaBeta[:,1], label="beta")
+    # plt.ylim([-10, 370])
+    plt.ylabel("speed (deg)")
+    plt.xlabel("step")
+    plt.legend()
+    fname = filename.strip(".txt") + ".png"
+    robotNum = int(filename.split("_")[-1].strip(".txt"))
+    plt.title("Robot %i path"%robotNum)
+    plt.savefig(fname, dpi=500)
+    plt.close()
+
 def plotSet():
     filenames = glob.glob("path_*.txt")
     p = multiprocessing.Pool(10)

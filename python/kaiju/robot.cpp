@@ -7,6 +7,7 @@
 #include <thread>
 #include <array>
 #include <list>
+#include <vector>
 #include <eigen3/Eigen/Dense>
 
 // https://stackoverflow.com/questions/28208965/how-to-have-a-class-contain-a-list-of-pointers-to-itself
@@ -15,22 +16,50 @@
 // http://geomalgorithms.com/a07-_distance.html#dist3D_Segment_to_Segment()
 
 // constants
-const double buffer_distance = 2.5; // robot width is 5
 const double beta_arm_width = 5;
+const double buffer_distance = beta_arm_width / 2.0;
 const double collide_dist_squared = beta_arm_width * beta_arm_width;
-const int points_per_circle = 36*2;
 const double alpha_arm_len = 7.4;
 const double beta_arm_len = 15; // mm to fiber
 const double top_collide_x1 = 8.187;
-// const double top_collide_x2 = 16.0;
+const double beta_head_end = 19.3 - 3; // measured from
 const double top_collide_x2 = 19.3 - 3 - buffer_distance;
-const double bottom_collide_x1 = 0;
-// const double bottom_collide_x2 = 10.689;
 const double pitch = 22.4;
 const double min_reach = beta_arm_len - alpha_arm_len;
 const double max_reach = beta_arm_len + alpha_arm_len;
-const double ang_step = 1; // step 1 degree
-const int maxPathIter = 500;
+
+const double ang_step = 1; //1.0; // degrees
+const int maxPathSteps = (int)(ceil(500.0/ang_step));
+// alpha beta array - the ordered list of moves to try
+const double ab_data[] = {
+    -ang_step,  ang_step,
+            0,  ang_step,
+     ang_step,  ang_step,
+    -ang_step,         0,
+     ang_step,         0,
+    -ang_step, -ang_step,
+            0, -ang_step,
+     ang_step, -ang_step
+};
+
+Eigen::Array<double, 8, 2> alphaBetaArr(ab_data);
+
+// define the geometry of the beta arm (a segmented line)
+// x, y, z triplets
+// x is direction along beta angle
+// y is 0 (all points are in plane defined by beta angle dir and +z)
+// z is direction along axis of robot (+z is towards M2 when installed at telescope)
+
+const double beta_arm_seg[] = {
+    0, 0, 0,
+    0, 0, 7.60,
+    6.12, 0, 13.85,
+    9.54, 0, 21.90,
+    9.54, 0, 30,
+    15.23, 0, 30
+};
+
+Eigen::Array<double, 6, 3> betaArmSeg(beta_arm_seg);
 
 #define SMALL_NUM   0.00000001 // anything that avoids division overflow
 // dot product (3D) which allows vector operations in arguments
@@ -130,6 +159,7 @@ double randomSample(){
 }
 
 std::array<double, 2> alphaBetaFromXY(double x, double y){
+    // law of cosines at work here...
     double xyMag = hypot(x, y);
     double alphaAngRad = acos(
         (-1*beta_arm_len*beta_arm_len + alpha_arm_len*alpha_arm_len + xyMag*xyMag)/(2*alpha_arm_len*xyMag)
@@ -216,7 +246,7 @@ public:
     double sinAlpha, sinBeta, cosAlpha, cosBeta;
     std::array<double, 4> tcCoords; //, bcCoords;
     std::array<double, 2> xyTarget, xyAlphaArm;
-    std::array<double, maxPathIter> alphaPath, betaPath;
+    std::vector<double> alphaPath, betaPath;
     std::list<Robot *> neighbors;
     Robot (int, double, double);
     void setAlphaBeta (double, double);
@@ -230,7 +260,7 @@ public:
     void decollide();
     void setXYUniform();
     void stepTowardFold(int stepNum);
-    void pathToFile(int nSteps);
+    void pathToFile();
 };
 
 Robot::Robot(int myid, double myxPos, double myyPos) {
@@ -239,12 +269,12 @@ Robot::Robot(int myid, double myxPos, double myyPos) {
     id = myid;
 }
 
-void Robot::pathToFile(int nSteps){
+void Robot::pathToFile(){
     FILE * pFile;
     char buffer[50];
     sprintf(buffer, "path_%04d.txt", id);
     pFile = fopen(buffer, "w");
-    for (int ii=0;ii<nSteps;ii++){
+    for (int ii=0;ii<alphaPath.size();ii++){
         fprintf(pFile, "%.8f %.8f\n", alphaPath[ii], betaPath[ii]);
     }
     fclose(pFile);
@@ -297,17 +327,11 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
 
     std::array<double, 2> tcpt1 = getXYAlongBeta(top_collide_x1);
     std::array<double, 2> tcpt2 = getXYAlongBeta(top_collide_x2);
-    // std::array<double, 2> bcpt2 = getXYAlongBeta(bottom_collide_x2);
 
     tcCoords[0] = tcpt1[0]; // get rid of tcCoords eventually? they get printed to files
     tcCoords[1] = tcpt1[1];
     tcCoords[2] = tcpt2[0];
     tcCoords[3] = tcpt2[1];
-
-    // bcCoords[0] = xyAlphaArm[0];
-    // bcCoords[1] = xyAlphaArm[1];
-    // bcCoords[2] = bcpt2[0];
-    // bcCoords[3] = bcpt2[1];
 }
 
 void Robot::setAlphaBetaRand(){
@@ -325,15 +349,7 @@ void Robot::setXYUniform(){
 
 
 bool Robot::isCollided(){
-    if (isTopCollided()){
-        return true;
-    }
-    // else if (isBottomCollided()){
-    //     return true;
-    // }
-    else {
-        return false;
-    }
+    return isTopCollided();
 }
 
 bool Robot::isTopCollided(){
@@ -347,16 +363,6 @@ bool Robot::isTopCollided(){
     return iAmCollided;
 }
 
-// bool Robot::isBottomCollided(){
-//     bool iAmCollided = false;
-//     for (Robot * robot : neighbors){
-//         if (segSquaredDist(bcCoords, robot->bcCoords) < collide_dist_squared){
-//             iAmCollided = true;
-//             break;
-//         }
-//     }
-//     return iAmCollided;
-// }
 
 void Robot::decollide(){
     // randomly replace alpha beta values until collisions vanish
@@ -374,45 +380,17 @@ void Robot::stepTowardFold(int stepNum){
     double currBeta = beta;
     if (currBeta==180 and currAlpha==0){
         // done folding don't move
-        alphaPath[stepNum] = currAlpha;
-        betaPath[stepNum] = currBeta;
+        alphaPath.push_back(currAlpha);
+        betaPath.push_back(currBeta);
+        // alphaPath[stepNum] = currAlpha;
+        // betaPath[stepNum] = currBeta;
         return;
     }
-    int nMoves = 8; // total number of moves to try
-    // build a list of alpha and beta combos to try
-    Eigen::MatrixXd alphaBetaArr(nMoves, 2);
-
-    // beta folding
-    alphaBetaArr(0, 0) = currAlpha - ang_step;
-    alphaBetaArr(0, 1) = currBeta + ang_step;
-
-    alphaBetaArr(1, 0) = currAlpha;
-    alphaBetaArr(1, 1) = currBeta + ang_step;
-
-    alphaBetaArr(2, 0) = currAlpha + ang_step;
-    alphaBetaArr(2, 1) = currBeta + ang_step;
-
-    // beta static
-    alphaBetaArr(3, 0) = currAlpha - ang_step;
-    alphaBetaArr(3, 1) = currBeta;
-
-    alphaBetaArr(4, 0) = currAlpha + ang_step;
-    alphaBetaArr(4, 1) = currBeta;
-
-    // beta unfolding
-    alphaBetaArr(5, 0) = currAlpha - ang_step;
-    alphaBetaArr(5, 1) = currBeta - ang_step;
-
-    alphaBetaArr(6, 0) = currAlpha;
-    alphaBetaArr(6, 1) = currBeta - ang_step;
-
-    alphaBetaArr(7, 0) = currAlpha + ang_step;
-    alphaBetaArr(7, 1) = currBeta - ang_step;
 
     // begin trying options pick first that works
-    for (int ii=0; ii<nMoves; ii++){
-        double nextAlpha = alphaBetaArr(ii, 0);
-        double nextBeta = alphaBetaArr(ii, 1);
+    for (int ii=0; ii<alphaBetaArr.rows(); ii++){
+        double nextAlpha = currAlpha + alphaBetaArr(ii, 0);
+        double nextBeta = currBeta + alphaBetaArr(ii, 1);
         if (nextAlpha > 360){
             nextAlpha = 360;
         }
@@ -431,9 +409,11 @@ void Robot::stepTowardFold(int stepNum){
             continue;
         }
         setAlphaBeta(nextAlpha, nextBeta);
-        alphaPath[stepNum] = nextAlpha;
-        betaPath[stepNum] = nextBeta;
         if (!isCollided()){
+            alphaPath.push_back(currAlpha);
+            betaPath.push_back(currBeta);
+            // alphaPath[stepNum] = nextAlpha;
+            // betaPath[stepNum] = nextBeta;
             return;
         }
     }
@@ -441,8 +421,10 @@ void Robot::stepTowardFold(int stepNum){
     // no move options worked,
     // settle for a non-move
     setAlphaBeta(currAlpha, currBeta);
-    alphaPath[stepNum] = currAlpha;
-    betaPath[stepNum] = currBeta;
+    alphaPath.push_back(currAlpha);
+    betaPath.push_back(currBeta);
+    // alphaPath[stepNum] = currAlpha;
+    // betaPath[stepNum] = currBeta;
 }
 
 bool robotSort(const Robot& robot1, const Robot& robot2){
@@ -453,14 +435,6 @@ bool robotSort(const Robot& robot1, const Robot& robot2){
         return true;
     }
 
-    // if (robot1.alpha == 0 and robot2.alpha > 0){
-    //     return true;
-    // }
-
-    // if (robot1.alpha > 0 and robot2.alpha == 0){
-    //     return false;
-    // }
-
 
     // steps to go
     double r1steps = robot1.alpha + 180 - robot1.beta;
@@ -468,33 +442,13 @@ bool robotSort(const Robot& robot1, const Robot& robot2){
     return (r1steps > r2steps);
 }
 
-// return if robot1 is less than robot2
-// bool robotSort(const Robot & robot1, const Robot & robot2){
-//     if (robot2.beta == 180 and robot1.beta < 180){
-//         return true;
-//     }
-//     if (robot1.alpha < robot2.alpha){
-//         return true;
-//     }
-//     else {
-//         return false;
-//     }
-// }
-
-// sort by total steps to go
-// bool robotSort(const Robot & robot1, const Robot & robot2){
-//     double robot1dist = (360 - robot1.alpha)*(360 - robot1.alpha)*(180 - robot1.beta);
-//     double robot2dist = (360 - robot2.alpha)*(360 - robot1.alpha)*(180 - robot2.beta);
-//     // if robot 1 dist is greater than robot2 2 return
-//     // true, we want this robot placed in front
-//     return robot1dist > robot2dist;
-// }
 
 class RobotGrid {
 public:
     int nRobots;
     bool didFail;
     int nSteps;
+
     double xFocalMax, yFocalMax, xFocalMin, yFocalMin;
     std::list<Robot> allRobots;
     RobotGrid (int);
@@ -508,35 +462,20 @@ RobotGrid::RobotGrid(int nDia){
     // nDia is number of robots along equator of grid
     Eigen::MatrixXd xyHexPos = getHexPositions(nDia);
     nRobots = xyHexPos.rows();
-    // nRobots = boost::size(xyHexPos);
-    // populate list of robots and determine xyFocalBounds
-    xFocalMax, yFocalMax = -1e9;
-    xFocalMin, yFocalMin = 1e9;
-    double xPos, yPos;
+
+    // determine min/max x/y values in grid
+
+    xFocalMax = xyHexPos.colwise().maxCoeff()(0) + max_reach;
+    yFocalMax = xyHexPos.colwise().maxCoeff()(1) + max_reach;
+    xFocalMin = xyHexPos.colwise().minCoeff()(0) - min_reach;
+    yFocalMin = xyHexPos.colwise().minCoeff()(1) - min_reach;
+    // add in robot reach to xyFocalBox
     for (int ii=0; ii<nRobots; ii++){
-        xPos = xyHexPos(ii, 0);
-        yPos = xyHexPos(ii, 1);
-        if (xPos < xFocalMin){
-            xFocalMin = xPos;
-        }
-        if (yPos < yFocalMin){
-            yFocalMin = yPos;
-        }
-        if (xPos > xFocalMax){
-            xFocalMax = xPos;
-        }
-        if (yPos > yFocalMax){
-            yFocalMax = yPos;
-        }
-        Robot robot(ii, xPos, yPos);
+        Robot robot(ii, xyHexPos(ii, 0), xyHexPos(ii, 1));
         allRobots.push_back(robot);
 
     }
-    // add in robot reach to xyFocalBox
-    xFocalMax += max_reach;
-    yFocalMax += max_reach;
-    xFocalMin -= max_reach;
-    yFocalMin -= max_reach;
+
     // for each robot, give it access to its neighbors
     // and initialze to random alpha betas
     for (Robot &r1 : allRobots){
@@ -590,8 +529,7 @@ void RobotGrid::toFile(const char* filename){
             "%i, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %i, %i\n",
             r.id, r.xPos, r.yPos, r.alpha, r.beta,
             r.tcCoords[0], r.tcCoords[1], r.tcCoords[2], r.tcCoords[3],
-            // r.bcCoords[0], r.bcCoords[1], r.bcCoords[2], r.bcCoords[3],
-            -999.0, -999.0, -999.0, -999.0,
+            -999.0, -999.0, -999.0, -999.0, // used to be bcCoords
             r.isTopCollided(), 0
         );
     }
@@ -604,7 +542,7 @@ void RobotGrid::pathGen(){
     // betas for getting locked, so try to move those first
     didFail = true;
     int ii;
-    for (ii=0; ii<maxPathIter; ii++){
+    for (ii=0; ii<maxPathSteps; ii++){
         bool allFolded = true;
         // std::cout << "iter " << ii << std::endl;
         // char buffer[50];
@@ -669,22 +607,22 @@ void doOneThread(int threadNum){
 //     }
 // }
 
-// int main()
-// {
-//     int nThreads = 10;
-//     std::thread t[10];
-//     clock_t tStart;
-//     clock_t tEnd;
-//     tStart = clock();
-//     for (int i = 0; i<10; ++i){
-//         t[i] = std::thread(doOneThread, i);
-//     }
-//     for (int i=0; i<10; ++i){
-//         t[i].join();
-//     }
-//     tEnd = clock();
-//     std::cout << "time took: " << (double)(tEnd - tStart)/CLOCKS_PER_SEC << std::endl;
-// }
+int main()
+{
+    int nThreads = 10;
+    std::thread t[10];
+    clock_t tStart;
+    clock_t tEnd;
+    tStart = clock();
+    for (int i = 0; i<10; ++i){
+        t[i] = std::thread(doOneThread, i);
+    }
+    for (int i=0; i<10; ++i){
+        t[i].join();
+    }
+    tEnd = clock();
+    std::cout << "time took: " << (double)(tEnd - tStart)/CLOCKS_PER_SEC << std::endl;
+}
 
 // int main()
 // {
@@ -705,17 +643,17 @@ void doOneThread(int threadNum){
 //
 // }
 
-int main()
-{
-    srand(0);
-    clock_t tStart;
-    clock_t tEnd;
-    tStart = clock();
-    RobotGrid rg = doOne();
-    tEnd = clock();
-    std::cout << "time took: " << (double)(tEnd - tStart)/CLOCKS_PER_SEC << std::endl;
-    for (Robot &robot : rg.allRobots){
-        robot.pathToFile(rg.nSteps);
-    }
-}
+// int main()
+// {
+//     srand(0);
+//     clock_t tStart;
+//     clock_t tEnd;
+//     tStart = clock();
+//     RobotGrid rg = doOne();
+//     tEnd = clock();
+//     std::cout << "time took: " << (double)(tEnd - tStart)/CLOCKS_PER_SEC << std::endl;
+//     for (Robot &robot : rg.allRobots){
+//         robot.pathToFile();
+//     }
+// }
 
