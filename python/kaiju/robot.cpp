@@ -9,6 +9,8 @@
 #include <list>
 #include <vector>
 #include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/Geometry>
+
 
 // https://stackoverflow.com/questions/28208965/how-to-have-a-class-contain-a-list-of-pointers-to-itself
 // https://internal.sdss.org/trac/as4/wiki/FPSLayout
@@ -50,52 +52,50 @@ Eigen::Array<double, 8, 2> alphaBetaArr(ab_data);
 // y is 0 (all points are in plane defined by beta angle dir and +z)
 // z is direction along axis of robot (+z is towards M2 when installed at telescope)
 
-const double beta_arm_seg[] = {
-    0, 0, 0,
-    0, 0, 7.60,
-    6.12, 0, 13.85,
-    9.54, 0, 21.90,
-    9.54, 0, 30,
-    15.23, 0, 30
-};
+// create a typedef for array of eigen vectors describing
+// segments along beta arm. 0,0,0 is point where beta
+// axis touches the (bottom of) beta arm
 
-Eigen::Array<double, 6, 3> betaArmSeg(beta_arm_seg);
+
+
+const double beta_pt1_data[] = {0, 0, 7.60};
+Eigen::Vector3d beta_pt1(beta_pt1_data);
+const double beta_pt2_data[] = {6.12, 0, 13.85};
+Eigen::Vector3d beta_pt2(beta_pt2_data);
+const double beta_pt3_data[] = {9.54, 0, 21.90};
+Eigen::Vector3d beta_pt3(beta_pt3_data);
+const double beta_pt4_data[] = {9.54, 0, 30};
+Eigen::Vector3d beta_pt4(beta_pt4_data);
+const double beta_pt5_data[] = {15.23, 0, 30};
+Eigen::Vector3d beta_pt5(beta_pt5_data);
+
+// add in point for fiber tips eventually?
+typedef std::array<Eigen::Vector3d, 5> betaArmOrientType;
+
+betaArmOrientType betaArmNeutral{ {beta_pt1, beta_pt2, beta_pt3, beta_pt4, beta_pt5} };
 
 #define SMALL_NUM   0.00000001 // anything that avoids division overflow
 // dot product (3D) which allows vector operations in arguments
 #define abs(x)     ((x) >= 0 ? (x) : -(x))   //  absolute value
 
 
-// Copyright 2001 softSurfer, 2012 Dan Sunday (modified by CS)
-// This code may be freely used, distributed and modified for any purpose
-// providing that this copyright notice is included with it.
-// SoftSurfer makes no warranty for this code, and cannot be held
-// liable for any real or imagined damage resulting from its use.
-// Users of this code must verify correctness for their application.
 // dist3D_Segment_to_Segment(): get the 3D minimum distance between 2 segments
 //    Input:  two 3D line segments S1 and S2
 //    Return: the shortest distance between S1 and S2
-double segSquaredDist(const std::array<double, 4> & segCoords1, const std::array<double, 4> & segCoords2)
+float
+dist3D_Segment_to_Segment(Eigen::Vector3d S1_P0, Eigen::Vector3d S1_P1, Eigen::Vector3d S2_P0, Eigen::Vector3d S2_P1)
 {
-    double   ux = segCoords1[2] - segCoords1[0];
-    double   uy = segCoords1[3] - segCoords1[1];
-
-    double   vx = segCoords2[2] - segCoords2[0];
-    double   vy = segCoords2[3] - segCoords2[1];
-
-    double   wx = segCoords1[0] - segCoords2[0];
-    double   wy = segCoords1[1] - segCoords2[1];
-
-    double   a = ux*ux + uy*uy;
-    double   b = ux*vx + uy*vy;
-    double   c = vx*vx + vy*vy;
-    double   d = ux*wx + uy*wy;
-    double   e = vx*wx + vy*wy;
-
-
-    double    D = a*c - b*b;        // always >= 0
-    double    sc, sN, sD = D;       // sc = sN / sD, default sD = D >= 0
-    double    tc, tN, tD = D;       // tc = tN / tD, default tD = D >= 0
+    Vector   u = S1_P1 - S1_P0;
+    Vector   v = S2_P1 - S2_P0;
+    Vector   w = S1_P0 - S2_P0;
+    float    a = u.dot(u);         // always >= 0
+    float    b = u.dot(v);
+    float    c = v.dot(v);         // always >= 0
+    float    d = u.dot(w);
+    float    e = v.dot(w);
+    float    D = a*c - b*b;        // always >= 0
+    float    sc, sN, sD = D;       // sc = sN / sD, default sD = D >= 0
+    float    tc, tN, tD = D;       // tc = tN / tD, default tD = D >= 0
 
     // compute the line parameters of the two closest points
     if (D < SMALL_NUM) { // the lines are almost parallel
@@ -147,10 +147,10 @@ double segSquaredDist(const std::array<double, 4> & segCoords1, const std::array
     sc = (abs(sN) < SMALL_NUM ? 0.0 : sN / sD);
     tc = (abs(tN) < SMALL_NUM ? 0.0 : tN / tD);
 
-    double dPx = wx + (ux * sc) - (vx * tc);
-    double dPy = wy + (uy * sc) - (vy * tc);
+    // get the difference of the two closest points
+    Vector   dP = w + (sc * u) - (tc * v);  // =  S1(sc) - S2(tc)
 
-    return dPx*dPx + dPy*dPy;   // return the closest distance squared
+    return dP.dot(dP);   // return the closest distance squared
 }
 
 double randomSample(){
@@ -243,8 +243,7 @@ private:
 public:
     int id;
     double xPos, yPos, alpha, beta;
-    double sinAlpha, sinBeta, cosAlpha, cosBeta;
-    std::array<double, 4> tcCoords; //, bcCoords;
+    betaArmOrientType betaOrientation;
     std::array<double, 2> xyTarget, xyAlphaArm;
     std::vector<double> alphaPath, betaPath;
     std::list<Robot *> neighbors;
@@ -313,8 +312,13 @@ std::array<double, 2> Robot::getXYAlongBeta(double xBeta){
 void Robot::setAlphaBeta(double newAlpha, double newBeta){
     alpha = newAlpha;
     beta = newBeta;
-    double alphaRad = alpha * M_PI / 180.0;
-    double betaRad = beta * M_PI / 180.0;
+
+    Eigen::AngleAxis<float> rotBeta(betaRad, Eigen::Vector3f::UnitZ());
+    Eigen::
+    for (int ii=0; ii<betaArmNeutral.size(); ii++){
+        betaOrientation[ii] =
+    }
+
     // precompute
     sinAlpha = sin(alphaRad);
     sinBeta = sin(betaRad);
@@ -355,7 +359,7 @@ bool Robot::isCollided(){
 bool Robot::isTopCollided(){
     bool iAmCollided = false;
     for (Robot * robot : neighbors){
-        if (segSquaredDist(tcCoords, robot->tcCoords) < collide_dist_squared){
+        if (dist3D_Segment_to_Segment(tcCoords, robot->tcCoords) < collide_dist_squared){
             iAmCollided = true;
             break;
         }
