@@ -21,7 +21,7 @@ AlphaArmLength = 7.4  # mm
 AlphaRange = [0, 360]
 BetaRange = [0, 180]
 BetaArmLength = 15  # mm, distance to fiber
-BetaArmWidth = 5  # mm
+BetaArmWidth = 3  # mm
 MinTargSeparation = 8  # mm
 # length mm along beta for which a collision cant happen
 BetaTopCollide = [8.187, 16]  # box from length 8.187mm to 16mm
@@ -35,25 +35,22 @@ MaxReach = BetaArmLength + AlphaArmLength
 
 
 class Robot(object):
-    def __init__(self, id, xPos, yPos, alpha, beta, tcCoords, bcCoords, isTC, isBC):
+    def __init__(self, id, xPos, yPos, alpha, beta, xAlphaEnd, yAlphaEnd, xBetaEnd, yBetaEnd, isCollided):
         self.id = id
         self.xPos = xPos
         self.yPos = yPos
         self.alpha = alpha
         self.beta = beta
-        self.tcCoords = tcCoords
-        self.bcCoords = bcCoords
-        self.isTC = isTC
-        self.isBC = isBC
+        self.xAlphaEnd = xAlphaEnd
+        self.yAlphaEnd = yAlphaEnd
+        self.xBetaEnd = xBetaEnd
+        self.yBetaEnd = yBetaEnd
+        self.isCollided = isCollided
 
         lineBuffer = BetaArmWidth / 2.0
 
         self.topCollideLine = LineString(
-            [[tcCoords[0], tcCoords[1]], [tcCoords[2], tcCoords[3]]]
-        ).buffer(lineBuffer, cap_style=1)
-
-        self.bottomCollideLine = LineString(
-            [[bcCoords[0], bcCoords[1]], [bcCoords[2], bcCoords[3]]]
+            [[xAlphaEnd, yAlphaEnd], [xBetaEnd, yBetaEnd]]
         ).buffer(lineBuffer, cap_style=1)
 
 
@@ -64,9 +61,7 @@ def getRobotList(filename):
     for line in fileLines:
         if line.startswith("#"):
             continue
-        id, xPos, yPos, alpha, beta, tcx1, tcy1, tcx2, tcy2, bcx1, bcy1, bcx2, bcy2, isTC, isBC = line.split(",")
-        tcCoords = [float(tcx1), float(tcy1), float(tcx2), float(tcy2)]
-        bcCoords = [float(bcx1), float(bcy1), float(bcx2), float(bcy2)]
+        id, xPos, yPos, alpha, beta, xAlphaEnd, yAlphaEnd, xBetaEnd, yBetaEnd, isCollided = line.split(",")
         robotList.append(
             Robot(
                 int(id),
@@ -74,10 +69,11 @@ def getRobotList(filename):
                 float(yPos),
                 float(alpha),
                 float(beta),
-                tcCoords,
-                bcCoords,
-                int(isTC),
-                int(isBC)
+                float(xAlphaEnd),
+                float(yAlphaEnd),
+                float(xBetaEnd),
+                float(yBetaEnd),
+                int(isCollided),
             )
         )
     return robotList
@@ -91,15 +87,11 @@ def plotGrid(robotList, title=None, xlim=None, ylim=None, save=True):
     yAll = [r.yPos for r in robotList]
     plt.scatter(xAll, yAll)
     for robot in robotList:
-        topcolor, bottomcolor = "blue", "green"
-        if robot.isTC == 1:
+        topcolor = "blue"
+        if robot.isCollided == 1:
             topcolor = "red"
-        if robot.isBC == 1:
-            bottomcolor = "red"
-        plt.plot([robot.xPos, robot.bcCoords[0]], [robot.yPos, robot.bcCoords[1]], 'k', linewidth=3)
+        plt.plot([robot.xPos, robot.xAlphaEnd], [robot.yPos, robot.yAlphaEnd], 'k', linewidth=3)
         patch = PolygonPatch(robot.topCollideLine, fc=topcolor, ec=topcolor, alpha=0.5, zorder=10)
-        ax.add_patch(patch)
-        patch = PolygonPatch(robot.bottomCollideLine, fc=bottomcolor, ec=bottomcolor, alpha=0.5, zorder=10)
         ax.add_patch(patch)
     plt.axis('equal')
     if title is not None:
@@ -109,7 +101,7 @@ def plotGrid(robotList, title=None, xlim=None, ylim=None, save=True):
     if ylim:
         plt.ylim(ylim)
     if save:
-        plt.savefig(title, dpi=500)
+        plt.savefig(title, dpi=250)
         plt.close()
 
 def doGrid(filename):
@@ -123,13 +115,12 @@ def doGrid(filename):
 def plotSet(basename):
 
     filenames = glob.glob(basename + "*.txt")
-
     p = multiprocessing.Pool(10)
     p.map(doGrid, filenames)
 
 
 
 if __name__ == "__main__":
-    plotSet("fail")
+    plotSet("step")
 
 
