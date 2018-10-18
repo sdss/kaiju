@@ -39,7 +39,7 @@ const double max_reach = beta_arm_len + alpha_arm_len;
 const double ang_step = 0.1; //1.0; // degrees
 const int maxPathSteps = (int)(ceil(500.0/ang_step));
 // line smoothing factor
-const double epsilon = 10 * ang_step;
+const double epsilon = 7 * ang_step;
 
 // const int maxPathSteps = 20;
 // alpha beta array - the ordered list of moves to try
