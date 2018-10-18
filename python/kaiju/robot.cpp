@@ -1,4 +1,9 @@
-// clang++ --std=c++11 -march=native -O3 robot.cpp
+// clang++ --std=c++11 -O3 robot.cpp
+// vectorizing via = // clang++ --std=c++11 -march=native -O3 robot.cpp
+// speeds things up but causes crashes and recommends that you
+// include <eigen3/Eigen/StdVector> and add this shit to containers
+// that std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d>>
+
 #include <iostream>
 #include <stdio.h>      /* printf, scanf, puts, NULL */
 #include <stdlib.h>     /* srand, rand */
@@ -10,6 +15,7 @@
 #include <vector>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
+// #include <eigen3/Eigen/StdVector>
 
 
 // https://stackoverflow.com/questions/28208965/how-to-have-a-class-contain-a-list-of-pointers-to-itself
@@ -18,7 +24,7 @@
 // http://geomalgorithms.com/a07-_distance.html#dist3D_Segment_to_Segment()
 
 // constants
-const double beta_arm_width = 3;
+const double beta_arm_width = 5;
 const double buffer_distance = beta_arm_width / 2.0;
 const double collide_dist_squared = beta_arm_width * beta_arm_width;
 const double alpha_arm_len = 7.4;
@@ -30,10 +36,10 @@ const double pitch = 22.4;
 const double min_reach = beta_arm_len - alpha_arm_len;
 const double max_reach = beta_arm_len + alpha_arm_len;
 
-const double ang_step = 0.5; //1.0; // degrees
+const double ang_step = 0.1; //1.0; // degrees
 const int maxPathSteps = (int)(ceil(500.0/ang_step));
 // line smoothing factor
-const double epsilon = 1;
+const double epsilon = 10 * ang_step;
 
 // const int maxPathSteps = 20;
 // alpha beta array - the ordered list of moves to try
@@ -95,11 +101,36 @@ Eigen::Vector3d alphaTransV(alpha_trans_data);
 #define abs(x)     ((x) >= 0 ? (x) : -(x))   //  absolute value
 
 
+// create a linear interpolater
+double linearInterpolate(std::vector<Eigen::Vector2d> & sparseXYPoints, double xValue){
+    Eigen::Vector2d pt1, pt0;
+    double yValue;
+    int nPoints = sparseXYPoints.size();
+    // check that x is in range
+    if (xValue < sparseXYPoints[0](0) || xValue > sparseXYPoints[nPoints-1](0)){
+        throw std::runtime_error("x outside interpolation range");
+    }
+    // check if x == last point
+    if (xValue == sparseXYPoints[nPoints-1](0)){
+        yValue = sparseXYPoints[nPoints-1](1);
+    }
+    for (int ii = 0; ii < nPoints-1; ii++){
+        pt1 = sparseXYPoints[ii+1];
+        pt0 = sparseXYPoints[ii];
+        if (xValue < pt1(0)){
+            yValue = pt0(1) + (pt1(1)-pt0(1)) / (pt1(0) - pt0(0)) * (xValue - pt0(0));
+            break;
+        }
+    }
+    return yValue;
+}
+
 // dist3D_Segment_to_Segment(): get the 3D minimum distance between 2 segments
 //    Input:  two 3D line segments S1 and S2
 //    Return: the shortest distance between S1 and S2
-double
-dist3D_Segment_to_Segment(Eigen::Vector3d S1_P0, Eigen::Vector3d S1_P1, Eigen::Vector3d S2_P0, Eigen::Vector3d S2_P1)
+double dist3D_Segment_to_Segment(
+    Eigen::Vector3d S1_P0, Eigen::Vector3d S1_P1,
+    Eigen::Vector3d S2_P0, Eigen::Vector3d S2_P1)
 {
     Eigen::Vector3d   u = S1_P1 - S1_P0;
     Eigen::Vector3d   v = S2_P1 - S2_P0;
@@ -347,7 +378,9 @@ public:
     Eigen::Vector3d transXY;
     betaGeometry betaOrientation;
     std::array<double, 2> xyTarget, xyAlphaArm;
-    std::vector<Eigen::Vector2d> alphaPath, betaPath, smoothAlphaPath, smoothBetaPath;
+    std::vector<Eigen::Vector2d> alphaPath, betaPath;
+    std::vector<Eigen::Vector2d> smoothAlphaPath, smoothBetaPath;
+    std::vector<Eigen::Vector2d> interpSmoothAlphaPath, interpSmoothBetaPath;
     std::list<Robot *> neighbors;
     Robot (int, double, double);
     void setAlphaBeta (double, double);
@@ -361,6 +394,7 @@ public:
     void stepTowardFold(int stepNum);
     void pathToFile();
     void smoothPathToFile();
+    void ismoothPathToFile();
     void smoothPath();
 };
 
@@ -402,6 +436,24 @@ void Robot::smoothPathToFile(){
     sprintf(buffer, "smoothpathBeta_%04d.txt", id);
     pFile = fopen(buffer, "w");
     for (auto & point : smoothBetaPath){
+        fprintf(pFile, "%.2f %.8f\n", point(0), point(1));
+    }
+    fclose(pFile);
+}
+
+void Robot::ismoothPathToFile(){
+    FILE * pFile;
+    char buffer[50];
+    sprintf(buffer, "ismoothpathAlpha_%04d.txt", id);
+    pFile = fopen(buffer, "w");
+    for (auto & point : interpSmoothAlphaPath){
+        fprintf(pFile, "%.2f %.8f\n", point(0), point(1));
+    }
+    fclose(pFile);
+
+    sprintf(buffer, "ismoothpathBeta_%04d.txt", id);
+    pFile = fopen(buffer, "w");
+    for (auto & point : interpSmoothBetaPath){
         fprintf(pFile, "%.2f %.8f\n", point(0), point(1));
     }
     fclose(pFile);
@@ -496,10 +548,28 @@ void Robot::decollide(){
     }
 }
 
+
 void Robot::smoothPath(){
     // smooth a previously generated path
+    double interpSmoothAlpha, interpSmoothBeta;
+    Eigen::Vector2d atemp, btemp;
     RamerDouglasPeucker(alphaPath, epsilon, smoothAlphaPath);
     RamerDouglasPeucker(betaPath, epsilon, smoothBetaPath);
+    // linearly interpolate smooth paths to same step values
+    // as computed
+    int nDensePoints = alphaPath.size();
+    for (int ii=0; ii<nDensePoints; ii++){
+        double xVal = alphaPath[ii](0);
+        atemp(0) = xVal;
+        btemp(0) = xVal;
+        interpSmoothAlpha = linearInterpolate(smoothAlphaPath, xVal);
+        atemp(1) = interpSmoothAlpha;
+        interpSmoothAlphaPath.push_back(atemp);
+        interpSmoothBeta = linearInterpolate(smoothBetaPath, xVal);
+        btemp(1) = interpSmoothBeta;
+        interpSmoothBetaPath.push_back(btemp);
+    }
+
 }
 
 void Robot::stepTowardFold(int stepNum){
@@ -587,6 +657,7 @@ public:
     int getNCollisions();
     void toFile(const char*);
     void pathGen();
+    void smoothPaths();
 };
 
 RobotGrid::RobotGrid(int nDia){
@@ -642,6 +713,15 @@ void RobotGrid::decollide(){
 
 }
 
+void RobotGrid::smoothPaths(){
+    for (Robot &r : allRobots){
+        r.smoothPath();
+    }
+
+}
+
+
+
 int RobotGrid::getNCollisions(){
     // return number of collisions found
     int nCollide = 0;
@@ -682,7 +762,7 @@ void RobotGrid::pathGen(){
         // toFile(buffer);
         //----------------------------------------
 
-        allRobots.sort(robotSort);
+        // allRobots.sort(robotSort);
         for (Robot &r: allRobots){
             // std::cout << "alpha beta " << r.alpha << " " << r.beta << std::endl;
             r.stepTowardFold(ii);
@@ -758,41 +838,43 @@ void doOneThread(int threadNum){
 //     std::cout << "time took: " << (double)(tEnd - tStart)/CLOCKS_PER_SEC << std::endl;
 // }
 
-int main()
-{
-    // run 500, print out failed grids
-    int nFails = 0;
-    int maxTries = 500;
-    char buffer[50];
-    for (int ii=0; ii<maxTries; ii++){
-        srand(ii);
-        std::cout << "trial " << ii << std::endl;
-        RobotGrid rg = doOne();
-        if(rg.didFail){
-            sprintf(buffer, "fail_%d.txt", ii);
-            rg.toFile(buffer);
-            nFails++;
-        }
-    }
-    std::cout << "nFails " << nFails << std::endl;
-
-}
-
 // int main()
 // {
-//     // single run print out robot paths
-//     srand(0);
-//     clock_t tStart;
-//     clock_t tEnd;
-//     tStart = clock();
-//     RobotGrid rg = doOne();
-//     tEnd = clock();
-//     std::cout << "time took: " << (double)(tEnd - tStart)/CLOCKS_PER_SEC << std::endl;
-//     for (Robot &robot : rg.allRobots){
-//         robot.smoothPath();
-//         robot.pathToFile();
-//         robot.smoothPathToFile();
+//     std::cout << "max steps " << maxPathSteps << std::endl;
+//     // run 500, print out failed grids
+//     int nFails = 0;
+//     int maxTries = 500;
+//     char buffer[50];
+//     for (int ii=0; ii<maxTries; ii++){
+//         srand(ii);
+//         std::cout << "trial " << ii << std::endl;
+//         RobotGrid rg = doOne();
+//         if(rg.didFail){
+//             sprintf(buffer, "fail_%d.txt", ii);
+//             rg.toFile(buffer);
+//             nFails++;
+//         }
 //     }
+//     std::cout << "nFails " << nFails << std::endl;
+
 // }
+
+int main()
+{
+    // single run print out robot paths
+    srand(0);
+    clock_t tStart;
+    clock_t tEnd;
+    tStart = clock();
+    RobotGrid rg = doOne();
+    rg.smoothPaths();
+    tEnd = clock();
+    std::cout << "time took: " << (double)(tEnd - tStart)/CLOCKS_PER_SEC << std::endl;
+    for (Robot &robot : rg.allRobots){
+        robot.pathToFile();
+        robot.smoothPathToFile();
+        robot.ismoothPathToFile();
+    }
+}
 
 

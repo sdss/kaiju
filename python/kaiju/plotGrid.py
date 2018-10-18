@@ -121,6 +121,6 @@ def plotSet(basename):
 
 
 if __name__ == "__main__":
-    plotSet("step")
+    plotSet("fail")
 
 

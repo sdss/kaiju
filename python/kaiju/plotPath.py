@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import glob
 import multiprocessing
 
-def plotOne(filename, isSmooth=False, isAlpha=True):
+def plotOne(filename, isSmooth=False, isAlpha=True, interp=False):
     # fig = plt.figure(figsize=(9, 9))
     path = numpy.loadtxt(filename)
     label = "alpha"
@@ -12,7 +12,12 @@ def plotOne(filename, isSmooth=False, isAlpha=True):
     alpha = 1
     if not isAlpha:
         label = "beta"
-    if isSmooth:
+    if interp:
+        label+=" interp"
+        linestyle = '-'
+        alpha = 1
+        linewidth = 0.25
+    elif isSmooth:
         label+=" smooth"
         linestyle = '.-'
         alpha = 0.2
@@ -61,10 +66,16 @@ for filenum in pathNums:
     betaFile = "pathBeta_%04i.txt"%filenum
     smoothAlphaFile = "smoothpathAlpha_%04i.txt"%filenum
     smoothBetaFile = "smoothpathBeta_%04i.txt"%filenum
+    ismoothAlphaFile = "ismoothpathAlpha_%04i.txt"%filenum
+    ismoothBetaFile = "ismoothpathBeta_%04i.txt"%filenum
     plotOne(alphaFile)
     plotOne(betaFile, isAlpha=False)
+
     plotOne(smoothAlphaFile, isSmooth=True)
     plotOne(smoothBetaFile, isSmooth=True, isAlpha=False)
+
+    plotOne(ismoothAlphaFile, isSmooth=True, interp=True)
+    plotOne(ismoothBetaFile, isSmooth=True, isAlpha=False, interp=True)
     fname = "path_%04i.png"%filenum
     plt.title("Robot %i path"%filenum)
     plt.savefig(fname, dpi=500)
