@@ -21,7 +21,7 @@ AlphaArmLength = 7.4  # mm
 AlphaRange = [0, 360]
 BetaRange = [0, 180]
 BetaArmLength = 15  # mm, distance to fiber
-BetaArmWidth = 3  # mm
+BetaArmWidth = 4  # mm
 MinTargSeparation = 8  # mm
 # length mm along beta for which a collision cant happen
 BetaTopCollide = [8.187, 16]  # box from length 8.187mm to 16mm
@@ -121,6 +121,6 @@ def plotSet(basename):
 
 
 if __name__ == "__main__":
-    plotSet("fail")
-
+    plotSet("interp_")
+# ffmpeg -r 10 -f image2 -i interp_%04d.png -pix_fmt yuv420p robotMovie.mp4
 

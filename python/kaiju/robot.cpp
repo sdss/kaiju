@@ -15,7 +15,7 @@
 #include <vector>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
-// #include <eigen3/Eigen/StdVector>
+#include "utils.h"
 
 
 // https://stackoverflow.com/questions/28208965/how-to-have-a-class-contain-a-list-of-pointers-to-itself
@@ -24,24 +24,24 @@
 // http://geomalgorithms.com/a07-_distance.html#dist3D_Segment_to_Segment()
 
 // constants
-const double beta_arm_width = 5;
+const double beta_arm_width = 5.2;
 const double buffer_distance = beta_arm_width / 2.0;
 const double collide_dist_squared = beta_arm_width * beta_arm_width;
+const double collide_dist_squared_shrink = 5 * 5; // collide zone just a bit
 const double alpha_arm_len = 7.4;
 const double beta_arm_len = 15; // mm to fiber
-// const double top_collide_x1 = 8.187;
-// const double beta_head_end = 19.3 - 3; // measured from
-// const double top_collide_x2 = 19.3 - 3 - buffer_distance;
-const double pitch = 22.4;
+const double pitch = 22.4; // distance to next nearest neighbor
 const double min_reach = beta_arm_len - alpha_arm_len;
 const double max_reach = beta_arm_len + alpha_arm_len;
 
 const double ang_step = 0.1; //1.0; // degrees
 const int maxPathSteps = (int)(ceil(500.0/ang_step));
 // line smoothing factor
-const double epsilon = 7 * ang_step;
+const double epsilon =  7 * ang_step;
+// from watching things:
+// ang_step 0.1 and epsilon = 7 * ang_step seems good
+// ang_step 1 and epsilon = 4 * ang_step seems good?
 
-// const int maxPathSteps = 20;
 // alpha beta array - the ordered list of moves to try
 const double ab_data[] = {
     -ang_step,  ang_step,
@@ -57,10 +57,13 @@ const double ab_data[] = {
 Eigen::Array<double, 8, 2> alphaBetaArr(ab_data);
 
 // define the geometry of the beta arm (a segmented line)
+// with origin at beta rotation axis
 // x, y, z triplets
-// x is direction along beta angle
+// +x is direction along alpha arm
 // y is 0 (all points are in plane defined by beta angle dir and +z)
-// z is direction along axis of robot (+z is towards M2 when installed at telescope)
+// z is direction along axis of robot rotation (+z is normal to focal plane pointing
+// (mostly if we're curved) towards M2)
+// goal here is to produce a force field (envelope)
 
 // create a typedef for array of eigen vectors describing
 // segments along beta arm. 0,0,0 is point where beta
@@ -74,18 +77,19 @@ const double b5_data[] = {9.54, 0, 30};
 // const double b6_data[] = {15.23, 0, 30};
 const double b6_data[] = {16.3-buffer_distance, 0, 30};
 
-Eigen::Vector3d b1_v(b1_data);
+Eigen::Vector3d b1_v(b1_data); // ignore this guy doesn't contribute +z including in inocous but wastes some computation time
 Eigen::Vector3d b2_v(b2_data);
 Eigen::Vector3d b3_v(b3_data);
 Eigen::Vector3d b4_v(b4_data);
 Eigen::Vector3d b5_v(b5_data);
 Eigen::Vector3d b6_v(b6_data);
 
-const int betaArmPoints = 5;
+const int betaArmPoints = 5; // should probably make this not a constant?
 
 typedef std::array<Eigen::Vector3d, betaArmPoints> betaGeometry;
 betaGeometry betaNeutral = {b2_v, b3_v, b4_v, b5_v, b6_v};
 
+// xyz pos of fiber in beta neutra position
 const double fiberNeutral_data[] = {beta_arm_len, 0, 0};
 Eigen::Vector3d fiberNeutral(fiberNeutral_data);
 
@@ -95,198 +99,6 @@ Eigen::Vector3d fiberNeutral(fiberNeutral_data);
 const double alpha_trans_data[] = {alpha_arm_len, 0, 0};
 Eigen::Vector3d alphaTransV(alpha_trans_data);
 
-
-#define SMALL_NUM   0.00000001 // anything that avoids division overflow
-// dot product (3D) which allows vector operations in arguments
-#define abs(x)     ((x) >= 0 ? (x) : -(x))   //  absolute value
-
-
-// create a linear interpolater
-double linearInterpolate(std::vector<Eigen::Vector2d> & sparseXYPoints, double xValue){
-    Eigen::Vector2d pt1, pt0;
-    double yValue;
-    int nPoints = sparseXYPoints.size();
-    // check that x is in range
-    if (xValue < sparseXYPoints[0](0) || xValue > sparseXYPoints[nPoints-1](0)){
-        throw std::runtime_error("x outside interpolation range");
-    }
-    // check if x == last point
-    if (xValue == sparseXYPoints[nPoints-1](0)){
-        yValue = sparseXYPoints[nPoints-1](1);
-    }
-    for (int ii = 0; ii < nPoints-1; ii++){
-        pt1 = sparseXYPoints[ii+1];
-        pt0 = sparseXYPoints[ii];
-        if (xValue < pt1(0)){
-            yValue = pt0(1) + (pt1(1)-pt0(1)) / (pt1(0) - pt0(0)) * (xValue - pt0(0));
-            break;
-        }
-    }
-    return yValue;
-}
-
-// dist3D_Segment_to_Segment(): get the 3D minimum distance between 2 segments
-//    Input:  two 3D line segments S1 and S2
-//    Return: the shortest distance between S1 and S2
-double dist3D_Segment_to_Segment(
-    Eigen::Vector3d S1_P0, Eigen::Vector3d S1_P1,
-    Eigen::Vector3d S2_P0, Eigen::Vector3d S2_P1)
-{
-    Eigen::Vector3d   u = S1_P1 - S1_P0;
-    Eigen::Vector3d   v = S2_P1 - S2_P0;
-    Eigen::Vector3d   w = S1_P0 - S2_P0;
-    double    a = u.dot(u);         // always >= 0
-    double    b = u.dot(v);
-    double    c = v.dot(v);         // always >= 0
-    double    d = u.dot(w);
-    double    e = v.dot(w);
-    double    D = a*c - b*b;        // always >= 0
-    double    sc, sN, sD = D;       // sc = sN / sD, default sD = D >= 0
-    double    tc, tN, tD = D;       // tc = tN / tD, default tD = D >= 0
-
-    // compute the line parameters of the two closest points
-    if (D < SMALL_NUM) { // the lines are almost parallel
-        sN = 0.0;         // force using point P0 on segment S1
-        sD = 1.0;         // to prevent possible division by 0.0 later
-        tN = e;
-        tD = c;
-    }
-    else {                 // get the closest points on the infinite lines
-        sN = (b*e - c*d);
-        tN = (a*e - b*d);
-        if (sN < 0.0) {        // sc < 0 => the s=0 edge is visible
-            sN = 0.0;
-            tN = e;
-            tD = c;
-        }
-        else if (sN > sD) {  // sc > 1  => the s=1 edge is visible
-            sN = sD;
-            tN = e + b;
-            tD = c;
-        }
-    }
-
-    if (tN < 0.0) {            // tc < 0 => the t=0 edge is visible
-        tN = 0.0;
-        // recompute sc for this edge
-        if (-d < 0.0)
-            sN = 0.0;
-        else if (-d > a)
-            sN = sD;
-        else {
-            sN = -d;
-            sD = a;
-        }
-    }
-    else if (tN > tD) {      // tc > 1  => the t=1 edge is visible
-        tN = tD;
-        // recompute sc for this edge
-        if ((-d + b) < 0.0)
-            sN = 0;
-        else if ((-d + b) > a)
-            sN = sD;
-        else {
-            sN = (-d +  b);
-            sD = a;
-        }
-    }
-    // finally do the division to get sc and tc
-    sc = (abs(sN) < SMALL_NUM ? 0.0 : sN / sD);
-    tc = (abs(tN) < SMALL_NUM ? 0.0 : tN / tD);
-
-    // get the difference of the two closest points
-    Eigen::Vector3d   dP = w + (sc * u) - (tc * v);  // =  S1(sc) - S2(tc)
-
-    return dP.dot(dP);   // return the closest distance squared
-}
-
-
-// Ramer-Douglas-Peucker for segmentizing paths!
-// https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
-// https://gist.github.com/TimSC/0813573d77734bcb6f2cd2cf6cc7aa51
-// std::vector<Eigen::Vector2d>
-double PerpendicularDistance(const Eigen::Vector2d &pt, const Eigen::Vector2d &lineStart, const Eigen::Vector2d &lineEnd)
-{
-    // copied from dude's github,
-    // could be made to use eigen stuff for linalg/norms
-    double dx = lineEnd(0) - lineStart(0);
-    double dy = lineEnd(1) - lineStart(1);
-
-
-    //Normalise
-    double mag = pow(pow(dx,2.0)+pow(dy,2.0),0.5);
-    if(mag > 0.0)
-    {
-        dx /= mag; dy /= mag;
-    }
-
-    double pvx = pt(0) - lineStart(0);
-    double pvy = pt(1) - lineStart(1);
-
-    //Get dot product (project pv onto normalized direction)
-    double pvdot = dx * pvx + dy * pvy;
-
-    //Scale line direction vector
-    double dsx = pvdot * dx;
-    double dsy = pvdot * dy;
-
-    //Subtract this from pv
-    double ax = pvx - dsx;
-    double ay = pvy - dsy;
-
-    return pow(pow(ax,2.0)+pow(ay,2.0),0.5);
-}
-
-void RamerDouglasPeucker(const std::vector<Eigen::Vector2d> &pointList, double epsilon, std::vector<Eigen::Vector2d> &out)
-{
-    if(pointList.size()<2)
-        throw std::runtime_error("Not enough points to simplify");
-
-    // Find the point with the maximum distance from line between start and end
-    double dmax = 0.0;
-    size_t index = 0;
-    size_t end = pointList.size()-1;
-    for(size_t i = 1; i < end; i++)
-    {
-        double d = PerpendicularDistance(pointList[i], pointList[0], pointList[end]);
-        if (d > dmax)
-        {
-            index = i;
-            dmax = d;
-        }
-    }
-
-    // If max distance is greater than epsilon, recursively simplify
-    if(dmax > epsilon)
-    {
-        // Recursive call
-        std::vector<Eigen::Vector2d> recResults1;
-        std::vector<Eigen::Vector2d> recResults2;
-        std::vector<Eigen::Vector2d> firstLine(pointList.begin(), pointList.begin()+index+1);
-        std::vector<Eigen::Vector2d> lastLine(pointList.begin()+index, pointList.end());
-        RamerDouglasPeucker(firstLine, epsilon, recResults1);
-        RamerDouglasPeucker(lastLine, epsilon, recResults2);
-
-        // Build the result list
-        out.assign(recResults1.begin(), recResults1.end()-1);
-        out.insert(out.end(), recResults2.begin(), recResults2.end());
-        if(out.size()<2)
-            throw std::runtime_error("Problem assembling output");
-    }
-    else
-    {
-        //Just return start and end points
-        out.clear();
-        out.push_back(pointList[0]);
-        out.push_back(pointList[end]);
-    }
-}
-
-
-double randomSample(){
-    // return between 0 and 1
-    return static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
-}
 
 std::array<double, 2> alphaBetaFromXY(double x, double y){
     // law of cosines at work here...
@@ -313,59 +125,6 @@ std::array<double, 2> alphaBetaFromXY(double x, double y){
     return outArr;
 }
 
-std::array<double, 2> sampleAnnulus(){
-    // random anululs sampling:
-    // https://ridlow.wordpress.com/2014/10/22/uniform-random-points-in-disk-annulus-ring-cylinder-and-sphere/
-    double rPick = sqrt((max_reach*max_reach - min_reach*min_reach)*randomSample() + min_reach*min_reach);
-    double thetaPick = randomSample() * 2 * M_PI;
-    std::array<double, 2> outArr;
-    outArr[0] = rPick * cos(thetaPick);
-    outArr[1] = rPick * sin(thetaPick);
-    return outArr;
-}
-
-Eigen::MatrixXd getHexPositions(int nDia){
-    // returns a 2d array populated with xy positions
-    // for a hex packed grid
-    // nDia must be odd (not caught)
-    int nHex = 0.25*(3*nDia*nDia + 1);
-    int nEdge = 0.5*(nDia + 1);
-    Eigen::MatrixXd A(nHex, 2);
-    double vertShift = sin(60*M_PI/180.0)*pitch;
-    double horizShift = cos(60*M_PI/180.0)*pitch;
-    int hexInd = 0;
-    // start a xStart such that the center of the
-    // hex grid is at 0,0
-    double xStart = -1*pitch*(nDia - 1.0)/2.0;
-    double nextX = xStart;
-    double nextY = 0;
-
-    // first fill in equator
-    // 0,0 is center
-    for (int ii = 0; ii < nDia; ii++){
-        A(hexInd,0) = nextX;
-        A(hexInd, 1) = nextY;
-        nextX += pitch;
-        hexInd++;
-    }
-
-    // loop over top and bottom rows
-    for (int row = 1; row < nEdge; row++){
-        nextY = row * vertShift;
-        nextX = xStart + row * horizShift;
-        for (int jj = 0; jj < nDia - row; jj++){
-            A(hexInd, 0) = nextX;
-            A(hexInd, 1) = nextY;
-            hexInd++;
-            A(hexInd, 0) = nextX;
-            A(hexInd, 1) = -1*nextY;
-            hexInd++;
-            nextX += pitch;
-        }
-    }
-
-    return A;
-}
 
 class Robot {
 // private:
@@ -388,7 +147,7 @@ public:
     void addNeighbor(Robot *);
     void topCollideZone();
     void bottomCollideZone();
-    bool isCollided();
+    bool isCollided(double collide2 = collide_dist_squared);
     void decollide();
     void setXYUniform();
     void stepTowardFold(int stepNum);
@@ -496,8 +255,7 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
         // we should be able to figure out how to compute
         // this matrix outside this loop....
         betaOrientation[ii] = transXY + (alphaRot * (alphaTransV + (betaRot * betaNeutral[ii])));
-        if (ii==betaArmPoints-1){
-        }
+
         // std::cout << "test : " << betaOrientation[ii] <<  " : test\n" << std::endl;
     }
     fiber_XYZ = transXY + (alphaRot * (alphaTransV + (betaRot * fiberNeutral)));
@@ -511,13 +269,13 @@ void Robot::setAlphaBetaRand(){
 }
 
 void Robot::setXYUniform(){
-    std::array<double, 2> xy = sampleAnnulus();
+    std::array<double, 2> xy = sampleAnnulus(min_reach, max_reach);
     std::array<double, 2> ab = alphaBetaFromXY(xy[0], xy[1]);
     setAlphaBeta(ab[0], ab[1]);
 }
 
 
-bool Robot::isCollided(){
+bool Robot::isCollided(double collide2){
     bool iAmCollided = false;
     for (Robot * robot : neighbors){
         for (int ii=0; ii<betaArmPoints-1; ii++){
@@ -525,7 +283,7 @@ bool Robot::isCollided(){
                     betaOrientation[ii], betaOrientation[ii+1],
                     robot->betaOrientation[ii], robot->betaOrientation[ii+1]
                 );
-            if ( dist2 < collide_dist_squared){
+            if (dist2 < collide2){
                     // std::cout << "dist " << dist2 - collide_dist_squared << std::endl;
                     iAmCollided = true;
                     break;
@@ -654,15 +412,16 @@ public:
     std::list<Robot> allRobots;
     RobotGrid (int);
     void decollide();
-    int getNCollisions();
+    int getNCollisions(double collide2 = collide_dist_squared);
     void toFile(const char*);
     void pathGen();
     void smoothPaths();
+    void verifySmoothed();
 };
 
 RobotGrid::RobotGrid(int nDia){
     // nDia is number of robots along equator of grid
-    Eigen::MatrixXd xyHexPos = getHexPositions(nDia);
+    Eigen::MatrixXd xyHexPos = getHexPositions(nDia, pitch);
     nRobots = xyHexPos.rows();
 
     // determine min/max x/y values in grid
@@ -717,16 +476,34 @@ void RobotGrid::smoothPaths(){
     for (Robot &r : allRobots){
         r.smoothPath();
     }
+}
 
+void RobotGrid::verifySmoothed(){
+    int nCollisions = 0;
+    char buffer[50];
+    int printEvery = nSteps / 500;
+    int printNum = 0;
+    for (int ii = 0; ii < nSteps -1; ii++){
+        for (Robot &r : allRobots){
+            r.setAlphaBeta(r.interpSmoothAlphaPath[ii](1), r.interpSmoothBetaPath[ii](1));
+        }
+        nCollisions += getNCollisions(collide_dist_squared_shrink);
+        if ((ii % printEvery) == 0){
+            sprintf(buffer, "interp_%d.txt", printNum);
+            toFile(buffer);
+            printNum++;
+        }
+    }
+    std::cout << "interp collisions: " << nCollisions << std::endl;
 }
 
 
 
-int RobotGrid::getNCollisions(){
+int RobotGrid::getNCollisions(double collide2){
     // return number of collisions found
     int nCollide = 0;
     for (Robot &r : allRobots){
-        if (r.isCollided()) {
+        if (r.isCollided(collide2)) {
             nCollide++;
         }
     }
@@ -751,16 +528,22 @@ void RobotGrid::pathGen(){
     // robots closest to alpha = 0 are at highest risk with extended
     // betas for getting locked, so try to move those first
     didFail = true;
+    int printEvery = maxPathSteps / 500; // want 500 snap shots of path
+    int printNum = 0;
     int ii;
     for (ii=0; ii<maxPathSteps; ii++){
         bool allFolded = true;
 
+
         // print each step to file
         //----------------------------------------
-        // char buffer[50];
-        // sprintf(buffer, "step_%d.txt", ii);
-        // toFile(buffer);
-        //----------------------------------------
+        // if ((ii % printEvery) == 0){
+        //     char buffer[50];
+        //     sprintf(buffer, "step_%d.txt", printNum);
+        //     toFile(buffer);
+        //     printNum++;
+
+        // }
 
         // allRobots.sort(robotSort);
         for (Robot &r: allRobots){
@@ -875,6 +658,7 @@ int main()
         robot.smoothPathToFile();
         robot.ismoothPathToFile();
     }
+    rg.verifySmoothed();
 }
 
 

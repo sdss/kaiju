@@ -78,5 +78,7 @@ for filenum in pathNums:
     plotOne(ismoothBetaFile, isSmooth=True, isAlpha=False, interp=True)
     fname = "path_%04i.png"%filenum
     plt.title("Robot %i path"%filenum)
-    plt.savefig(fname, dpi=500)
+    plt.savefig(fname, dpi=1000)
     plt.close()
+
+    # ffmpeg -r 10 -f image2 -i interp_%04d.png -pix_fmt yuv420p -vcodec libx264 robotMovie.mp4
