@@ -4,7 +4,8 @@
 #include <array>
 #include <eigen3/Eigen/Dense>
 
-#define SMALL_NUM   0.00000001 // anything that avoids division overflow
+// #define SMALL_NUM   0.00000001 // anything that avoids division overflow
+const double SMALL_NUM = 0.00000001; // anything that avoids division overflow
 
 std::array<double, 2> sampleAnnulus(double rMin, double rMax);
 
@@ -21,3 +22,11 @@ double PerpendicularDistance(const Eigen::Vector2d &pt, const Eigen::Vector2d &l
 void RamerDouglasPeucker(const std::vector<Eigen::Vector2d> &pointList, double epsilon, std::vector<Eigen::Vector2d> &out);
 
 double randomSample();
+
+// double meanErrorRMD(
+//     // return the mean error between the rmd simplified line
+//     // and the original line, we'll use this to globally
+//     // shift the simplified line to one side
+//     const std::vector<Eigen::Vector2d> &rmdInterpPoints,
+//     const std::vector<Eigen::Vector2d> &pathGenPoints,
+//     )

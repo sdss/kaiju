@@ -1,6 +1,4 @@
-#include <cmath>
 #include "utils.h"
-
 
 double randomSample(){
     // return between 0 and 1
@@ -18,6 +16,7 @@ std::array<double, 2> sampleAnnulus(double rMin, double rMax){
     return outArr;
 }
 
+// https://internal.sdss.org/trac/as4/wiki/FPSLayout
 Eigen::MatrixXd getHexPositions(int nDia, double pitch){
     // returns a 2d array populated with xy positions
     // for a hex packed grid
@@ -85,6 +84,7 @@ double linearInterpolate(std::vector<Eigen::Vector2d> & sparseXYPoints, double x
     return yValue;
 }
 
+// http://geomalgorithms.com/a07-_distance.html#dist3D_Segment_to_Segment()
 // dist3D_Segment_to_Segment(): get the 3D minimum distance between 2 segments
 //    Input:  two 3D line segments S1 and S2
 //    Return: the shortest distance between S1 and S2
@@ -198,7 +198,8 @@ double PerpendicularDistance(const Eigen::Vector2d &pt, const Eigen::Vector2d &l
 }
 
 void RamerDouglasPeucker(const std::vector<Eigen::Vector2d> &pointList, double epsilon, std::vector<Eigen::Vector2d> &out)
-{
+{   // biasDir is to modify the internal (not end) points by epsilon in one directon to make sure we are on one
+    // side of the curve
     if(pointList.size()<2)
         throw std::runtime_error("Not enough points to simplify");
 
@@ -241,3 +242,23 @@ void RamerDouglasPeucker(const std::vector<Eigen::Vector2d> &pointList, double e
         out.push_back(pointList[end]);
     }
 }
+
+// double meanErrorRMD(
+//     // return the y value for which to shift points
+//     // such that we have only a 1 sided error
+//     const std::vector<Eigen::Vector2d> &rmdInterpPoints,
+//     const std::vector<Eigen::Vector2d> &pathGenPoints,
+//     )
+// {
+//     // compute mean error
+//     int size = rmdInterpPoints.size();
+//     double mean = 0
+//     for (ii=0; ii<size; ii++){
+//         mean += std::abs(rmdInterpPoints[ii] - pathGenPoints[ii]);
+//     }
+//     mean = mean / size;
+//     return mean;
+// }
+
+
+
