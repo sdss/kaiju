@@ -218,9 +218,9 @@ bool Robot::isCollided(double collide2){
                     robot->betaOrientation[ii], robot->betaOrientation[ii+1]
                 );
             if (dist2 < collide2){
-                    // std::cout << "dist " << dist2 - collide_dist_squared << std::endl;
-                    iAmCollided = true;
-                    break;
+                // std::cout << "dist " << dist2 - collide_dist_squared << std::endl;
+                iAmCollided = true;
+                break;
             }
         }
     }
@@ -251,7 +251,7 @@ void Robot::smoothPath(){
     npts = smoothAlphaPath.size();
     for (int ii=1; ii<npts-1; ii++){
         // only shift internal (not end) points
-        smoothAlphaPath[ii](1) = smoothAlphaPath[ii](1) + epsilon;
+        smoothAlphaPath[ii](1) = smoothAlphaPath[ii](1);// + epsilon;
     }
 
     RamerDouglasPeucker(betaPath, epsilon, smoothBetaPath);
@@ -262,7 +262,7 @@ void Robot::smoothPath(){
     npts = smoothBetaPath.size();
     for (int ii=1; ii<npts-1; ii++){
         // only shift internal (not end) points
-        smoothBetaPath[ii](1) = smoothBetaPath[ii](1) - epsilon;
+        smoothBetaPath[ii](1) = smoothBetaPath[ii](1);// - epsilon;
     }
 
     int nDensePoints = alphaPath.size();
