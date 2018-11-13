@@ -96,6 +96,9 @@ Robot::Robot(int myid, double myxPos, double myyPos) {
     yPos = myyPos;
     transXY = Eigen::Vector3d(myxPos, myyPos, 0);
     id = myid;
+    betaModel = &betaCurvePts;
+    modelRadii = &curveRad;
+
 }
 
 void Robot::pathToFile(){
