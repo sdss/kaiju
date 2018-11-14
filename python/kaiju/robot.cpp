@@ -96,8 +96,9 @@ Robot::Robot(int myid, double myxPos, double myyPos) {
     yPos = myyPos;
     transXY = Eigen::Vector3d(myxPos, myyPos, 0);
     id = myid;
-    betaModel = &betaCurvePts;
-    modelRadii = &curveRad;
+    betaModel = betaCurvePts;
+    betaOrientation = betaCurvePts; // this gets overwritten on first setAlphaBeta
+    modelRadii = curveRad;
 
 }
 
@@ -186,12 +187,12 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
     // fullTransform = (alphaTransT*betaRot).matrix();
 
     // std::cout << "alpha beta crap" << std::endl;
-    for (int ii = 0; ii < betaArmPoints; ii++){
+    for (int ii = 0; ii < betaModel.size(); ii++){
         // first rotate about beta (we start in beta ref frame)
         // next translate in x by the alpha arm length
         // we should be able to figure out how to compute
         // this matrix outside this loop....
-        betaOrientation[ii] = transXY + (alphaRot * (alphaTransV + (betaRot * betaNeutral[ii])));
+        betaOrientation[ii] = transXY + (alphaRot * (alphaTransV + (betaRot * betaModel[ii])));
 
         // std::cout << "test : " << betaOrientation[ii] <<  " : test\n" << std::endl;
     }
@@ -212,15 +213,19 @@ void Robot::setXYUniform(){
 }
 
 
-bool Robot::isCollided(double collide2){
+bool Robot::isCollided(double radiusBuffer){
+    double dist2, rad1, rad2, collideDist2;
     bool iAmCollided = false;
     for (Robot * robot : neighbors){
-        for (int ii=0; ii<betaArmPoints-1; ii++){
-            double dist2 = dist3D_Segment_to_Segment(
+        for (int ii=0; ii<betaOrientation.size()-1; ii++){
+            dist2 = dist3D_Segment_to_Segment(
                     betaOrientation[ii], betaOrientation[ii+1],
                     robot->betaOrientation[ii], robot->betaOrientation[ii+1]
                 );
-            if (dist2 < collide2){
+            rad1 = modelRadii[ii];
+            rad2 = robot->modelRadii[ii];
+            collideDist2 = (rad1+rad2+radiusBuffer)*(rad1+rad2+radiusBuffer);
+            if (dist2 < collideDist2){
                 // std::cout << "dist " << dist2 - collide_dist_squared << std::endl;
                 iAmCollided = true;
                 break;
@@ -237,7 +242,7 @@ void Robot::decollide(){
     int ii;
     for (ii=0; ii<300; ii++){
         setXYUniform();
-        if (!isCollided(collide_dist_squared)){
+        if (!isCollided(radius_buffer)){
             break;
         }
     }
@@ -323,7 +328,7 @@ void Robot::stepTowardFold(int stepNum){
             continue;
         }
         setAlphaBeta(nextAlpha, nextBeta);
-        if (!isCollided(collide_dist_squared)){
+        if (!isCollided(radius_buffer)){
             alphaPathPoint(1) = currAlpha;
             betaPathPoint(1) = currBeta;
             alphaPath.push_back(alphaPathPoint);

@@ -1,4 +1,4 @@
-CFLAGS = -O3 -Wall --std=c++11
+CFLAGS = -O3 -Wall --std=c++11 -g
 CC = clang++
 
 kaiju: robot.o utils.o robotGrid.o betaArm.o main.cpp
