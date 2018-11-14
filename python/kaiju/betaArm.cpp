@@ -34,7 +34,8 @@ const double CURVE_RAD[nCurvePts-1] = {
     2.8058,
     2.7977,
     2.7950,
-    2.5 // beta head width / 2
+    // 2.5 // beta head width / 2
+    2.61,
 };
 
 

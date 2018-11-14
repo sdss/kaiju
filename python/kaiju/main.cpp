@@ -91,18 +91,18 @@ int main()
     clock_t tEnd;
     tStart = clock();
     RobotGrid rg = doOne();
-    rg.smoothPaths();
+    // rg.smoothPaths();
     tEnd = clock();
     std::cout << "time took: " << (double)(tEnd - tStart)/CLOCKS_PER_SEC << std::endl;
     for (Robot &robot : rg.allRobots){
         robot.pathToFile();
         // std::cout << " 1 " << robot.id << std::endl;
-        robot.smoothPathToFile();
+        // robot.smoothPathToFile();
         // std::cout << " 2 " << robot.id << std::endl;
-        robot.ismoothPathToFile();
+        // robot.ismoothPathToFile();
         // std::cout << " 3 " << robot.id << std::endl;
     }
-    rg.verifySmoothed();
+    // rg.verifySmoothed();
 }
 
 

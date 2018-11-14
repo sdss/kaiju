@@ -50,7 +50,7 @@ class Robot(object):
         lineBuffer = BetaArmWidth / 2.0
 
         self.topCollideLine = LineString(
-            [[xAlphaEnd, yAlphaEnd], [xBetaEnd, yBetaEnd]]
+            [(xAlphaEnd, yAlphaEnd), (xBetaEnd, yBetaEnd)]
         ).buffer(lineBuffer, cap_style=1)
 
 
@@ -91,6 +91,7 @@ def plotGrid(robotList, title=None, xlim=None, ylim=None, save=True):
         if robot.isCollided == 1:
             topcolor = "red"
         plt.plot([robot.xPos, robot.xAlphaEnd], [robot.yPos, robot.yAlphaEnd], 'k', linewidth=3)
+        # plt.plot([robot.xAlphaEnd, robot.xBetaEnd],[robot.yAlphaEnd, robot.yBetaEnd], color=topcolor, alpha=0.5, linewidth=5)
         patch = PolygonPatch(robot.topCollideLine, fc=topcolor, ec=topcolor, alpha=0.5, zorder=10)
         ax.add_patch(patch)
     plt.axis('equal')
@@ -118,10 +119,15 @@ def plotSet(basename):
     p = multiprocessing.Pool(10)
     p.map(doGrid, filenames)
 
+def plotSetSlow(basename):
+    filenames = glob.glob(basename + "*.txt")[:10]
+    for filename in filenames:
+        doGrid(filename)
+
 
 
 if __name__ == "__main__":
-    plotSet("interp_")
+    # plotSet("interp_")
     plotSet("step_")
 # ffmpeg -r 10 -f image2 -i interp_%04d.png -pix_fmt yuv420p robotMovie.mp4
 

@@ -34,23 +34,23 @@ Eigen::Array<double, 8, 2> alphaBetaArr(ab_data);
 // segments along beta arm. 0,0,0 is point where beta
 // axis touches the (bottom of) beta arm
 
-const double b1_data[] = {0, 0, 0};
-const double b2_data[] = {0, 0, 7.60};
-const double b3_data[] = {6.12, 0, 13.85};
-const double b4_data[] = {9.54, 0, 21.90};
-const double b5_data[] = {9.54, 0, 30};
-// const double b6_data[] = {15.23, 0, 30};
-const double b6_data[] = {16.3-buffer_distance, 0, 30};
+// const double b1_data[] = {0, 0, 0};
+// const double b2_data[] = {0, 0, 7.60};
+// const double b3_data[] = {6.12, 0, 13.85};
+// const double b4_data[] = {9.54, 0, 21.90};
+// const double b5_data[] = {9.54, 0, 30};
+// // const double b6_data[] = {15.23, 0, 30};
+// const double b6_data[] = {16.3-buffer_distance, 0, 30};
 
-Eigen::Vector3d b1_v(b1_data); // ignore this guy doesn't contribute +z including in inocous but wastes some computation time
-Eigen::Vector3d b2_v(b2_data);
-Eigen::Vector3d b3_v(b3_data);
-Eigen::Vector3d b4_v(b4_data);
-Eigen::Vector3d b5_v(b5_data);
-Eigen::Vector3d b6_v(b6_data);
+// Eigen::Vector3d b1_v(b1_data); // ignore this guy doesn't contribute +z including in inocous but wastes some computation time
+// Eigen::Vector3d b2_v(b2_data);
+// Eigen::Vector3d b3_v(b3_data);
+// Eigen::Vector3d b4_v(b4_data);
+// Eigen::Vector3d b5_v(b5_data);
+// Eigen::Vector3d b6_v(b6_data);
 
 
-betaGeometry betaNeutral = {b2_v, b3_v, b4_v, b5_v, b6_v};
+// betaGeometry betaNeutral = {b2_v, b3_v, b4_v, b5_v, b6_v};
 
 // xyz pos of fiber in beta neutra position
 const double fiberNeutral_data[] = {beta_arm_len, 0, 0};
@@ -96,9 +96,13 @@ Robot::Robot(int myid, double myxPos, double myyPos) {
     yPos = myyPos;
     transXY = Eigen::Vector3d(myxPos, myyPos, 0);
     id = myid;
-    betaModel = betaCurvePts;
+    // betaModel = betaCurvePts; // copy
+    // betaOrientation = betaCurvePts; // this gets overwritten on first setAlphaBeta
+    // modelRadii = curveRad;
+    betaModel = betaCurvePts; // copy
     betaOrientation = betaCurvePts; // this gets overwritten on first setAlphaBeta
     modelRadii = curveRad;
+
 
 }
 
@@ -242,7 +246,7 @@ void Robot::decollide(){
     int ii;
     for (ii=0; ii<300; ii++){
         setXYUniform();
-        if (!isCollided(radius_buffer)){
+        if (!isCollided()){
             break;
         }
     }
@@ -328,7 +332,7 @@ void Robot::stepTowardFold(int stepNum){
             continue;
         }
         setAlphaBeta(nextAlpha, nextBeta);
-        if (!isCollided(radius_buffer)){
+        if (!isCollided()){
             alphaPathPoint(1) = currAlpha;
             betaPathPoint(1) = currBeta;
             alphaPath.push_back(alphaPathPoint);

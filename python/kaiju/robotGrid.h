@@ -29,7 +29,7 @@ public:
 
     double xFocalMax, yFocalMax, xFocalMin, yFocalMin;
     std::list<Robot> allRobots;
-    RobotGrid (int nDia, int myMaxPathSteps);
+    RobotGrid (int nDia, int myMaxPathSteps, int myPrintEvery = 0);
     void decollide();
     int getNCollisions(double radiusBuffer=0);
     void toFile(const char*);

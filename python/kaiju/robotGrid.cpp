@@ -5,11 +5,11 @@
 #include "betaArm.h"
 
 
-RobotGrid::RobotGrid(int nDia, int myMaxPathSteps){
+RobotGrid::RobotGrid(int nDia, int myMaxPathSteps, int myPrintEvery){
     // nDia is number of robots along equator of grid
     initBetaArms();
     maxPathSteps = myMaxPathSteps;
-    printEvery = 1; // default to not printing
+    printEvery = myPrintEvery; // default to not printing
     Eigen::MatrixXd xyHexPos = getHexPositions(nDia, pitch);
     nRobots = xyHexPos.rows();
 
@@ -51,9 +51,9 @@ RobotGrid::RobotGrid(int nDia, int myMaxPathSteps){
 
 void RobotGrid::decollide(){
     // iterate over robots and resolve collisions
-    while(getNCollisions(radius_buffer)){
+    while(getNCollisions()){
         for (Robot &r : allRobots){
-            if (r.isCollided(radius_buffer)){
+            if (r.isCollided()){
                 r.decollide();
             }
         }
@@ -112,7 +112,7 @@ void RobotGrid::toFile(const char* filename){
     for (Robot &r : allRobots){
         fprintf(pFile,
             "%i, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %i\n",
-            r.id, r.xPos, r.yPos, r.alpha, r.beta, r.betaOrientation[0](0), r.betaOrientation[0](1), r.betaOrientation[betaArmPoints-1](0), r.betaOrientation[betaArmPoints-1](1), r.isCollided(collide_dist_squared)
+            r.id, r.xPos, r.yPos, r.alpha, r.beta, r.betaOrientation[0](0), r.betaOrientation[0](1), r.betaOrientation.back()(0), r.betaOrientation.back()(1), r.isCollided()
         );
     }
     fclose(pFile);
