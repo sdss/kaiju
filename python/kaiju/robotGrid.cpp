@@ -7,7 +7,6 @@
 
 RobotGrid::RobotGrid(int nDia, int myMaxPathSteps, int myPrintEvery){
     // nDia is number of robots along equator of grid
-    initBetaArms();
     maxPathSteps = myMaxPathSteps;
     printEvery = myPrintEvery; // default to not printing
     Eigen::MatrixXd xyHexPos = getHexPositions(nDia, pitch);

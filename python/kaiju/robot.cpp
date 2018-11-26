@@ -21,37 +21,6 @@ const double ab_data[] = {
 
 Eigen::Array<double, 8, 2> alphaBetaArr(ab_data);
 
-// define the geometry of the beta arm (a segmented line)
-// with origin at beta rotation axis
-// x, y, z triplets
-// +x is direction along alpha arm
-// y is 0 (all points are in plane defined by beta angle dir and +z)
-// z is direction along axis of robot rotation (+z is normal to focal plane pointing
-// (mostly if we're curved) towards M2)
-// goal here is to produce a force field (envelope)
-
-// create a typedef for array of eigen vectors describing
-// segments along beta arm. 0,0,0 is point where beta
-// axis touches the (bottom of) beta arm
-
-// const double b1_data[] = {0, 0, 0};
-// const double b2_data[] = {0, 0, 7.60};
-// const double b3_data[] = {6.12, 0, 13.85};
-// const double b4_data[] = {9.54, 0, 21.90};
-// const double b5_data[] = {9.54, 0, 30};
-// // const double b6_data[] = {15.23, 0, 30};
-// const double b6_data[] = {16.3-buffer_distance, 0, 30};
-
-// Eigen::Vector3d b1_v(b1_data); // ignore this guy doesn't contribute +z including in inocous but wastes some computation time
-// Eigen::Vector3d b2_v(b2_data);
-// Eigen::Vector3d b3_v(b3_data);
-// Eigen::Vector3d b4_v(b4_data);
-// Eigen::Vector3d b5_v(b5_data);
-// Eigen::Vector3d b6_v(b6_data);
-
-
-// betaGeometry betaNeutral = {b2_v, b3_v, b4_v, b5_v, b6_v};
-
 // xyz pos of fiber in beta neutra position
 const double fiberNeutral_data[] = {beta_arm_len, 0, 0};
 Eigen::Vector3d fiberNeutral(fiberNeutral_data);
@@ -96,14 +65,9 @@ Robot::Robot(int myid, double myxPos, double myyPos) {
     yPos = myyPos;
     transXY = Eigen::Vector3d(myxPos, myyPos, 0);
     id = myid;
-    // betaModel = betaCurvePts; // copy
-    // betaOrientation = betaCurvePts; // this gets overwritten on first setAlphaBeta
-    // modelRadii = curveRad;
-    betaModel = betaCurvePts; // copy
-    betaOrientation = betaCurvePts; // this gets overwritten on first setAlphaBeta
-    modelRadii = curveRad;
-
-
+    betaModel = betaArmPts;
+    betaOrientation = betaArmPts;
+    modelRadii = betaRadVec;
 }
 
 void Robot::pathToFile(){

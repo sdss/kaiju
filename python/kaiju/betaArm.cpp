@@ -1,7 +1,10 @@
+#include <stdio.h>
 #include "betaArm.h"
 
-std::vector<double> curveRad, curveRadM1, curveRadM2, linRad5, linRad4, linRad3;
-betaGeometry betaCurvePts, betaLinearPts5, betaLinearPts4, betaLinearPts3;
+std::vector<double> curveRad, curveRadM1, curveRadM2, linRad5, linRad4, linRad3, betaRadVec;
+betaGeometry betaCurvePts, betaLinearPts5, betaLinearPts4, betaLinearPts3, betaArmPts;
+betaGeometry betaBlockPts5, betaBlockPts4, betaBlockPts3;
+
 
 const int nCurvePts = 13;
 
@@ -41,6 +44,7 @@ const double CURVE_RAD[nCurvePts-1] = {
 
 
 void initBetaArms(){
+    Eigen::Vector3d blockOrigin, origin, end1, end2, end3;
 
     // curve arm geometries
     for (int ii=0; ii<nCurvePts; ii++){
@@ -53,21 +57,80 @@ void initBetaArms(){
         }
     }
 
+
     // straight arm geometries
-    Eigen::Vector3d origin, end1, end2, end3;
     origin << 0, 0, 0;
     end1 << 16.5 - 5.0/2.0, 0, 30;
     end2 << 16.5 - 4.0/2.0, 0, 30;
-    end3 << 16.5 - 5.0/2.0, 0, 30;
+    end3 << 16.5 - 3.0/2.0, 0, 30;
     betaLinearPts5.push_back(origin);
     betaLinearPts5.push_back(end1);
     betaLinearPts4.push_back(origin);
     betaLinearPts4.push_back(end2);
     betaLinearPts3.push_back(origin);
-    betaLinearPts3.push_back(end2);
+    betaLinearPts3.push_back(end3);
     linRad5.push_back(2.5);
     linRad4.push_back(2.0);
     linRad3.push_back(1.5);
 
+    // block geometries
+    linOrigin << 0, 0, 30;
+    betaBlockPts.push_back(blockOrigin)
+
+    // default to P1 geometry wide block
+    setBetaGeom(6);
+
+}
+
+void setBetaGeom(int betaGeom){
+    // beta geom lookup list
+    // 0: P1 gemoetry
+    // 1: P1 geometry with collision radius shrunk by 0.5mm
+    // 2: P1 geometry with collision radius shrunk by 1mm
+    // 3: linear cylindrical arm with radius 5mm
+    // 4: linear cylindrical arm with radius 4mm
+    // 5: linear cylndrical arm with radius 3mm
+    // 6: block geom, 5mm width
+    // 7: block geom, 4mm width
+    // 8: block geom, 3mm width
+    if (betaGeom==0){
+        betaRadVec = curveRad;
+        betaArmPts = betaCurvePts;
+    }
+    else if (betaGeom==1){
+        betaRadVec = curveRadM1;
+        betaArmPts = betaCurvePts;
+    }
+    else if (betaGeom==2){
+        betaRadVec = curveRadM2;
+        betaArmPts = betaCurvePts;
+    }
+    else if (betaGeom==3){
+        betaRadVec = linRad5;
+        betaArmPts = betaLinearPts5;
+    }
+    else if (betaGeom==4){
+        betaRadVec = linRad4;
+        betaArmPts = betaLinearPts4;
+    }
+    else if (betaGeom==5){
+        betaRadVec = linRad3;
+        betaArmPts = betaLinearPts3;
+    }
+    else if (betaGeom==6){
+        betaRadVec = linRad5;
+        betaArmPts = betaBlockPts;
+    }
+    else if (betaGeom==7){
+        betaRadVec = linRad4;
+        betaArmPts = betaBlockPts;
+    }
+    else if (betaGeom==8){
+        betaRadVec = linRad3;
+        betaArmPts = betaBlockPts;
+    }
+    else {
+        throw std::runtime_error("invalid betaGeom!");
+    }
 }
 

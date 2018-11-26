@@ -11,8 +11,6 @@
 // move this somewhere else
 const int betaArmPoints = 5; // should probably make this not a constant?
 
-// typedef std::array<Eigen::Vector3d, betaArmPoints> betaGeometry;
-
 class Robot {
 public:
     int id;
