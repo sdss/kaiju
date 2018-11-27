@@ -14,7 +14,7 @@ RobotGrid doOne(){
 }
 
 void doOneThread(int threadNum){
-    int maxIter = 200;
+    int maxIter = 400;
     int seed = threadNum * maxIter;
     char buffer[50];
     for (int ii = 0; ii<maxIter; ii++){
@@ -23,10 +23,13 @@ void doOneThread(int threadNum){
         RobotGrid rg (25, maxPathStepsGlob);
         rg.decollide();
         rg.pathGen();
-        if (!rg.didFail){
-            sprintf(buffer, "success_%04d.txt", seed);
-            rg.toFile(buffer);
-        }
+
+        // if (!rg.didFail){
+        //     sprintf(buffer, "success_%04d.txt", seed);
+        //     rg.toFile(buffer);
+        // }
+        sprintf(buffer, "stats_%04d_%02d.txt", seed, betaGeomID);
+        rg.printStats(buffer);
         seed++;
     }
 
@@ -46,23 +49,40 @@ void doOneThread(int threadNum){
 //     }
 // }
 
-int main()
+int main() // try lots of geometries
 {
     initBetaArms();
+    int geom_id;
     int nThreads = 10;
     std::thread t[10];
-    clock_t tStart;
-    clock_t tEnd;
-    tStart = clock();
-    for (int i = 0; i<nThreads; ++i){
-        t[i] = std::thread(doOneThread, i);
+    for (geom_id=0; geom_id<9; geom_id++){
+        setBetaGeom(geom_id);
+        for (int i = 0; i<nThreads; ++i){
+            t[i] = std::thread(doOneThread, i);
+        }
+        for (int i=0; i<nThreads; ++i){
+            t[i].join();
+        }
     }
-    for (int i=0; i<nThreads; ++i){
-        t[i].join();
-    }
-    tEnd = clock();
-    std::cout << "time took: " << (double)(tEnd - tStart)/CLOCKS_PER_SEC << std::endl;
 }
+
+// int main()
+// {
+//     initBetaArms();
+//     int nThreads = 10;
+//     std::thread t[10];
+//     clock_t tStart;
+//     clock_t tEnd;
+//     tStart = clock();
+//     for (int i = 0; i<nThreads; ++i){
+//         t[i] = std::thread(doOneThread, i);
+//     }
+//     for (int i=0; i<nThreads; ++i){
+//         t[i].join();
+//     }
+//     tEnd = clock();
+//     std::cout << "time took: " << (double)(tEnd - tStart)/CLOCKS_PER_SEC << std::endl;
+// }
 
 // int main()
 // {

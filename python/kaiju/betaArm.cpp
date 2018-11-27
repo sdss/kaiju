@@ -2,9 +2,8 @@
 #include "betaArm.h"
 
 std::vector<double> curveRad, curveRadM1, curveRadM2, linRad5, linRad4, linRad3, betaRadVec;
-betaGeometry betaCurvePts, betaLinearPts5, betaLinearPts4, betaLinearPts3, betaArmPts;
-betaGeometry betaBlockPts5, betaBlockPts4, betaBlockPts3;
-
+betaGeometry betaBlockPts, betaCurvePts, betaLinearPts5, betaLinearPts4, betaLinearPts3, betaArmPts;
+int betaGeomID;
 
 const int nCurvePts = 13;
 
@@ -22,7 +21,7 @@ const double CURVE_PTS[nCurvePts][3] = {
     {10.1438, 0, 23.8787},
     {10.25, 0,  26},
     {10.25, 0, 30},
-    {19.2-1.5, 0, 30} // 19.2 is flat end of head 1.5 is machined radius
+    {19.2-3.0-1.5, 0, 30} // 19.2 is flat end of head offset by 3mm (center of beta axis) 1.5 is machined radius
 };
 
 const double CURVE_RAD[nCurvePts-1] = {
@@ -44,7 +43,7 @@ const double CURVE_RAD[nCurvePts-1] = {
 
 
 void initBetaArms(){
-    Eigen::Vector3d blockOrigin, origin, end1, end2, end3;
+    Eigen::Vector3d origin, end1, end2, end3, blockOrigin, blockEnd;
 
     // curve arm geometries
     for (int ii=0; ii<nCurvePts; ii++){
@@ -59,6 +58,7 @@ void initBetaArms(){
 
 
     // straight arm geometries
+    // angled cylinders
     origin << 0, 0, 0;
     end1 << 16.5 - 5.0/2.0, 0, 30;
     end2 << 16.5 - 4.0/2.0, 0, 30;
@@ -73,9 +73,11 @@ void initBetaArms(){
     linRad4.push_back(2.0);
     linRad3.push_back(1.5);
 
-    // block geometries
-    linOrigin << 0, 0, 30;
-    betaBlockPts.push_back(blockOrigin)
+    // block geometry
+    blockOrigin << 0, 0, 30;
+    blockEnd << 19.2 - 3.0 - 1.5, 0, 30; // 1.5 is radius
+    betaBlockPts.push_back(blockOrigin);
+    betaBlockPts.push_back(blockEnd);
 
     // default to P1 geometry wide block
     setBetaGeom(6);
@@ -132,5 +134,6 @@ void setBetaGeom(int betaGeom){
     else {
         throw std::runtime_error("invalid betaGeom!");
     }
+    betaGeomID = betaGeom;
 }
 

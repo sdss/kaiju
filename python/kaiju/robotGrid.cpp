@@ -70,7 +70,7 @@ void RobotGrid::verifySmoothed(){
     int nCollisions = 0;
     char buffer[50];
     int printNum = 0;
-    for (int ii = 0; ii < nSteps; ii++){ // why -1 steps?
+    for (int ii = 0; ii < nSteps; ii++){
         for (Robot &r : allRobots){
             r.setAlphaBeta(r.interpSmoothAlphaPath[ii](1), r.interpSmoothBetaPath[ii](1));
             // std::cout << " robot id " << r.id << std::endl;
@@ -115,6 +115,43 @@ void RobotGrid::toFile(const char* filename){
         );
     }
     fclose(pFile);
+}
+
+void RobotGrid::printStats(const char* filename){
+    FILE * pFile;
+    pFile = fopen(filename, "w");
+    /* print:
+    total robots in grid
+    success robots in blind target allocation
+    number of replacements required to resolve collisions
+    number of time steps
+    number of robots successfully reaching home
+    */
+    int totalRobots = 0;
+    int allocSuccess = 0;
+    int nDecollide = 0;
+    int pathSuccess = 0;
+    int maxStepsToFullFold = 0;
+    for (Robot &r : allRobots){
+        totalRobots++;
+        if (r.nDecollide == 0){
+            allocSuccess++;
+        }
+        else {
+            nDecollide += r.nDecollide;
+        }
+        if (r.beta==180 and r.alpha==0){
+            pathSuccess++;
+            if (r.lastStepNum > maxStepsToFullFold){
+                maxStepsToFullFold = r.lastStepNum;
+            }
+        }
+
+    }
+    //fprintf(pFile, "#betaGeomID, totalRobots, allocSuccess, nDecollide, pathSuccess, pathSteps\n");
+    fprintf(pFile, "%i, %i, %i, %i, %i, %i\n", betaGeomID, totalRobots, allocSuccess, nDecollide, pathSuccess, maxStepsToFullFold);
+    fclose(pFile);
+
 }
 
 void RobotGrid::pathGen(){

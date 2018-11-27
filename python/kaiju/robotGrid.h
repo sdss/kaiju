@@ -15,7 +15,7 @@ const double max_reach = beta_arm_len + alpha_arm_len;
 const double radius_buffer = 0.2; // 0.2 mm extra buffer zone in distance between segments
 
 const double ang_step = 1; // degrees
-const int maxPathStepsGlob = (int)(ceil(500.0/ang_step));
+const int maxPathStepsGlob = (int)(ceil(700.0/ang_step));
 // line smoothing factor
 const double epsilon =  5 * ang_step; // was 7*ang_step for 0.1 step size
 
@@ -33,6 +33,7 @@ public:
     void decollide();
     int getNCollisions(double radiusBuffer=0);
     void toFile(const char*);
+    void printStats(const char*);
     void pathGen();
     void smoothPaths();
     void verifySmoothed();

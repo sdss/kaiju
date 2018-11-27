@@ -210,6 +210,7 @@ void Robot::decollide(){
     int ii;
     for (ii=0; ii<300; ii++){
         setXYUniform();
+        nDecollide ++;
         if (!isCollided()){
             break;
         }
@@ -273,6 +274,9 @@ void Robot::stepTowardFold(int stepNum){
         betaPath.push_back(betaPathPoint);
         return;
     }
+    // this is for keeping track of last step
+    // only updates if robot hasn't reached fold
+    lastStepNum = stepNum;
 
     // begin trying options pick first that works
     for (int ii=0; ii<alphaBetaArr.rows(); ii++){

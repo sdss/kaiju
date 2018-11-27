@@ -14,6 +14,8 @@ const int betaArmPoints = 5; // should probably make this not a constant?
 class Robot {
 public:
     int id;
+    int nDecollide = 0;
+    int lastStepNum = 0;
     double xPos, yPos, alpha, beta;
     Eigen::Affine3d betaRot, alphaRot;
     Eigen::Vector3d fiber_XYZ;
