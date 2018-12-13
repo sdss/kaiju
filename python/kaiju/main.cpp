@@ -8,6 +8,9 @@
 
 RobotGrid doOne(){
     RobotGrid rg (25, maxPathStepsGlob);
+    // std::cout << "ncollisions before swaps " << rg.getNCollisions() << std::endl;
+    rg.optimizeTargets();
+    // std::cout << "ncollisions after swaps " << rg.getNCollisions() << std::endl;
     rg.decollide();
     rg.pathGen();
     return rg;
@@ -21,6 +24,7 @@ void doOneThread(int threadNum){
         // std::cout << "seed " << seed << std::endl;
         srand(seed);
         RobotGrid rg (25, maxPathStepsGlob);
+        rg.optimizeTargets();
         rg.decollide();
         rg.pathGen();
 
@@ -36,6 +40,7 @@ void doOneThread(int threadNum){
 }
 
 // int main(){
+//     initBetaArms();
 //     int maxIter = 1000;
 //     char buffer[50];
 //     for (int ii = 0; ii<maxIter; ii++){
@@ -49,7 +54,7 @@ void doOneThread(int threadNum){
 //     }
 // }
 
-int main() // try lots of geometries
+int main() // try geometry stats
 {
     initBetaArms();
     int geom_id;
@@ -86,6 +91,7 @@ int main() // try lots of geometries
 
 // int main()
 // {
+//     initBetaArms();
 //     std::cout << "max steps " << maxPathStepsGlob << std::endl;
 //     // run 500, print out failed grids
 //     int nFails = 0;
@@ -108,6 +114,7 @@ int main() // try lots of geometries
 // int main()
 // {
 //     // single run print out robot paths
+//     initBetaArms();
 //     srand(0);
 //     clock_t tStart;
 //     clock_t tEnd;

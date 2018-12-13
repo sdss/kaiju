@@ -4,6 +4,25 @@
 #include "robotGrid.h"
 #include "betaArm.h"
 
+// define constants
+const double beta_arm_width = 5.2;
+const double buffer_distance = beta_arm_width / 2.0;
+const double collide_dist_squared = beta_arm_width * beta_arm_width;
+const double collide_dist_squared_shrink = 5 * 5; // collide zone just a bit
+const double alpha_arm_len = 7.4;
+const double beta_arm_len = 15; // mm to fiber
+const double pitch = 22.4; // distance to next nearest neighbor
+const double min_reach = beta_arm_len - alpha_arm_len;
+const double max_reach = beta_arm_len + alpha_arm_len;
+
+const double radius_buffer = 0.2; // 0.2 mm extra buffer zone in distance between segments
+
+const double ang_step = 1; // degrees
+const int maxPathStepsGlob = (int)(ceil(700.0/ang_step));
+// line smoothing factor
+const double epsilon =  5 * ang_step; // was 7*ang_step for 0.1 step size
+const double min_targ_sep = 8; // mm
+
 
 RobotGrid::RobotGrid(int nDia, int myMaxPathSteps, int myPrintEvery){
     // nDia is number of robots along equator of grid
@@ -29,7 +48,6 @@ RobotGrid::RobotGrid(int nDia, int myMaxPathSteps, int myPrintEvery){
     // for each robot, give it access to its neighbors
     // and initialze to random alpha betas
     for (Robot &r1 : allRobots){
-        r1.setXYUniform();
         // r1.setAlphaBeta(0,180);
         for (Robot &r2 : allRobots){
             if (r1.id==r2.id){
@@ -38,14 +56,41 @@ RobotGrid::RobotGrid(int nDia, int myMaxPathSteps, int myPrintEvery){
             double dx = r1.xPos - r2.xPos;
             double dy = r1.yPos - r2.yPos;
             double dist = hypot(dx, dy);
-            if (dist < (pitch+0.1)){
+            if (dist < (2*pitch+0.1)){ // make this 2*pitch?
                 // these robots are neighbors
                 r1.addNeighbor(&r2);
             }
         }
     }
 
+    // initialze each robot position
+    // ensure minimum target separation
+    // assignments keeps track of all previous assignment
+    // to check for min target separation
+    std::vector<Eigen::Vector2d> assignments;
+    for (Robot &r : allRobots){
+        while (true) {
+            r.setXYUniform();
+            Eigen::Vector2d nextAssign;
+            nextAssign(0) = r.fiber_XYZ(0);
+            nextAssign(1) = r.fiber_XYZ(1);
+            bool assignOK = true;
+            for (auto &assigned: assignments){
+                Eigen::Vector2d diff = nextAssign - assigned;
+                if (diff.norm() < min_targ_sep){
+                    assignOK = false;
+                    // std::cout << "assignment not ok" << std::endl;
+                    break; // for loop break
+                }
+            }
+            if (assignOK){
+                assignments.push_back(nextAssign);
+                break;
+            }
+        }
+    }
 }
+
 
 
 void RobotGrid::decollide(){
@@ -59,6 +104,7 @@ void RobotGrid::decollide(){
     }
 
 }
+
 
 void RobotGrid::smoothPaths(){
     for (Robot &r : allRobots){
@@ -172,7 +218,6 @@ void RobotGrid::pathGen(){
             }
         }
 
-        // allRobots.sort(robotSort);
         for (Robot &r: allRobots){
             // std::cout << "alpha beta " << r.alpha << " " << r.beta << std::endl;
             r.stepTowardFold(ii);
@@ -192,3 +237,82 @@ void RobotGrid::pathGen(){
 }
 
 
+void RobotGrid::optimizeTargets(){
+    double myX,myY,nX,nY;
+    bool swapWorked;
+    Robot * rn;
+    int randIndex;
+    // int randNeighborIndex;
+
+    // could compile all this stuff into lookup
+    // tables but this is working ok
+
+
+    for (int jj=0; jj<1000; jj++){
+
+        if (getNCollisions() == 0){
+            // all collisions have vanished!!!!
+            break;
+        }
+
+        for (Robot & r : allRobots){
+            if (!r.isCollided()){
+                continue;  // this robot isn't collided skip it
+            }
+            swapWorked = false;
+            // save current assignment
+            myX = r.fiber_XYZ(0);
+            myY = r.fiber_XYZ(1);
+            std::vector<int> swappableNeighbors;
+            for (int ii=0; ii < r.neighbors.size(); ii++){
+                rn = r.neighbors[ii];
+                nX = rn->fiber_XYZ(0);
+                nY = rn->fiber_XYZ(1);
+                if (!rn->checkFiberXYGlobal(myX, myY)){
+                    // neighbor can't reach mine
+                    // move to next robot
+                    continue;
+                }
+                if (!r.checkFiberXYGlobal(nX,nY)){
+                    // i cant reach neighbor
+                    // move to next robot
+                    continue;
+                }
+                // we can reach eachother, test it
+                swappableNeighbors.push_back(ii);
+                r.setFiberXY(nX, nY);
+                rn->setFiberXY(myX,myY);
+                if (!r.isCollided()){
+                    // no longer collided
+                    // keep this swap!
+                    // first one that's good
+                    swapWorked = true;
+                    break;
+                }
+                // swap them back
+                r.setFiberXY(myX, myY);
+                rn->setFiberXY(nX, nY);
+            }
+
+            if (!swapWorked and swappableNeighbors.size()>0){
+                // we didn't find any swap that got rid
+                // of collision, pick a random valid
+                // swap for this robot
+                // set them back,
+                // swap didn't work
+                randIndex = rand() % swappableNeighbors.size();
+                rn = r.neighbors[swappableNeighbors[randIndex]];
+                nX = rn->fiber_XYZ(0);
+                nY = rn->fiber_XYZ(1);
+
+                r.setFiberXY(nX, nY);
+                rn->setFiberXY(myX, myY);
+            }
+
+
+        }
+
+    }
+
+
+}

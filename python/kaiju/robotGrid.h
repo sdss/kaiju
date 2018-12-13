@@ -2,22 +2,23 @@
 #include "robot.h"
 
 // move constants to cpp file?
-const double beta_arm_width = 5.2;
-const double buffer_distance = beta_arm_width / 2.0;
-const double collide_dist_squared = beta_arm_width * beta_arm_width;
-const double collide_dist_squared_shrink = 5 * 5; // collide zone just a bit
-const double alpha_arm_len = 7.4;
-const double beta_arm_len = 15; // mm to fiber
-const double pitch = 22.4; // distance to next nearest neighbor
-const double min_reach = beta_arm_len - alpha_arm_len;
-const double max_reach = beta_arm_len + alpha_arm_len;
+extern const double beta_arm_width;
+extern const double buffer_distance;
+extern const double collide_dist_squared;
+extern const double collide_dist_squared_shrink;
+extern const double alpha_arm_len;
+extern const double beta_arm_len;
+extern const double pitch;
+extern const double min_reach;
+extern const double max_reach;
 
-const double radius_buffer = 0.2; // 0.2 mm extra buffer zone in distance between segments
+extern const double radius_buffer;
 
-const double ang_step = 1; // degrees
-const int maxPathStepsGlob = (int)(ceil(700.0/ang_step));
+extern const double ang_step;
+extern const int maxPathStepsGlob;
 // line smoothing factor
-const double epsilon =  5 * ang_step; // was 7*ang_step for 0.1 step size
+extern const double epsilon;
+extern const double min_targ_sep;
 
 class RobotGrid {
 public:
@@ -26,9 +27,8 @@ public:
     int nSteps;
     int maxPathSteps;
     int printEvery; // if -1 just print final if -2 print final and start
-
     double xFocalMax, yFocalMax, xFocalMin, yFocalMin;
-    std::list<Robot> allRobots;
+    std::vector<Robot> allRobots;
     RobotGrid (int nDia, int myMaxPathSteps, int myPrintEvery = 0);
     void decollide();
     int getNCollisions(double radiusBuffer=0);
@@ -37,6 +37,5 @@ public:
     void pathGen();
     void smoothPaths();
     void verifySmoothed();
+    void optimizeTargets();
 };
-
-bool robotSort(const Robot& robot1, const Robot& robot2);

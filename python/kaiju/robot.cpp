@@ -33,7 +33,7 @@ Eigen::Vector3d alphaTransV(alpha_trans_data);
 
 
 // move this to robot class?
-// 0,0 is origin of
+// 0,0 is origin of robot
 std::array<double, 2> alphaBetaFromXY(double x, double y){
     // law of cosines at work here...
     double xyMag = hypot(x, y);
@@ -68,6 +68,35 @@ Robot::Robot(int myid, double myxPos, double myyPos) {
     betaModel = betaArmPts;
     betaOrientation = betaArmPts;
     modelRadii = betaRadVec;
+}
+
+bool Robot::checkFiberXYGlobal(double xFiberGlobal, double yFiberGlobal){
+    double xFiberLocal = xFiberGlobal - xPos;
+    double yFiberLocal = yFiberGlobal - yPos;
+    bool canReach = checkFiberXYLocal(xFiberLocal, yFiberLocal);
+    return canReach;
+}
+
+bool Robot::checkFiberXYLocal(double xFiberLocal, double yFiberLocal){
+    double rad = hypot(xFiberLocal, yFiberLocal);
+    bool canReach = false;
+    if (rad > min_reach and rad < max_reach) {
+        canReach = true;
+    }
+    return canReach;
+
+}
+
+void Robot::setFiberXY(double xFiberGlobal, double yFiberGlobal){
+    double xFiberLocal = xFiberGlobal - xPos;
+    double yFiberLocal = yFiberGlobal - yPos;
+    bool canReach = checkFiberXYLocal(xFiberLocal, yFiberLocal);
+    if (!canReach){
+        throw std::runtime_error("cannot reach target xy");
+    }
+    std::array<double, 2> newAlphaBeta = alphaBetaFromXY(xFiberLocal, yFiberLocal);
+    setAlphaBeta(newAlphaBeta[0], newAlphaBeta[1]);
+
 }
 
 void Robot::pathToFile(){
@@ -130,6 +159,7 @@ void Robot::addNeighbor(Robot * rNeighbor){
 
 
 void Robot::setAlphaBeta(double newAlpha, double newBeta){
+    targetAssigned = true;
     alpha = newAlpha;
     beta = newBeta;
     double alphaRad = alpha * M_PI / 180.0;
@@ -207,11 +237,40 @@ bool Robot::isCollided(double radiusBuffer){
 
 void Robot::decollide(){
     // randomly replace alpha beta values until collisions vanish
-    int ii;
-    for (ii=0; ii<300; ii++){
-        setXYUniform();
+    // get neighbors positions to ensure we dont
+    // break the minimum target separation
+    std::vector<Eigen::Vector2d> assignments;
+    for (Robot * robot: neighbors){
+        Eigen::Vector2d neighborPos;
+        if (robot->targetAssigned){
+            neighborPos(0) = robot->fiber_XYZ(0); // could just taka block?
+            neighborPos(1) = robot->fiber_XYZ(1);
+            assignments.push_back(neighborPos);
+        }
+    }
+    for (int ii=0; ii<300; ii++){
+        while (true) {
+            setXYUniform();
+            Eigen::Vector2d nextAssign;
+            nextAssign(0) = fiber_XYZ(0);
+            nextAssign(1) = fiber_XYZ(1);
+            bool assignOK = true;
+            for (auto &assigned: assignments){
+                Eigen::Vector2d diff = nextAssign - assigned;
+                if (diff.norm() < min_targ_sep){
+                    assignOK = false;
+                    // std::cout << "assignment not ok" << std::endl;
+                    break; // for loop break
+                }
+            }
+            if (assignOK){
+                break; // break while loop for min separation
+            }
+        }
+        // check if this assignment is collided
         nDecollide ++;
         if (!isCollided()){
+            // break for loop
             break;
         }
     }
