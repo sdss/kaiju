@@ -241,76 +241,66 @@ void RobotGrid::optimizeTargets(){
     double myX,myY,nX,nY;
     bool swapWorked;
     Robot * rn;
-    int randIndex;
+    // int randIndex;
     // int randNeighborIndex;
 
     // could compile all this stuff into lookup
     // tables but this is working ok
 
-
-    for (int jj=0; jj<1000; jj++){
-
-        if (getNCollisions() == 0){
-            // all collisions have vanished!!!!
-            break;
+    for (Robot & r : allRobots){
+        if (!r.isCollided()){
+            continue;  // this robot isn't collided skip it
         }
-
-        for (Robot & r : allRobots){
+        swapWorked = false;
+        // save current assignment
+        myX = r.fiber_XYZ(0);
+        myY = r.fiber_XYZ(1);
+        std::vector<int> swappableNeighbors;
+        for (int ii=0; ii < r.neighbors.size(); ii++){
+            rn = r.neighbors[ii];
+            nX = rn->fiber_XYZ(0);
+            nY = rn->fiber_XYZ(1);
+            if (!rn->checkFiberXYGlobal(myX, myY)){
+                // neighbor can't reach mine
+                // move to next robot
+                continue;
+            }
+            if (!r.checkFiberXYGlobal(nX,nY)){
+                // i cant reach neighbor
+                // move to next robot
+                continue;
+            }
+            // we can reach eachother, test it
+            swappableNeighbors.push_back(ii);
+            r.setFiberXY(nX, nY);
+            rn->setFiberXY(myX,myY);
             if (!r.isCollided()){
-                continue;  // this robot isn't collided skip it
+                // no longer collided
+                // keep this swap!
+                // first one that's good
+                swapWorked = true;
+                break;
             }
-            swapWorked = false;
-            // save current assignment
-            myX = r.fiber_XYZ(0);
-            myY = r.fiber_XYZ(1);
-            std::vector<int> swappableNeighbors;
-            for (int ii=0; ii < r.neighbors.size(); ii++){
-                rn = r.neighbors[ii];
-                nX = rn->fiber_XYZ(0);
-                nY = rn->fiber_XYZ(1);
-                if (!rn->checkFiberXYGlobal(myX, myY)){
-                    // neighbor can't reach mine
-                    // move to next robot
-                    continue;
-                }
-                if (!r.checkFiberXYGlobal(nX,nY)){
-                    // i cant reach neighbor
-                    // move to next robot
-                    continue;
-                }
-                // we can reach eachother, test it
-                swappableNeighbors.push_back(ii);
-                r.setFiberXY(nX, nY);
-                rn->setFiberXY(myX,myY);
-                if (!r.isCollided()){
-                    // no longer collided
-                    // keep this swap!
-                    // first one that's good
-                    swapWorked = true;
-                    break;
-                }
-                // swap them back
-                r.setFiberXY(myX, myY);
-                rn->setFiberXY(nX, nY);
-            }
-
-            if (!swapWorked and swappableNeighbors.size()>0){
-                // we didn't find any swap that got rid
-                // of collision, pick a random valid
-                // swap for this robot
-                // set them back,
-                // swap didn't work
-                randIndex = rand() % swappableNeighbors.size();
-                rn = r.neighbors[swappableNeighbors[randIndex]];
-                nX = rn->fiber_XYZ(0);
-                nY = rn->fiber_XYZ(1);
-
-                r.setFiberXY(nX, nY);
-                rn->setFiberXY(myX, myY);
-            }
-
-
+            // swap them back
+            r.setFiberXY(myX, myY);
+            rn->setFiberXY(nX, nY);
         }
+
+        // if (!swapWorked and swappableNeighbors.size()>0){
+        //     // we didn't find any swap that got rid
+        //     // of collision, pick a random valid
+        //     // swap for this robot
+        //     // set them back,
+        //     // swap didn't work
+        //     randIndex = rand() % swappableNeighbors.size();
+        //     rn = r.neighbors[swappableNeighbors[randIndex]];
+        //     nX = rn->fiber_XYZ(0);
+        //     nY = rn->fiber_XYZ(1);
+
+        //     r.setFiberXY(nX, nY);
+        //     rn->setFiberXY(myX, myY);
+        // }
+
 
     }
 
