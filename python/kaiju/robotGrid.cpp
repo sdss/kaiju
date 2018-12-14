@@ -5,10 +5,6 @@
 #include "betaArm.h"
 
 // define constants
-const double beta_arm_width = 5.2;
-const double buffer_distance = beta_arm_width / 2.0;
-const double collide_dist_squared = beta_arm_width * beta_arm_width;
-const double collide_dist_squared_shrink = 5 * 5; // collide zone just a bit
 const double alpha_arm_len = 7.4;
 const double beta_arm_len = 15; // mm to fiber
 const double pitch = 22.4; // distance to next nearest neighbor

@@ -2,10 +2,6 @@
 #include "robot.h"
 
 // move constants to cpp file?
-extern const double beta_arm_width;
-extern const double buffer_distance;
-extern const double collide_dist_squared;
-extern const double collide_dist_squared_shrink;
 extern const double alpha_arm_len;
 extern const double beta_arm_len;
 extern const double pitch;
