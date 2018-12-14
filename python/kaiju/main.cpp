@@ -125,7 +125,7 @@ int main()
     // std::cout << "ncollisions after swaps " << rg.getNCollisions() << std::endl;
     rg.decollide();
     rg.pathGen();
-    // rg.smoothPaths();
+    rg.smoothPaths();
     tEnd = clock();
     std::cout << "time took: " << (double)(tEnd - tStart)/CLOCKS_PER_SEC << std::endl;
     for (Robot &robot : rg.allRobots){
