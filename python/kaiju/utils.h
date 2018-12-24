@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <vector>
 #include <array>
-#include <eigen3/Eigen/Dense>
+#include "eigen3/Eigen/Dense"
 
 // #define SMALL_NUM   0.00000001 // anything that avoids division overflow
 const double SMALL_NUM = 0.00000001; // anything that avoids division overflow
