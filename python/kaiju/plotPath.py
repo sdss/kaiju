@@ -56,9 +56,10 @@ def plotSet():
     p = multiprocessing.Pool(10)
     p.map(plotOne, filenames)
 
-#filenames = glob.glob("path_*.txt")
-filenames = ["path_%04i.txt"%x for x in [204, 244, 247, 252, 262, 370]]
+# filenames = glob.glob("path_*.txt")
+# filenames = ["path_%04i.txt"%x for x in [204, 244, 247, 252, 262, 370]]
 pathNums = [204, 244, 247, 252, 262, 370]
+pathNums = range(100)
 
 for filenum in pathNums:
     fig = plt.figure(figsize=(9, 9))

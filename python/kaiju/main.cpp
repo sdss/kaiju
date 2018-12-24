@@ -7,7 +7,7 @@
 
 
 RobotGrid doOne(){
-    RobotGrid rg (25, maxPathStepsGlob);
+    RobotGrid rg (25, 1);
     // std::cout << "ncollisions before swaps " << rg.getNCollisions() << std::endl;
     rg.optimizeTargets();
     // std::cout << "ncollisions after swaps " << rg.getNCollisions() << std::endl;
@@ -17,13 +17,14 @@ RobotGrid doOne(){
 }
 
 void doOneThread(int threadNum){
+    int ang_step = 1;
     int maxIter = 400;
     int seed = threadNum * maxIter;
     char buffer[50];
     for (int ii = 0; ii<maxIter; ii++){
         // std::cout << "seed " << seed << std::endl;
         srand(seed);
-        RobotGrid rg (25, maxPathStepsGlob);
+        RobotGrid rg (25, ang_step);
         rg.optimizeTargets();
         rg.decollide();
         rg.pathGen();
@@ -46,7 +47,7 @@ void doOneThread(int threadNum){
 //     for (int ii = 0; ii<maxIter; ii++){
 //         std::cout << "seed " << ii << std::endl;
 //         srand(ii);
-//         RobotGrid rg (25, maxPathStepsGlob);
+//         RobotGrid rg (25, 1,);
 //         rg.decollide();
 //         rg.pathGen();
 //         sprintf(buffer, "end_%04d.txt", ii);
@@ -92,7 +93,7 @@ void doOneThread(int threadNum){
 // int main()
 // {
 //     initBetaArms();
-//     std::cout << "max steps " << maxPathStepsGlob << std::endl;
+//     std::cout << "max steps " << 1, << std::endl;
 //     // run 500, print out failed grids
 //     int nFails = 0;
 //     int maxTries = 500;
@@ -111,29 +112,41 @@ void doOneThread(int threadNum){
 
 // }
 
-int main()
+int main(int argc,char *argv[])
 {
+    double collisionBuffer = 0;
+    double ang_step = 1;
+    if( argc > 1 ) {
+        collisionBuffer = atof(argv[1]);  // alternative strtod
+    }
+    if( argc > 2 ) {
+        ang_step = atof(argv[2]);  // alternative strtod
+    }
     // single run print out robot paths
     initBetaArms();
     srand(0);
+    int print_every =  (int)(1.0 / ang_step);
+    std::cout << "print every: " << print_every << std::endl;
     clock_t tStart;
     clock_t tEnd;
     tStart = clock();
-    RobotGrid rg (25, maxPathStepsGlob);
-    // std::cout << "ncollisions before swaps " << rg.getNCollisions() << std::endl;
+    RobotGrid rg (25, ang_step, print_every, collisionBuffer);
+    std::cout << "ncollisions before swaps " << rg.getNCollisions() << std::endl;
     rg.optimizeTargets();
-    // std::cout << "ncollisions after swaps " << rg.getNCollisions() << std::endl;
+    std::cout << "ncollisions after swaps " << rg.getNCollisions() << std::endl;
     rg.decollide();
     rg.pathGen();
+    std::cout << "pathGen fail " << rg.didFail << std::endl;
+    rg.setCollisionBuffer(0);
     rg.smoothPaths();
     tEnd = clock();
     std::cout << "time took: " << (double)(tEnd - tStart)/CLOCKS_PER_SEC << std::endl;
     for (Robot &robot : rg.allRobots){
         robot.pathToFile();
         // std::cout << " 1 " << robot.id << std::endl;
-        // robot.smoothPathToFile();
+        robot.smoothPathToFile();
         // std::cout << " 2 " << robot.id << std::endl;
-        // robot.ismoothPathToFile();
+        robot.ismoothPathToFile();
         // std::cout << " 3 " << robot.id << std::endl;
     }
     rg.verifySmoothed();

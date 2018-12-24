@@ -11,18 +11,18 @@ const double pitch = 22.4; // distance to next nearest neighbor
 const double min_reach = beta_arm_len - alpha_arm_len;
 const double max_reach = beta_arm_len + alpha_arm_len;
 
-const double radius_buffer = 0.2; // 0.2 mm extra buffer zone in distance between segments
-
-const double ang_step = 1; // degrees
-const int maxPathStepsGlob = (int)(ceil(700.0/ang_step));
+// const double ang_step = 1; // degrees
+// const int maxPathStepsGlob = (int)(ceil(700.0/ang_step));
 // line smoothing factor
-const double epsilon =  5 * ang_step; // was 7*ang_step for 0.1 step size
+// const double epsilon =  5 * ang_step; // was 7*ang_step for 0.1 step size
 const double min_targ_sep = 8; // mm
 
 
-RobotGrid::RobotGrid(int nDia, int myMaxPathSteps, int myPrintEvery){
+RobotGrid::RobotGrid(int nDia, double myAng_step, int myPrintEvery, double collisionBuffer){
     // nDia is number of robots along equator of grid
-    maxPathSteps = myMaxPathSteps;
+    ang_step = myAng_step;
+    epsilon = 5 * ang_step;
+    maxPathSteps = (int)(ceil(700.0/ang_step));
     printEvery = myPrintEvery; // default to not printing
     Eigen::MatrixXd xyHexPos = getHexPositions(nDia, pitch);
     nRobots = xyHexPos.rows();
@@ -35,7 +35,8 @@ RobotGrid::RobotGrid(int nDia, int myMaxPathSteps, int myPrintEvery){
     yFocalMin = xyHexPos.colwise().minCoeff()(1) - min_reach;
     // add in robot reach to xyFocalBox
     for (int ii=0; ii<nRobots; ii++){
-        Robot robot(ii, xyHexPos(ii, 0), xyHexPos(ii, 1));
+        Robot robot(ii, xyHexPos(ii, 0), xyHexPos(ii, 1), ang_step);
+        robot.setCollisionBuffer(collisionBuffer);
         // hack set all alpha betas home
         allRobots.push_back(robot);
 
@@ -87,7 +88,11 @@ RobotGrid::RobotGrid(int nDia, int myMaxPathSteps, int myPrintEvery){
     }
 }
 
-
+void RobotGrid::setCollisionBuffer(double newBuffer){
+    for (Robot &r : allRobots){
+        r.setCollisionBuffer(newBuffer);
+    }
+}
 
 void RobotGrid::decollide(){
     // iterate over robots and resolve collisions
@@ -104,7 +109,7 @@ void RobotGrid::decollide(){
 
 void RobotGrid::smoothPaths(){
     for (Robot &r : allRobots){
-        r.smoothPath();
+        r.smoothPath(epsilon);
     }
 }
 
@@ -135,11 +140,11 @@ void RobotGrid::verifySmoothed(){
 
 
 
-int RobotGrid::getNCollisions(double radiusBuffer){
+int RobotGrid::getNCollisions(){
     // return number of collisions found
     int nCollide = 0;
     for (Robot &r : allRobots){
-        if (r.isCollided(radiusBuffer)) {
+        if (r.isCollided()) {
             nCollide++;
         }
     }

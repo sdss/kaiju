@@ -8,18 +8,18 @@
 
 
 // alpha beta array - the ordered list of moves to try
-const double ab_data[] = {
-    -ang_step,  ang_step,
-            0,  ang_step,
-     ang_step,  ang_step,
-    -ang_step,         0,
-     ang_step,         0,
-    -ang_step, -ang_step,
-            0, -ang_step,
-     ang_step, -ang_step
-};
+// const double ab_data[] = {
+//     -ang_step,  ang_step,
+//             0,  ang_step,
+//      ang_step,  ang_step,
+//     -ang_step,         0,
+//      ang_step,         0,
+//     -ang_step, -ang_step,
+//             0, -ang_step,
+//      ang_step, -ang_step
+// };
 
-Eigen::Array<double, 8, 2> alphaBetaArr(ab_data);
+// Eigen::Array<double, 8, 2> alphaBetaArr(ab_data);
 
 // xyz pos of fiber in beta neutra position
 const double fiberNeutral_data[] = {beta_arm_len, 0, 0};
@@ -60,15 +60,30 @@ std::array<double, 2> alphaBetaFromXY(double x, double y){
 }
 
 
-Robot::Robot(int myid, double myxPos, double myyPos) {
+Robot::Robot(int myid, double myxPos, double myyPos, double myAng_step) {
     xPos = myxPos;
     yPos = myyPos;
+    ang_step = myAng_step;
     transXY = Eigen::Vector3d(myxPos, myyPos, 0);
     id = myid;
     betaModel = betaArmPts;
     betaOrientation = betaArmPts;
     modelRadii = betaRadVec;
+
+    alphaBetaArr <<  -ang_step,  ang_step,
+                             0,  ang_step,
+                      ang_step,  ang_step,
+                     -ang_step,         0,
+                      ang_step,         0,
+                     -ang_step, -ang_step,
+                             0, -ang_step,
+                      ang_step, -ang_step;
 }
+
+void Robot::setCollisionBuffer(double newBuffer){
+    collisionBuffer = newBuffer;
+}
+
 
 bool Robot::checkFiberXYGlobal(double xFiberGlobal, double yFiberGlobal){
     double xFiberLocal = xFiberGlobal - xPos;
@@ -211,7 +226,7 @@ void Robot::setXYUniform(){
 }
 
 
-bool Robot::isCollided(double radiusBuffer){
+bool Robot::isCollided(){
     double dist2, rad1, rad2, collideDist2;
     bool iAmCollided = false;
     for (Robot * robot : neighbors){
@@ -222,7 +237,7 @@ bool Robot::isCollided(double radiusBuffer){
                 );
             rad1 = modelRadii[ii];
             rad2 = robot->modelRadii[ii];
-            collideDist2 = (rad1+rad2+radiusBuffer)*(rad1+rad2+radiusBuffer);
+            collideDist2 = (rad1+rad2+collisionBuffer)*(rad1+rad2+robot->collisionBuffer);
             if (dist2 < collideDist2){
                 // std::cout << "dist " << dist2 - collide_dist_squared << std::endl;
                 iAmCollided = true;
@@ -277,7 +292,7 @@ void Robot::decollide(){
 }
 
 
-void Robot::smoothPath(){
+void Robot::smoothPath(double epsilon){
     // smooth a previously generated path
     double interpSmoothAlpha, interpSmoothBeta;
     int npts;

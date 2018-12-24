@@ -127,7 +127,7 @@ def plotSetSlow(basename):
 
 
 if __name__ == "__main__":
-    # plotSet("interp_")
+    plotSet("interp_")
     plotSet("step_")
 # ffmpeg -r 10 -f image2 -i interp_%04d.png -pix_fmt yuv420p robotMovie.mp4
 

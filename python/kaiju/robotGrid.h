@@ -10,14 +10,16 @@ extern const double max_reach;
 
 extern const double radius_buffer;
 
-extern const double ang_step;
-extern const int maxPathStepsGlob;
+// extern const double ang_step;
+// extern const int maxPathStepsGlob;
 // line smoothing factor
-extern const double epsilon;
+// extern const double epsilon;
 extern const double min_targ_sep;
 
 class RobotGrid {
 public:
+    double ang_step;
+    double epsilon;
     int nRobots;
     bool didFail;
     int nSteps;
@@ -25,13 +27,14 @@ public:
     int printEvery; // if -1 just print final if -2 print final and start
     double xFocalMax, yFocalMax, xFocalMin, yFocalMin;
     std::vector<Robot> allRobots;
-    RobotGrid (int nDia, int myMaxPathSteps, int myPrintEvery = 0);
+    RobotGrid (int nDia, double myAng_step, int myPrintEvery = 0, double collisionBuffer=0);
     void decollide();
-    int getNCollisions(double radiusBuffer=0);
+    int getNCollisions();
     void toFile(const char*);
     void printStats(const char*);
     void pathGen();
     void smoothPaths();
     void verifySmoothed();
     void optimizeTargets();
+    void setCollisionBuffer(double newBuffer);
 };
