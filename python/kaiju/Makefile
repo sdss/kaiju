@@ -1,19 +1,19 @@
 CFLAGS = -O3 -Wall --std=c++11 -g
 CC = clang++
 
-kaiju: robot.o utils.o robotGrid.o betaArm.o main.cpp
+kaiju: robot.o utils.o robotGrid.o betaArm.o main.cpp robotGrid.h betaArm.h
 	$(CC) $(CFLAGS) -o kaiju main.cpp robot.o robotGrid.o utils.o betaArm.o
 
-robot.o: robot.cpp
+robot.o: robot.cpp robot.h utils.h robotGrid.h
 	$(CC) $(CFLAGS) -c robot.cpp
 
-robotGrid.o: robotGrid.cpp
+robotGrid.o: robotGrid.cpp robotGrid.h betaArm.h
 	$(CC) $(CFLAGS) -c robotGrid.cpp
 
-utils.o: utils.cpp
+utils.o: utils.cpp utils.h
 	$(CC) $(CFLAGS) -c utils.cpp
 
-betaArm.o: betaArm.cpp
+betaArm.o: betaArm.cpp betaArm.h
 	$(CC) $(CFLAGS) -c betaArm.cpp
 
 clean:
