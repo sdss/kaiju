@@ -1,4 +1,5 @@
 #include <pybind11/pybind11.h>
+#include <pybind11/eigen.h>
 #include "robotGrid.h"
 #include "betaArm.h"
 
