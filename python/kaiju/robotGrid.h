@@ -27,7 +27,7 @@ public:
     int printEvery; // if -1 just print final if -2 print final and start
     double xFocalMax, yFocalMax, xFocalMin, yFocalMin;
     std::vector<Robot> allRobots;
-    RobotGrid (int nDia, double myAng_step, int myPrintEvery = 0, double collisionBuffer=0);
+    RobotGrid (int nDia, double myAng_step, int betaGeomID = 6, int myPrintEvery = 0, double collisionBuffer=0);
     void decollide();
     int getNCollisions();
     void toFile(const char*);

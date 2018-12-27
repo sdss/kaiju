@@ -60,15 +60,15 @@ std::array<double, 2> alphaBetaFromXY(double x, double y){
 }
 
 
-Robot::Robot(int myid, double myxPos, double myyPos, double myAng_step) {
+Robot::Robot(int myid, double myxPos, double myyPos, double myAng_step, betaGeometry myBetaGeom, std::vector<double> myModelRadii) {
     xPos = myxPos;
     yPos = myyPos;
     ang_step = myAng_step;
     transXY = Eigen::Vector3d(myxPos, myyPos, 0);
     id = myid;
-    betaModel = betaArmPts;
-    betaOrientation = betaArmPts;
-    modelRadii = betaRadVec;
+    betaModel = myBetaGeom;
+    betaOrientation = myBetaGeom;
+    modelRadii = myModelRadii;
 
     alphaBetaArr <<  -ang_step,  ang_step,
                              0,  ang_step,

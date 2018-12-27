@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include "betaArm.h"
 
-std::vector<double> curveRad, curveRadM1, curveRadM2, linRad5, linRad4, linRad3, betaRadVec;
-betaGeometry betaBlockPts, betaCurvePts, betaLinearPts5, betaLinearPts4, betaLinearPts3, betaArmPts;
+std::vector<double> curveRad, curveRadM1, curveRadM2, linRad5, linRad4, linRad3; // betaRadVec;
+betaGeometry betaBlockPts, betaCurvePts, betaLinearPts5, betaLinearPts4, betaLinearPts3; // betaArmPts;
 int betaGeomID;
 
 const int nCurvePts = 13;
@@ -80,11 +80,11 @@ void initBetaArms(){
     betaBlockPts.push_back(blockEnd);
 
     // default to P1 geometry wide block
-    setBetaGeom(6);
+    // setBetaGeom(6);
 
 }
 
-void setBetaGeom(int betaGeom){
+std::pair<betaGeometry, std::vector<double>> getBetaGeom(int betaGeom){
     // beta geom lookup list
     // 0: P1 gemoetry
     // 1: P1 geometry with collision radius shrunk by 0.5mm
@@ -95,45 +95,65 @@ void setBetaGeom(int betaGeom){
     // 6: block geom, 5mm width
     // 7: block geom, 4mm width
     // 8: block geom, 3mm width
+    std::pair<betaGeometry, std::vector<double>> output;
     if (betaGeom==0){
-        betaRadVec = curveRad;
-        betaArmPts = betaCurvePts;
+        output.first = betaCurvePts;
+        output.second = curveRad;
+        // betaRadVec = curveRad;
+        // betaArmPts = betaCurvePts;
     }
     else if (betaGeom==1){
-        betaRadVec = curveRadM1;
-        betaArmPts = betaCurvePts;
+        output.first = betaCurvePts;
+        output.second = curveRadM1;
+        // betaRadVec = curveRadM1;
+        // betaArmPts = betaCurvePts;
     }
     else if (betaGeom==2){
-        betaRadVec = curveRadM2;
-        betaArmPts = betaCurvePts;
+        output.first = betaCurvePts;
+        output.second = curveRadM2;
+        // betaRadVec = curveRadM2;
+        // betaArmPts = betaCurvePts;
     }
     else if (betaGeom==3){
-        betaRadVec = linRad5;
-        betaArmPts = betaLinearPts5;
+        output.first = betaLinearPts5;
+        output.second = linRad5;
+        // betaRadVec = linRad5;
+        // betaArmPts = betaLinearPts5;
     }
     else if (betaGeom==4){
-        betaRadVec = linRad4;
-        betaArmPts = betaLinearPts4;
+        output.first = betaLinearPts4;
+        output.second = linRad4;
+        // betaRadVec = linRad4;
+        // betaArmPts = betaLinearPts4;
     }
     else if (betaGeom==5){
-        betaRadVec = linRad3;
-        betaArmPts = betaLinearPts3;
+        output.first = betaLinearPts3;
+        output.second = linRad3;
+        // betaRadVec = linRad3;
+        // betaArmPts = betaLinearPts3;
     }
     else if (betaGeom==6){
-        betaRadVec = linRad5;
-        betaArmPts = betaBlockPts;
+        output.first = betaBlockPts;
+        output.second = linRad5;
+        // betaRadVec = linRad5;
+        // betaArmPts = betaBlockPts;
     }
     else if (betaGeom==7){
-        betaRadVec = linRad4;
-        betaArmPts = betaBlockPts;
+        output.first = betaBlockPts;
+        output.second = linRad4;
+        // betaRadVec = linRad4;
+        // betaArmPts = betaBlockPts;
     }
     else if (betaGeom==8){
-        betaRadVec = linRad3;
-        betaArmPts = betaBlockPts;
+        output.first = betaBlockPts;
+        output.second = linRad3;
+        // betaRadVec = linRad3;
+        // betaArmPts = betaBlockPts;
     }
     else {
         throw std::runtime_error("invalid betaGeom!");
     }
     betaGeomID = betaGeom;
+    return output;
 }
 

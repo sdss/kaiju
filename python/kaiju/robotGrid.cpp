@@ -18,7 +18,7 @@ const double max_reach = beta_arm_len + alpha_arm_len;
 const double min_targ_sep = 8; // mm
 
 
-RobotGrid::RobotGrid(int nDia, double myAng_step, int myPrintEvery, double collisionBuffer){
+RobotGrid::RobotGrid(int nDia, double myAng_step, int betaGeomID, int myPrintEvery, double collisionBuffer){
     // nDia is number of robots along equator of grid
     ang_step = myAng_step;
     epsilon = 5 * ang_step;
@@ -26,6 +26,9 @@ RobotGrid::RobotGrid(int nDia, double myAng_step, int myPrintEvery, double colli
     printEvery = myPrintEvery; // default to not printing
     Eigen::MatrixXd xyHexPos = getHexPositions(nDia, pitch);
     nRobots = xyHexPos.rows();
+
+    // get desired betaArm shape
+    std::pair<betaGeometry, std::vector<double>> betaPair = getBetaGeom(betaGeomID);
 
     // determine min/max x/y values in grid
 
@@ -35,7 +38,7 @@ RobotGrid::RobotGrid(int nDia, double myAng_step, int myPrintEvery, double colli
     yFocalMin = xyHexPos.colwise().minCoeff()(1) - min_reach;
     // add in robot reach to xyFocalBox
     for (int ii=0; ii<nRobots; ii++){
-        Robot robot(ii, xyHexPos(ii, 0), xyHexPos(ii, 1), ang_step);
+        Robot robot(ii, xyHexPos(ii, 0), xyHexPos(ii, 1), ang_step, betaPair.first, betaPair.second);
         robot.setCollisionBuffer(collisionBuffer);
         // hack set all alpha betas home
         allRobots.push_back(robot);

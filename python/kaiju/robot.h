@@ -29,7 +29,7 @@ public:
     std::vector<Eigen::Vector2d> smoothAlphaPath, smoothBetaPath;
     std::vector<Eigen::Vector2d> interpSmoothAlphaPath, interpSmoothBetaPath;
     std::vector<Robot *> neighbors;
-    Robot (int myid, double myxPos, double myyPos, double myAng_step);
+    Robot (int myid, double myxPos, double myyPos, double myAng_step, betaGeometry myBetaGeom, std::vector<double> myModelRadii);
     void setAlphaBeta (double nextAlpha, double nextBeta);
     void setFiberXY (double xFiberGlobal, double yFiberGlobal); // xy in focal plane coord sys
     bool checkFiberXYLocal (double xFiberLocal, double yFiberLocal); // check if robot can reach

@@ -130,7 +130,7 @@ int main(int argc,char *argv[])
     clock_t tStart;
     clock_t tEnd;
     tStart = clock();
-    RobotGrid rg (25, ang_step, print_every, collisionBuffer);
+    RobotGrid rg (25, ang_step, 6, print_every, collisionBuffer);
     std::cout << "ncollisions before swaps " << rg.getNCollisions() << std::endl;
     rg.optimizeTargets();
     std::cout << "ncollisions after swaps " << rg.getNCollisions() << std::endl;

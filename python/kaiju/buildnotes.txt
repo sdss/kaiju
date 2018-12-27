@@ -39,3 +39,9 @@ struct Pet {
     std::string name;
     Kind type;
 };
+
+
+
+lsst?
+
+https://developer.lsst.io/v/DM-9089/coding/python_wrappers_for_cpp_with_pybind11.html
