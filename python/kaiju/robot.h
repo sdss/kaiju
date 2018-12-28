@@ -26,8 +26,11 @@ public:
     std::vector<double> modelRadii;
     // std::array<double, 2> xyTarget, xyAlphaArm;
     std::vector<Eigen::Vector2d> alphaPath, betaPath;
-    std::vector<Eigen::Vector2d> smoothAlphaPath, smoothBetaPath;
-    std::vector<Eigen::Vector2d> interpSmoothAlphaPath, interpSmoothBetaPath;
+    std::vector<Eigen::Vector2d> smoothAlphaPath, smoothBetaPath; // sparse
+    std::vector<Eigen::Vector2d> interpSmoothAlphaPath, interpSmoothBetaPath; // dense
+    std::vector<Eigen::Vector2d> interpAlphaX, interpAlphaY, interpBetaX, interpBetaY; // smoothed
+    std::vector<Eigen::Vector2d> roughAlphaX, roughAlphaY, roughBetaX, roughBetaY; // jiggly
+    std::vector<Eigen::Vector2d> interpCollisions; // boolean points for collided or not
     std::vector<Robot *> neighbors;
     Robot (int myid, double myxPos, double myyPos, double myAng_step, betaGeometry myBetaGeom, std::vector<double> myModelRadii);
     void setAlphaBeta (double nextAlpha, double nextBeta);

@@ -316,6 +316,7 @@ void Robot::smoothPath(double epsilon){
         smoothBetaPath[ii](1) = smoothBetaPath[ii](1);// - epsilon;
     }
 
+    // calculate smoothed alpha betas at every step
     int nDensePoints = alphaPath.size();
     for (int ii=0; ii<nDensePoints; ii++){
         double xVal = alphaPath[ii](0);
@@ -328,8 +329,25 @@ void Robot::smoothPath(double epsilon){
         interpSmoothBeta = linearInterpolate(smoothBetaPath, xVal);
         btemp(1) = interpSmoothBeta;
         interpSmoothBetaPath.push_back(btemp);
-    }
 
+        // populate interpXY points for alpha/beta ends
+        setAlphaBeta(interpSmoothAlpha, interpSmoothBeta);
+        atemp(1) = betaOrientation[0](0); // xAlphaEnd
+        interpAlphaX.push_back(atemp);
+        atemp(1) = betaOrientation[0](1); // yAlphaEnd
+        interpAlphaY.push_back(atemp);
+        atemp(1) = betaOrientation.back()(0); // xBetaEnd
+        interpBetaX.push_back(atemp);
+        atemp(1) = betaOrientation.back()(1); // yBetaEnd
+        interpBetaY.push_back(atemp);
+
+        atemp(1) = 0; // not collided
+        if (isCollided()){
+            atemp(1) = 1;
+        }
+        interpCollisions.push_back(atemp);
+
+    }
 
 }
 
@@ -390,6 +408,18 @@ void Robot::stepTowardFold(int stepNum){
     betaPathPoint(1) = currBeta;
     alphaPath.push_back(alphaPathPoint);
     betaPath.push_back(betaPathPoint);
+
+    // add alpha/beta xy points
+    Eigen::Vector2d temp;
+    temp(0) = stepNum;
+    temp(1) = betaOrientation[0](0); // xAlphaEnd
+    roughAlphaX.push_back(temp);
+    temp(1) = betaOrientation[0](1); // yAlphaEnd
+    roughAlphaY.push_back(temp);
+    temp(1) = betaOrientation.back()(0); // xBetaEnd
+    roughBetaX.push_back(temp);
+    temp(1) = betaOrientation.back()(1); // yBetaEnd
+    roughBetaY.push_back(temp);
 }
 
 bool robotSort(const Robot& robot1, const Robot& robot2){
