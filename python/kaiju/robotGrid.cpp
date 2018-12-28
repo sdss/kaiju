@@ -1,5 +1,5 @@
 #include <iostream>
-#include "eigen3/Eigen/Dense"
+#include <Eigen/Dense>
 #include "utils.h"
 #include "robotGrid.h"
 #include "betaArm.h"

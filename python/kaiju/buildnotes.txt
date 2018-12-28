@@ -45,3 +45,10 @@ struct Pet {
 lsst?
 
 https://developer.lsst.io/v/DM-9089/coding/python_wrappers_for_cpp_with_pybind11.html
+
+conda install eigen
+
+homebrew stuff:
+
+ ln -s eigen3/Eigen/ Eigen
+

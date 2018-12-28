@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <array>
-#include "eigen3/Eigen/Dense"
+#include <Eigen/Dense>
 
 typedef std::vector<Eigen::Vector3d> betaGeometry;
 // collision radii as a function of z

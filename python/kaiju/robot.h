@@ -4,8 +4,8 @@
 #include <vector>
 #include <list>
 #include <array>
-#include "eigen3/Eigen/Dense"
-#include "eigen3/Eigen/Geometry"
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
 #include "betaArm.h"
 
 
