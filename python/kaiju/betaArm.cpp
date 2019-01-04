@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "betaArm.h"
 
-std::vector<double> curveRad, curveRadM1, curveRadM2, linRad5, linRad4, linRad3; // betaRadVec;
+std::vector<double> curveRad, curveRadM1, curveRadM2, linRad5, linRad4, linRad3, linRad1; // betaRadVec;
 betaGeometry betaBlockPts, betaCurvePts, betaLinearPts5, betaLinearPts4, betaLinearPts3; // betaArmPts;
 int betaGeomID;
 
@@ -72,6 +72,7 @@ void initBetaArms(){
     linRad5.push_back(2.5);
     linRad4.push_back(2.0);
     linRad3.push_back(1.5);
+    linRad1.push_back(0.5);
 
     // block geometry
     blockOrigin << 0, 0, 30;
@@ -95,6 +96,7 @@ std::pair<betaGeometry, std::vector<double>> getBetaGeom(int betaGeom){
     // 6: block geom, 5mm width
     // 7: block geom, 4mm width
     // 8: block geom, 3mm width
+    // 9: block geom, 1mm width
     std::pair<betaGeometry, std::vector<double>> output;
     if (betaGeom==0){
         output.first = betaCurvePts;
@@ -147,6 +149,12 @@ std::pair<betaGeometry, std::vector<double>> getBetaGeom(int betaGeom){
     else if (betaGeom==8){
         output.first = betaBlockPts;
         output.second = linRad3;
+        // betaRadVec = linRad3;
+        // betaArmPts = betaBlockPts;
+    }
+    else if (betaGeom==9){
+        output.first = betaBlockPts;
+        output.second = linRad1;
         // betaRadVec = linRad3;
         // betaArmPts = betaBlockPts;
     }

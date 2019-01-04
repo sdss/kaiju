@@ -25,9 +25,10 @@ public:
     int nSteps;
     int maxPathSteps;
     int printEvery; // if -1 just print final if -2 print final and start
+    int smoothCollisions;
     double xFocalMax, yFocalMax, xFocalMin, yFocalMin;
     std::vector<Robot> allRobots;
-    RobotGrid (int nDia, double myAng_step, int betaGeomID = 6, int myPrintEvery = 0, double collisionBuffer=0);
+    RobotGrid (int nDia, double myAng_step, int betaGeomID, int myPrintEvery, double collisionBuffer, double myEpsilon, int seed);
     void decollide();
     int getNCollisions();
     void toFile(const char*);

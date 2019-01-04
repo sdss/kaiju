@@ -17,23 +17,25 @@ RobotGrid doOne(){
 }
 
 void doOneThread(int threadNum){
+    std::vector<double> colArray = {0, 0.33333333, 0.66666667, 1.0, 1.33333333,1.66666667, 2.0, 2.33333333, 2.66666667, 3.0};
     int ang_step = 1;
     int maxIter = 400;
     int seed = threadNum * maxIter;
     char buffer[50];
+    int print_every = 0;
+    double collisionBuffer = colArray[threadNum];
     for (int ii = 0; ii<maxIter; ii++){
         // std::cout << "seed " << seed << std::endl;
         srand(seed);
-        RobotGrid rg (25, ang_step);
-        rg.optimizeTargets();
+        RobotGrid rg (25, ang_step, 8, print_every, collisionBuffer); // 3mm width
         rg.decollide();
         rg.pathGen();
 
-        // if (!rg.didFail){
-        //     sprintf(buffer, "success_%04d.txt", seed);
-        //     rg.toFile(buffer);
-        // }
-        sprintf(buffer, "stats_%04d_%02d.txt", seed, betaGeomID);
+        if (rg.didFail){
+            sprintf(buffer, "fail_%04d_%02d.txt", seed, threadNum);
+            rg.toFile(buffer);
+        }
+        sprintf(buffer, "stats_%04d_%02d.txt", seed, threadNum);
         rg.printStats(buffer);
         seed++;
     }
@@ -55,22 +57,22 @@ void doOneThread(int threadNum){
 //     }
 // }
 
-// int main() // try geometry stats
-// {
-//     initBetaArms();
-//     int geom_id;
-//     int nThreads = 10;
-//     std::thread t[10];
-//     for (geom_id=0; geom_id<9; geom_id++){
-//         setBetaGeom(geom_id);
-//         for (int i = 0; i<nThreads; ++i){
-//             t[i] = std::thread(doOneThread, i);
-//         }
-//         for (int i=0; i<nThreads; ++i){
-//             t[i].join();
-//         }
-//     }
-// }
+int main() // try geometry stats
+{
+    initBetaArms();
+    int geom_id;
+    int nThreads = 10;
+    std::thread t[10];
+    for (geom_id=0; geom_id<9; geom_id++){
+        // setBetaGeom(geom_id);
+        for (int i = 0; i<nThreads; ++i){
+            t[i] = std::thread(doOneThread, i);
+        }
+        for (int i=0; i<nThreads; ++i){
+            t[i].join();
+        }
+    }
+}
 
 // int main()
 // {
@@ -112,44 +114,47 @@ void doOneThread(int threadNum){
 
 // }
 
-int main(int argc,char *argv[])
-{
-    double collisionBuffer = 0;
-    double ang_step = 1;
-    if( argc > 1 ) {
-        collisionBuffer = atof(argv[1]);  // alternative strtod
-    }
-    if( argc > 2 ) {
-        ang_step = atof(argv[2]);  // alternative strtod
-    }
-    // single run print out robot paths
-    initBetaArms();
-    srand(0);
-    int print_every =  (int)(1.0 / ang_step);
-    std::cout << "print every: " << print_every << std::endl;
-    clock_t tStart;
-    clock_t tEnd;
-    tStart = clock();
-    RobotGrid rg (25, ang_step, 6, print_every, collisionBuffer);
-    std::cout << "ncollisions before swaps " << rg.getNCollisions() << std::endl;
-    rg.optimizeTargets();
-    std::cout << "ncollisions after swaps " << rg.getNCollisions() << std::endl;
-    rg.decollide();
-    rg.pathGen();
-    std::cout << "pathGen fail " << rg.didFail << std::endl;
-    rg.setCollisionBuffer(0);
-    rg.smoothPaths();
-    tEnd = clock();
-    std::cout << "time took: " << (double)(tEnd - tStart)/CLOCKS_PER_SEC << std::endl;
-    for (Robot &robot : rg.allRobots){
-        robot.pathToFile();
-        // std::cout << " 1 " << robot.id << std::endl;
-        robot.smoothPathToFile();
-        // std::cout << " 2 " << robot.id << std::endl;
-        robot.ismoothPathToFile();
-        // std::cout << " 3 " << robot.id << std::endl;
-    }
-    rg.verifySmoothed();
-}
+// int main(int argc,char *argv[])
+// {
+//     double collisionBuffer = 0;
+//     double ang_step = 1;
+//     if( argc > 1 ) {
+//         collisionBuffer = atof(argv[1]);  // alternative strtod
+//     }
+//     if( argc > 2 ) {
+//         ang_step = atof(argv[2]);  // alternative strtod
+//     }
+//     // single run print out robot paths
+//     initBetaArms();
+//     srand(1);
+//     int print_every =  (int)(1.0 / ang_step);
+//     std::cout << "print every: " << print_every << std::endl;
+//     clock_t tStart;
+//     clock_t tEnd;
+//     tStart = clock();
+//     RobotGrid rg (25, ang_step, 8, print_every, collisionBuffer);
+//     std::cout << "nRobots " << rg.nRobots << std::endl;
+//     std::cout << "ncollisions before swaps " << rg.getNCollisions() << std::endl;
+//     rg.optimizeTargets();
+//     std::cout << "ncollisions after swaps " << rg.getNCollisions() << std::endl;
+//     rg.decollide();
+//     rg.pathGen();
+//     std::cout << "pathGen fail " << rg.didFail << std::endl;
+//     rg.setCollisionBuffer(0);
+//     rg.smoothPaths();
+//     tEnd = clock();
+//     std::cout << "time took: " << (double)(tEnd - tStart)/CLOCKS_PER_SEC << std::endl;
+//     for (Robot &robot : rg.allRobots){
+//         robot.pathToFile();
+//         // std::cout << " 1 " << robot.id << std::endl;
+//         robot.smoothPathToFile();
+//         // std::cout << " 2 " << robot.id << std::endl;
+//         robot.ismoothPathToFile();
+//         // std::cout << " 3 " << robot.id << std::endl;
+//     }
+//     rg.verifySmoothed();
+// }
+
+// for AAS
 
 

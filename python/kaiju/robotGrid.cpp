@@ -1,4 +1,5 @@
 #include <iostream>
+#include <stdio.h>      /* printf, scanf, puts, NULL */
 #include <Eigen/Dense>
 #include "utils.h"
 #include "robotGrid.h"
@@ -15,13 +16,17 @@ const double max_reach = beta_arm_len + alpha_arm_len;
 // const int maxPathStepsGlob = (int)(ceil(700.0/ang_step));
 // line smoothing factor
 // const double epsilon =  5 * ang_step; // was 7*ang_step for 0.1 step size
-const double min_targ_sep = 8; // mm
+
+// const double min_targ_sep = 8; // mm
+const double min_targ_sep = 0; // mm
 
 
-RobotGrid::RobotGrid(int nDia, double myAng_step, int betaGeomID, int myPrintEvery, double collisionBuffer){
+RobotGrid::RobotGrid(int nDia, double myAng_step, int betaGeomID, int myPrintEvery, double collisionBuffer, double myEpsilon, int seed){
     // nDia is number of robots along equator of grid
+    srand(seed);
+    smoothCollisions = 0;
     ang_step = myAng_step;
-    epsilon = 5 * ang_step;
+    epsilon = myEpsilon;
     maxPathSteps = (int)(ceil(700.0/ang_step));
     printEvery = myPrintEvery; // default to not printing
     Eigen::MatrixXd xyHexPos = getHexPositions(nDia, pitch);
@@ -117,7 +122,7 @@ void RobotGrid::smoothPaths(){
 }
 
 void RobotGrid::verifySmoothed(){
-    int nCollisions = 0;
+    smoothCollisions = 0;
     char buffer[50];
     int printNum = 0;
     for (int ii = 0; ii < nSteps; ii++){
@@ -125,7 +130,7 @@ void RobotGrid::verifySmoothed(){
             r.setAlphaBeta(r.interpSmoothAlphaPath[ii](1), r.interpSmoothBetaPath[ii](1));
             // std::cout << " robot id " << r.id << std::endl;
         }
-        nCollisions += getNCollisions();
+        smoothCollisions += getNCollisions();
         // std::cout << "n Collisions" << std::endl;
         // std::cout << " ii, printEvery, nsteps alpha path " << ii << " " << printEvery << " " << nSteps << std::endl;
 
@@ -138,7 +143,7 @@ void RobotGrid::verifySmoothed(){
         }
         // std::cout << "shit balls" << std::endl;
     }
-    std::cout << "interp collisions: " << nCollisions << std::endl;
+    // std::cout << "interp collisions: " << nCollisions << std::endl;
 }
 
 

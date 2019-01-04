@@ -10,6 +10,10 @@ PYBIND11_MODULE(cKaiju, m) {
     m.def("initBetaArms", &initBetaArms);
     m.def("getBetaGeom", &getBetaGeom);
     py::class_<Robot>(m, "Robot")
+        .def_readwrite("alpha", &Robot::alpha)
+        .def_readwrite("beta", &Robot::beta)
+        .def_readwrite("nDecollide", &Robot::nDecollide)
+        // .def_readwrite("lastStepNum", &Robot::lastStepNum)
         .def_readwrite("alphaPath", &Robot::alphaPath)
         .def_readwrite("betaPath", &Robot::betaPath)
         .def_readwrite("smoothAlphaPath", &Robot::smoothAlphaPath)
@@ -27,8 +31,11 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("interpCollisions", &Robot::interpCollisions);
 
     py::class_<RobotGrid>(m, "RobotGrid")
-        .def(py::init<int, double, int, int, double>())
+        .def(py::init<int, double, int, int, double, double, int>())
         .def_readwrite("allRobots", &RobotGrid::allRobots)
+        .def_readwrite("smoothCollisions", &RobotGrid::smoothCollisions)
+        .def_readwrite("didFail", &RobotGrid::didFail)
+        .def_readwrite("nSteps", &RobotGrid::nSteps)
         .def("optimizeTargets", &RobotGrid::optimizeTargets)
         .def("decollide", &RobotGrid::decollide)
         .def("smoothPaths", &RobotGrid::smoothPaths)

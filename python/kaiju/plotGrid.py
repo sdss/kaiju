@@ -112,6 +112,12 @@ def doGrid(filename):
     zeropad = ("%i" % imgNum).zfill(4)
     plotGrid(roboList, xlim=[-300,300], ylim=[-300, 300], title="%s_%s.png" % (basename, zeropad), save=True)
 
+def doFails():
+    files = glob.glob("fail*.txt")
+    for filename in files:
+        roboList = getRobotList(filename)
+        imgname = filename.strip(".txt") + ".png"
+        plotGrid(roboList, xlim=[-300,300], ylim=[-300, 300], title=imgname, save=True)
 
 def plotSet(basename):
 
@@ -127,7 +133,8 @@ def plotSetSlow(basename):
 
 
 if __name__ == "__main__":
-    plotSet("interp_")
-    plotSet("step_")
+    # plotSet("interp_")
+    # plotSet("step_")
+    doFails()
 # ffmpeg -r 10 -f image2 -i interp_%04d.png -pix_fmt yuv420p robotMovie.mp4
 

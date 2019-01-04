@@ -356,6 +356,7 @@ void Robot::stepTowardFold(int stepNum){
     double currBeta = beta;
     Eigen::Vector2d alphaPathPoint;
     Eigen::Vector2d betaPathPoint;
+    Eigen::Vector2d temp;
     alphaPathPoint(0) = stepNum;
     betaPathPoint(0) = stepNum;
     if (currBeta==180 and currAlpha==0){
@@ -364,6 +365,17 @@ void Robot::stepTowardFold(int stepNum){
         betaPathPoint(1) = currBeta;
         alphaPath.push_back(alphaPathPoint);
         betaPath.push_back(betaPathPoint);
+
+        temp(0) = stepNum;
+        temp(1) = betaOrientation[0](0); // xAlphaEnd
+        roughAlphaX.push_back(temp);
+        temp(1) = betaOrientation[0](1); // yAlphaEnd
+        roughAlphaY.push_back(temp);
+        temp(1) = betaOrientation.back()(0); // xBetaEnd
+        roughBetaX.push_back(temp);
+        temp(1) = betaOrientation.back()(1); // yBetaEnd
+        roughBetaY.push_back(temp);
+
         return;
     }
     // this is for keeping track of last step
@@ -393,10 +405,24 @@ void Robot::stepTowardFold(int stepNum){
         }
         setAlphaBeta(nextAlpha, nextBeta);
         if (!isCollided()){
-            alphaPathPoint(1) = currAlpha;
-            betaPathPoint(1) = currBeta;
+
+            alphaPathPoint(1) = nextAlpha;
+            betaPathPoint(1) = nextBeta;
             alphaPath.push_back(alphaPathPoint);
             betaPath.push_back(betaPathPoint);
+
+            // add alpha/beta xy points
+
+            temp(0) = stepNum;
+            temp(1) = betaOrientation[0](0); // xAlphaEnd
+            roughAlphaX.push_back(temp);
+            temp(1) = betaOrientation[0](1); // yAlphaEnd
+            roughAlphaY.push_back(temp);
+            temp(1) = betaOrientation.back()(0); // xBetaEnd
+            roughBetaX.push_back(temp);
+            temp(1) = betaOrientation.back()(1); // yBetaEnd
+            roughBetaY.push_back(temp);
+
             return;
         }
     }
@@ -410,7 +436,7 @@ void Robot::stepTowardFold(int stepNum){
     betaPath.push_back(betaPathPoint);
 
     // add alpha/beta xy points
-    Eigen::Vector2d temp;
+    // Eigen::Vector2d temp;
     temp(0) = stepNum;
     temp(1) = betaOrientation[0](0); // xAlphaEnd
     roughAlphaX.push_back(temp);
