@@ -230,7 +230,7 @@ void RobotGrid::pathGen(){
         for (Robot &r: allRobots){
             // std::cout << "alpha beta " << r.alpha << " " << r.beta << std::endl;
             r.stepTowardFold(ii);
-            if (allFolded and (r.beta!=180 or r.alpha!=0)){
+            if (allFolded and r.beta!=180) { // stop when beta = 180} or r.alpha!=0)){
                 allFolded = false;
             }
         }
