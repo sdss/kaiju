@@ -97,14 +97,13 @@ def doOne(seed):
 
 if __name__ == "__main__":
     cKaiju.initBetaArms()
-    out = doOne(1)
-    print(out)
-
-    # p = Pool(12)
-    # t = time.time()
-    # outList = p.map(doOne, range(12))
-    # print outList
-    # print("took ", time.time()-t)
+    p = Pool(12)
+    t = time.time()
+    outList = p.map(doOne, range(12))
+    print outList
+    print("took ", time.time()-t)
+    for l in outList:
+        print l[0]
 
 
 
