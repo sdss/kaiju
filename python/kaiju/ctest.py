@@ -1,8 +1,10 @@
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy
 import cKaiju
 import time
 from multiprocessing import Pool
+import cPickle
+global r_phys
 
 # from interface docs
 # speed is 5rpm at output of arm
@@ -12,11 +14,10 @@ betaGeom = 9 # 1mm widefin!
 printEvery = 0
 stepSize = 0.03 # degrees
 nDia = 25
-r_phys = 2
+# r_phys = 2
 b_step = 0.02
-b_smooth = 0.02
+b_smooth = 0.04
 epsilon = stepSize * 2.2
-collisionBuffer = r_phys + b_step + b_smooth
 
 # max speed = 30 deg per sec
 # dt / step = stepSize /
@@ -25,6 +26,8 @@ deg_per_sec = 30
 sec_per_step = stepSize / deg_per_sec
 
 def doOne(seed):
+    global r_phys
+    collisionBuffer = r_phys + b_step + b_smooth
     t0 = time.time()
     rg = cKaiju.RobotGrid(nDia, stepSize, betaGeom, printEvery, collisionBuffer, epsilon, seed)
     rg.decollide()
@@ -96,15 +99,48 @@ def doOne(seed):
 
 
 if __name__ == "__main__":
+    global r_phys
     cKaiju.initBetaArms()
-    p = Pool(12)
-    t = time.time()
-    outList = p.map(doOne, range(12))
-    print outList
-    print("took ", time.time()-t)
-    for l in outList:
-        print l[0]
-
+    seeds = range(500)
+    rPhysList = [
+        2.5,
+        2.4,
+        2.3,
+        2.2,
+        2.1,
+        2.0,
+        1.9,
+        1.8,
+        1.7,
+        1.6,
+        1.5,
+        1.4,
+        1.3,
+        1.2,
+        1.1,
+        1.0,
+        0.9,
+        0.8,
+        0.7,
+        0.6,
+        0.5,
+        0.4,
+        0.3,
+        0.2,
+        0.1,
+        0.0
+    ]
+    for r in rPhysList:
+        r_phys = r
+        p = Pool(12)
+        t = time.time()
+        outList = p.map(doOne, seeds)
+        print("r_phys", r_phys, "took ", time.time()-t)
+        outFile = open('r_phys_%.2f.pkl'%r_phys, 'wb')
+        cPickle.dump(outList, outFile)
+        outFile.close()
+        # p.join()
+        p.close()
 
 
     # betaGeom = 9 # 1mm widefin!

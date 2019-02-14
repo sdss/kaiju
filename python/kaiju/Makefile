@@ -10,7 +10,7 @@ cKaiju: robot.o utils.o robotGrid.o betaArm.o robotGrid.h betaArm.h cKaiju.cpp
 	$(CC) $(CFLAGS) $(INC) -shared -undefined dynamic_lookup cKaiju.cpp robot.o robotGrid.o utils.o betaArm.o -o cKaiju.so
 
 cKaijuMox: robot.o utils.o robotGrid.o betaArm.o robotGrid.h betaArm.h cKaiju.cpp
-	g++ $(CFLAGS) $(INCMOX) -shared -fPIC cKaiju.cpp robot.o robotGrid.o utils.o betaArm.o -o cKaiju.so
+	$(CC) $(CFLAGS) $(INCMOX) -shared -fPIC cKaiju.cpp robot.o robotGrid.o utils.o betaArm.o -o cKaiju.so
 
 robot.o: robot.cpp robot.h utils.h robotGrid.h
 	$(CC) $(CFLAGS) -c robot.cpp
@@ -25,4 +25,4 @@ betaArm.o: betaArm.cpp betaArm.h
 	$(CC) $(CFLAGS) -c betaArm.cpp
 
 clean:
-	rm -f kaiju *.o
+	rm -f kaiju cKaiju.so *.o

@@ -7,7 +7,7 @@
 
 
 RobotGrid doOne(){
-    RobotGrid rg (25, 1);
+    RobotGrid rg (5, 1, 8, 1, 0);
     // std::cout << "ncollisions before swaps " << rg.getNCollisions() << std::endl;
     rg.optimizeTargets();
     // std::cout << "ncollisions after swaps " << rg.getNCollisions() << std::endl;
@@ -42,6 +42,10 @@ void doOneThread(int threadNum){
 
 }
 
+int main(){
+    initBetaArms();
+    doOne();
+}
 // int main(){
 //     initBetaArms();
 //     int maxIter = 1000;
@@ -57,22 +61,22 @@ void doOneThread(int threadNum){
 //     }
 // }
 
-int main() // try geometry stats
-{
-    initBetaArms();
-    int geom_id;
-    int nThreads = 10;
-    std::thread t[10];
-    for (geom_id=0; geom_id<9; geom_id++){
-        // setBetaGeom(geom_id);
-        for (int i = 0; i<nThreads; ++i){
-            t[i] = std::thread(doOneThread, i);
-        }
-        for (int i=0; i<nThreads; ++i){
-            t[i].join();
-        }
-    }
-}
+// int main() // try geometry stats
+// {
+//     initBetaArms();
+//     int geom_id;
+//     int nThreads = 10;
+//     std::thread t[10];
+//     for (geom_id=0; geom_id<9; geom_id++){
+//         // setBetaGeom(geom_id);
+//         for (int i = 0; i<nThreads; ++i){
+//             t[i] = std::thread(doOneThread, i);
+//         }
+//         for (int i=0; i<nThreads; ++i){
+//             t[i].join();
+//         }
+//     }
+// }
 
 // int main()
 // {

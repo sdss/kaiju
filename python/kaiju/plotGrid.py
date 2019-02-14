@@ -21,7 +21,8 @@ AlphaArmLength = 7.4  # mm
 AlphaRange = [0, 360]
 BetaRange = [0, 180]
 BetaArmLength = 15  # mm, distance to fiber
-BetaArmWidth = 4  # mm
+BetaArmWidth = 3  # mm
+# BetaArmWidthMin = 3  # mm
 MinTargSeparation = 8  # mm
 # length mm along beta for which a collision cant happen
 BetaTopCollide = [8.187, 16]  # box from length 8.187mm to 16mm
@@ -110,7 +111,7 @@ def doGrid(filename):
     imgNum = int(imgNum.strip(".txt"))
     roboList = getRobotList(filename)
     zeropad = ("%i" % imgNum).zfill(4)
-    plotGrid(roboList, xlim=[-300,300], ylim=[-300, 300], title="%s_%s.png" % (basename, zeropad), save=True)
+    plotGrid(roboList, xlim=[-75,75], ylim=[-75, 75], title="%s_%s.png" % (basename, zeropad), save=True)
 
 def doFails():
     files = glob.glob("fail*.txt")
@@ -134,7 +135,7 @@ def plotSetSlow(basename):
 
 if __name__ == "__main__":
     # plotSet("interp_")
-    # plotSet("step_")
-    doFails()
+    plotSet("step_")
+    # doFails()
 # ffmpeg -r 10 -f image2 -i interp_%04d.png -pix_fmt yuv420p robotMovie.mp4
 
