@@ -1,5 +1,6 @@
 #pragma once
 #include "robot.h"
+// #include <pybind11/stl_bind.h>
 
 // move constants to cpp file?
 extern const double alpha_arm_len;
@@ -38,4 +39,5 @@ public:
     void verifySmoothed();
     void optimizeTargets();
     void setCollisionBuffer(double newBuffer);
+    Robot getRobot(int);
 };

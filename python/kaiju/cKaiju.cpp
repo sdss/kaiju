@@ -1,8 +1,11 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
 #include <pybind11/stl.h>
+// #include <pybind11/stl_bind.h>
 #include "robotGrid.h"
 #include "betaArm.h"
+
+// PYBIND11_MAKE_OPAQUE(std::vector<Robot>);
 
 namespace py = pybind11;
 
@@ -12,7 +15,12 @@ PYBIND11_MODULE(cKaiju, m) {
     py::class_<Robot>(m, "Robot")
         .def_readwrite("alpha", &Robot::alpha)
         .def_readwrite("beta", &Robot::beta)
+        .def_readwrite("xPos", &Robot::xPos)
+        .def_readwrite("yPos", &Robot::yPos)
         .def_readwrite("nDecollide", &Robot::nDecollide)
+        .def_readwrite("betaOrientation", &Robot::betaOrientation)
+        .def_readwrite("betaModel", &Robot::betaModel)
+        .def_readwrite("id", &Robot::id)
         // .def_readwrite("lastStepNum", &Robot::lastStepNum)
         .def_readwrite("alphaPath", &Robot::alphaPath)
         .def_readwrite("betaPath", &Robot::betaPath)
@@ -28,19 +36,29 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("roughAlphaY", &Robot::roughAlphaY)
         .def_readwrite("roughBetaX", &Robot::roughBetaX)
         .def_readwrite("roughBetaY", &Robot::roughBetaY)
-        .def_readwrite("interpCollisions", &Robot::interpCollisions);
+        .def_readwrite("interpCollisions", &Robot::interpCollisions)
+        .def("setAlphaBeta", &Robot::setAlphaBeta)
+        .def("setAlphaBetaRand", &Robot::setAlphaBetaRand)
+        .def("isCollided", &Robot::isCollided)
+        .def("checkFiberXYLocal", &Robot::checkFiberXYLocal)
+        .def("checkFiberXYGlobal", &Robot::checkFiberXYGlobal)
+        .def("setFiberXY", &Robot::setFiberXY)
+        .def("decollide", &Robot::decollide);
 
     py::class_<RobotGrid>(m, "RobotGrid")
         .def(py::init<int, double, int, int, double, double, int>())
+        // warning!!! iterating over this gives you copies!!!! use getRobot if you want a reference
         .def_readwrite("allRobots", &RobotGrid::allRobots)
         .def_readwrite("smoothCollisions", &RobotGrid::smoothCollisions)
         .def_readwrite("didFail", &RobotGrid::didFail)
         .def_readwrite("nSteps", &RobotGrid::nSteps)
+        .def_readwrite("nRobots", &RobotGrid::nRobots)
         .def("optimizeTargets", &RobotGrid::optimizeTargets)
         .def("decollide", &RobotGrid::decollide)
         .def("smoothPaths", &RobotGrid::smoothPaths)
         .def("verifySmoothed", &RobotGrid::verifySmoothed)
         .def("setCollisionBuffer", &RobotGrid::setCollisionBuffer)
-        .def("pathGen", &RobotGrid::pathGen);
+        .def("pathGen", &RobotGrid::pathGen)
+        .def("getRobot", &RobotGrid::getRobot);
 }
 

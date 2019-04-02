@@ -96,6 +96,10 @@ RobotGrid::RobotGrid(int nDia, double myAng_step, int betaGeomID, int myPrintEve
     }
 }
 
+Robot RobotGrid::getRobot(int robotInd){
+    return allRobots[robotInd];
+}
+
 void RobotGrid::setCollisionBuffer(double newBuffer){
     for (Robot &r : allRobots){
         r.setCollisionBuffer(newBuffer);
@@ -105,7 +109,9 @@ void RobotGrid::setCollisionBuffer(double newBuffer){
 void RobotGrid::decollide(){
     // iterate over robots and resolve collisions
     while(getNCollisions()){
+        // std::cout << "getting collisions " << std::endl;
         for (Robot &r : allRobots){
+            // std::cout << "decolliding robot " << r.id << std::endl;
             if (r.isCollided()){
                 r.decollide();
             }
@@ -228,6 +234,7 @@ void RobotGrid::pathGen(){
         }
 
         for (Robot &r: allRobots){
+            // std::cout << "path gen " << r.betaOrientation.size() << " " << r.betaModel.size() << std::endl;
             // std::cout << "alpha beta " << r.alpha << " " << r.beta << std::endl;
             r.stepTowardFold(ii);
             if (allFolded and r.beta!=180) { // stop when beta = 180} or r.alpha!=0)){

@@ -61,6 +61,7 @@ std::array<double, 2> alphaBetaFromXY(double x, double y){
 
 
 Robot::Robot(int myid, double myxPos, double myyPos, double myAng_step, betaGeometry myBetaGeom, std::vector<double> myModelRadii) {
+    // std::cout << "robot constructor called" << std::endl;
     xPos = myxPos;
     yPos = myyPos;
     ang_step = myAng_step;
@@ -200,6 +201,9 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
     // fullTransform = (alphaTransT*betaRot).matrix();
 
     // std::cout << "alpha beta crap" << std::endl;
+    // std::cout << "beta model size: " << betaModel.size() << std::endl;
+    // std::cout << "beta orientation size: " << betaOrientation.size() << std::endl;
+    // std::cout << "beta before: " << betaOrientation[1][0] << " " << betaOrientation[1][1] << " " << betaOrientation[1][2] << std::endl;
     for (int ii = 0; ii < betaModel.size(); ii++){
         // first rotate about beta (we start in beta ref frame)
         // next translate in x by the alpha arm length
@@ -207,8 +211,9 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
         // this matrix outside this loop....
         betaOrientation[ii] = transXY + (alphaRot * (alphaTransV + (betaRot * betaModel[ii])));
 
-        // std::cout << "test : " << betaOrientation[ii] <<  " : test\n" << std::endl;
+
     }
+    // std::cout << "beta after: " << betaOrientation[1][0] << " " << betaOrientation[1][1] << " " << betaOrientation[1][2] << std::endl;
     fiber_XYZ = transXY + (alphaRot * (alphaTransV + (betaRot * fiberNeutral)));
 
 }
@@ -217,6 +222,7 @@ void Robot::setAlphaBetaRand(){
     double a = randomSample() * 359.99999;
     double b = randomSample() * 180.0;
     setAlphaBeta(a, b);
+    // std::cout << "robot " << id << " set rand " << betaOrientation.size() << std::endl;
 }
 
 void Robot::setXYUniform(){
@@ -254,6 +260,7 @@ void Robot::decollide(){
     // randomly replace alpha beta values until collisions vanish
     // get neighbors positions to ensure we dont
     // break the minimum target separation
+    // std::cout << "decollide beta orientation size: " << betaOrientation.size() << std::endl;
     std::vector<Eigen::Vector2d> assignments;
     for (Robot * robot: neighbors){
         Eigen::Vector2d neighborPos;
@@ -381,7 +388,6 @@ void Robot::stepTowardFold(int stepNum){
     // this is for keeping track of last step
     // only updates if robot hasn't reached fold
     lastStepNum = stepNum;
-
     // begin trying options pick first that works
     for (int ii=0; ii<alphaBetaArr.rows(); ii++){
         double nextAlpha = currAlpha + alphaBetaArr(ii, 0);
@@ -405,7 +411,6 @@ void Robot::stepTowardFold(int stepNum){
         }
         setAlphaBeta(nextAlpha, nextBeta);
         if (!isCollided()){
-
             alphaPathPoint(1) = nextAlpha;
             betaPathPoint(1) = nextBeta;
             alphaPath.push_back(alphaPathPoint);
@@ -414,8 +419,13 @@ void Robot::stepTowardFold(int stepNum){
             // add alpha/beta xy points
 
             temp(0) = stepNum;
+            // std::cout << "beta orientation size: " << betaOrientation.size() << std::endl;
+            // std::cout << "beta model size: " << betaModel.size() << std::endl;
             temp(1) = betaOrientation[0](0); // xAlphaEnd
+            // std::cout << "step toward fold " << ii << std::endl;
+
             roughAlphaX.push_back(temp);
+
             temp(1) = betaOrientation[0](1); // yAlphaEnd
             roughAlphaY.push_back(temp);
             temp(1) = betaOrientation.back()(0); // xBetaEnd

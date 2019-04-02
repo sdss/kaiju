@@ -16,7 +16,7 @@ robot.o: robot.cpp robot.h utils.h robotGrid.h
 	$(CC) $(CFLAGS) -c robot.cpp
 
 robotGrid.o: robotGrid.cpp robotGrid.h betaArm.h
-	$(CC) $(CFLAGS) -c robotGrid.cpp
+	$(CC) $(CFLAGS) $(INC) -c robotGrid.cpp
 
 utils.o: utils.cpp utils.h
 	$(CC) $(CFLAGS) -c utils.cpp
