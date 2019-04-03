@@ -12,7 +12,7 @@ namespace py = pybind11;
 PYBIND11_MODULE(cKaiju, m) {
     m.def("initBetaArms", &initBetaArms);
     m.def("getBetaGeom", &getBetaGeom);
-    py::class_<Robot>(m, "Robot")
+    py::class_<Robot, std::shared_ptr<Robot>>(m, "Robot")
         .def_readwrite("alpha", &Robot::alpha)
         .def_readwrite("beta", &Robot::beta)
         .def_readwrite("xPos", &Robot::xPos)
@@ -45,7 +45,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("setFiberXY", &Robot::setFiberXY)
         .def("decollide", &Robot::decollide);
 
-    py::class_<RobotGrid>(m, "RobotGrid")
+    py::class_<RobotGrid, std::shared_ptr<RobotGrid>>(m, "RobotGrid")
         .def(py::init<int, double, int, int, double, double, int>())
         // warning!!! iterating over this gives you copies!!!! use getRobot if you want a reference
         .def_readwrite("allRobots", &RobotGrid::allRobots)

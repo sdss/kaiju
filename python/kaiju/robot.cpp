@@ -169,7 +169,7 @@ void Robot::ismoothPathToFile(){
     fclose(pFile);
 }
 
-void Robot::addNeighbor(Robot * rNeighbor){
+void Robot::addNeighbor(std::shared_ptr<Robot> rNeighbor){
     neighbors.push_back(rNeighbor);
 }
 
@@ -235,7 +235,7 @@ void Robot::setXYUniform(){
 bool Robot::isCollided(){
     double dist2, rad1, rad2, collideDist2;
     bool iAmCollided = false;
-    for (Robot * robot : neighbors){
+    for (auto robot : neighbors){
         for (int ii=0; ii<betaOrientation.size()-1; ii++){
             dist2 = dist3D_Segment_to_Segment(
                     betaOrientation[ii], betaOrientation[ii+1],
@@ -262,7 +262,7 @@ void Robot::decollide(){
     // break the minimum target separation
     // std::cout << "decollide beta orientation size: " << betaOrientation.size() << std::endl;
     std::vector<Eigen::Vector2d> assignments;
-    for (Robot * robot: neighbors){
+    for (auto robot: neighbors){
         Eigen::Vector2d neighborPos;
         if (robot->targetAssigned){
             neighborPos(0) = robot->fiber_XYZ(0); // could just taka block?

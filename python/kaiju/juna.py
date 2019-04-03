@@ -16,14 +16,18 @@ img = plt.imread(starPng)
 imgSize = 600
 imgStartX = 450
 imgStartY = 450
-img = img[imgStartX:imgSize+imgStartX, imgStartY:imgSize+imgStartY,:]
+img = img[imgStartX:imgSize+imgStartX-1, imgStartY:imgSize+imgStartY-1,:]
+
+img = img*2
+
 
 plt.figure(figsize=(10,10))
 plt.imshow(img)
 plt.xlim([0,imgSize])
 plt.ylim([0, imgSize])
 plt.axis('off')
-plt.savefig("color.png")
+plt.savefig("color.png", dpi=250)
+
 
 # import pdb; pdb.set_trace()
 
@@ -54,13 +58,13 @@ plt.figure(figsize=(10,10))
 plt.xlim([0,imgSize])
 plt.ylim([0, imgSize])
 plt.axis('off')
-plt.imshow(gray, cmap='gray_r', vmax=1.75)
-plt.savefig("gray.png")
+plt.imshow(img)#, vmax=1.75)#, cmap='gray_r')
+plt.savefig("gray.png", dpi=250)
 
 for cent in centroids:
     x,y = cent.xyCtr
     plt.scatter(x,y,edgecolors='red', facecolors='red', marker="+", linewidths=2)
-plt.savefig("gray_targ.png")
+plt.savefig("gray_targ.png", dpi=250)
 
 betaGeom = 9 # 1mm widefin!
 printEvery = 0
@@ -71,13 +75,6 @@ b_step = 0.02
 b_smooth = 0.04
 epsilon = stepSize * 2.2
 
-
-# max speed = 30 deg per sec
-# dt / step = stepSize /
-# 0.03 degrees / dt = 30
-deg_per_sec = 30
-sec_per_step = stepSize / deg_per_sec
-r_phys = 2
 collisionBuffer = 1.5
 offset = imgSize / 2.
 
@@ -85,27 +82,7 @@ cKaiju.initBetaArms()
 rg = cKaiju.RobotGrid(nDia, stepSize, betaGeom, printEvery, collisionBuffer, epsilon, 0)
 print("setting alpha beta")
 
-# nRobots = len(rg.allRobots)
-
-# for ii in range(rg.nRobots):
-#     #
-#     # robot.setAlphaBeta(180,180)
-#     robot = rg.getRobot(ii)
-#     print("pybetaBefore", robot.betaOrientation)
-#     robot.setAlphaBetaRand();
-#     print("pybetaAfter", robot.betaOrientation)
-#     before = robot.betaOrientation
-#     # print()
-#     # print()
-#     # print()
-
-# print("trying again?")
-# for ii in range(rg.nRobots):
-#     robot = rg.getRobot(ii)
-#     print("zizz ", robot.betaOrientation)
-
-for ii in range(rg.nRobots):
-    robot = rg.getRobot(ii)
+for robot in rg.allRobots:
     for cent in centroids:
         if cent.got:
             continue
@@ -120,37 +97,42 @@ for ii in range(rg.nRobots):
             if not robot.isCollided():
                 cent.got = True
                 break
-            robot.decollide()
+        robot.decollide()
 
 print("loop done")
-rg.decollide()
 rg.pathGen()
 print('path gen done')
 
 
 # gross way to hold things
 robotList = []
-for ii in range(rg.nRobots):
-    robot = rg.getRobot(ii)
+for ri in range(rg.nRobots):
+    robot = rg.getRobot(ri)
     # only keep positions (not time), and downsample
     alphaX = numpy.asarray(robot.roughAlphaX)[:,1]
     alphaY = numpy.asarray(robot.roughAlphaY)[:,1]
     betaX = numpy.asarray(robot.roughBetaX)[:,1]
     betaY = numpy.asarray(robot.roughBetaY)[:,1]
 
-    alphaXds = numpy.hstack((alphaX[0:-1:50], alphaX[-1]))
-    alphaYds = numpy.hstack((alphaY[0:-1:50], alphaY[-1]))
-    betaXds = numpy.hstack((betaX[0:-1:50], betaX[-1]))
-    betaYds = numpy.hstack((betaY[0:-1:50], betaY[-1]))
+    alphaXds = list(numpy.hstack((alphaX[0:-1:50], alphaX[-1])))
+    alphaYds = list(numpy.hstack((alphaY[0:-1:50], alphaY[-1])))
+    betaXds = list(numpy.hstack((betaX[0:-1:50], betaX[-1])))
+    betaYds = list(numpy.hstack((betaY[0:-1:50], betaY[-1])))
     robotList.append([alphaXds, alphaYds, betaXds, betaYds, robot.xPos, robot.yPos])
 
+# reverse robot list
+for r in robotList:
+    for a in r[:-2]:
+        a.reverse()
 
-def plotStep(step):
+figOffset = 0
+
+def plotStep(figOffset, step):
     plt.figure(figsize=(10,10))
     plt.xlim([0, imgSize])
     plt.ylim([0, imgSize])
     plt.axis('off')
-    plt.imshow(gray, cmap='gray_r', vmax=1.75)
+    plt.imshow(img)#, vmax=1.75)#, cmap='gray_r')
     ax = plt.gca()
 
     for r in robotList:
@@ -160,36 +142,60 @@ def plotStep(step):
         betaY = r[3][step] + offset
         x = r[4] + offset
         y = r[5] + offset
-        plt.plot([x, alphaX], [y, alphaY], color='black', linewidth=2)
+        plt.plot([x, alphaX], [y, alphaY], color='white', linewidth=2, alpha=0.5)
 
         topCollideLine = LineString(
             [(alphaX, alphaY), (betaX, betaY)]
         ).buffer(collisionBuffer, cap_style=1)
-        topcolor = 'blue'
-        patch = PolygonPatch(topCollideLine, fc=topcolor, ec=topcolor, alpha=0.5, zorder=10)
+        topcolor = 'white'
+        edgecolor = 'yellow'
+        patch = PolygonPatch(topCollideLine, fc=topcolor, ec=edgecolor, alpha=0.5, zorder=10)
         ax.add_patch(patch)
 
     for cent in centroids:
         x,y = cent.xyCtr
-        if step == 0 and cent.got:
-            color = 'green'
-            marker = 'o'
-            facecolor = "none"
-        else:
-            color = "red"
-            facecolor = "red"
-            marker = '+'
-        plt.scatter(x,y,edgecolors=color, facecolors=facecolor, marker=marker, linewidths=2)
+        if cent.got:
+            if figOffset > 0:
+                color = 'green'
+                marker = 'o'
+                facecolor = "none"
+            else:
+                color = "gold"
+                facecolor = "gold"
+                marker = '+'
+            plt.scatter(x,y,edgecolors=color, facecolors=facecolor, marker=marker, linewidths=2)
 
 
-    plt.savefig("step_%04d.png"%step)
+    plt.savefig("step_%04d.png"%(step+figOffset), dpi=250)
     plt.close()
+
+
 
 stepArray = range(len(robotList[0][0]))
 # pltPartial = functools.partial(plotStep, robotList)
+ps = functools.partial(plotStep, 0)
+
 p = Pool(12)
-p.map(plotStep, stepArray)
+p.map(ps, stepArray)
 p.close()
+
+# figOffset += len(stepArray)
+for expStep in range(20):
+    figOffset += 1
+    plotStep(figOffset, stepArray[-1])
+
+# reverse robot list
+figOffset += 1 + stepArray[-1]
+ps = functools.partial(plotStep, figOffset)
+for r in robotList:
+    for a in r[:-2]:
+        a.reverse()
+
+p = Pool(12)
+p.map(ps, stepArray)
+p.close()
+
+
 # plt.show()
 # ffmpeg -r 10 -f image2 -i step_%04d.png -pix_fmt yuv420p robotMovie.mp4
 

@@ -28,16 +28,16 @@ public:
     int printEvery; // if -1 just print final if -2 print final and start
     int smoothCollisions;
     double xFocalMax, yFocalMax, xFocalMin, yFocalMin;
-    std::vector<Robot> allRobots;
+    std::vector<std::shared_ptr<Robot>> allRobots;
     RobotGrid (int nDia, double myAng_step, int betaGeomID, int myPrintEvery, double collisionBuffer, double myEpsilon, int seed);
     void decollide();
     int getNCollisions();
-    void toFile(const char*);
-    void printStats(const char*);
+    // void toFile(const char*);
+    // void printStats(const char*);
     void pathGen();
     void smoothPaths();
     void verifySmoothed();
     void optimizeTargets();
     void setCollisionBuffer(double newBuffer);
-    Robot getRobot(int);
+    std::shared_ptr<Robot> getRobot(int);
 };

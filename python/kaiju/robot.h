@@ -9,7 +9,7 @@
 #include "betaArm.h"
 
 
-class Robot {
+class Robot{
 public:
     int id;
     int nDecollide = 0;
@@ -31,14 +31,15 @@ public:
     std::vector<Eigen::Vector2d> interpAlphaX, interpAlphaY, interpBetaX, interpBetaY; // smoothed
     std::vector<Eigen::Vector2d> roughAlphaX, roughAlphaY, roughBetaX, roughBetaY; // jiggly
     std::vector<Eigen::Vector2d> interpCollisions; // boolean points for collided or not
-    std::vector<Robot *> neighbors;
+    // std::vector<Robot *> neighbors;
+    std::vector<std::shared_ptr<Robot>> neighbors;
     Robot (int myid, double myxPos, double myyPos, double myAng_step, betaGeometry myBetaGeom, std::vector<double> myModelRadii);
     void setAlphaBeta (double nextAlpha, double nextBeta);
     void setFiberXY (double xFiberGlobal, double yFiberGlobal); // xy in focal plane coord sys
     bool checkFiberXYLocal (double xFiberLocal, double yFiberLocal); // check if robot can reach
     bool checkFiberXYGlobal (double xFiberGlobal, double yFiberGlobal); // check if robot can reach
     void setAlphaBetaRand();
-    void addNeighbor(Robot *);
+    void addNeighbor(std::shared_ptr<Robot>);
     bool isCollided();
     void decollide();
     void setXYUniform();
