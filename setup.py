@@ -6,6 +6,7 @@ import glob
 include_dirs = [
     'include',
     '/usr/local/include',
+    '/usr/local/include/eigen3',
     '/usr/include',
     pybind11.get_include(),
     pybind11.get_include(True)
