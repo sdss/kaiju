@@ -84,7 +84,8 @@ def runSetup(requirements):
         ]
     )
 
-requirements = [line.strip() for line in open("requirements.txt")]
+requirementsFile = os.path.join(os.path.dirname(__file__), "requirements.txt")
+requirements = [line.strip() for line in open(requirementsFile)]
 runSetup(requirements)
 
 if sys.argv[-1] == "build":
