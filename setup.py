@@ -61,27 +61,31 @@ module = Extension(
     sources=sources
 )
 
-setup(
-    name="sdss-kaiju",
-    version=getVersion(),
-    license="BSD3",
-    author="Conor Sayres",
-    author_email="csayres@uw.edu",
-    description="Collision Avoidance for SDSS-V Positioners",
-    long_description=open('README.rst').read(),
-    packages=["python/kaiju"],
-    url="https://github.com/sdss/kaiju",
-    keywords="astronomy software",
-    ext_modules=[module],
-    install_requires=[line.strip() for line in open("requirements.txt")],
-    classifiers = [
-        'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: BSD License',
-        'Natural Language :: English',
-        'Operating System :: OS Independent',
-        'Programming Language :: Python',
-    ]
-)
+def runSetup(requirements):
+    setup(
+        name="sdss-kaiju",
+        version=getVersion(),
+        license="BSD3",
+        author="Conor Sayres",
+        author_email="csayres@uw.edu",
+        description="Collision Avoidance for SDSS-V Positioners",
+        long_description=open('README.rst').read(),
+        packages=["python/kaiju"],
+        url="https://github.com/sdss/kaiju",
+        keywords="astronomy software",
+        ext_modules=[module],
+        install_requires=requirements,
+        classifiers = [
+            'Intended Audience :: Science/Research',
+            'License :: OSI Approved :: BSD License',
+            'Natural Language :: English',
+            'Operating System :: OS Independent',
+            'Programming Language :: Python',
+        ]
+    )
+
+requirements = [line.strip() for line in open("requirements.txt")]
+runSetup(requirements)
 
 if sys.argv[-1] == "build":
     # put the shared object in a standard location
