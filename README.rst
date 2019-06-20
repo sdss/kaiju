@@ -1,5 +1,5 @@
 kaiju
 ======
 
-Python wrapped C++ routines for collision avoidance for SDSS-V robotic fiber positioners.
+Python wrapped C++ collision avoidance routines for SDSS-V robotic fiber positioners.
 

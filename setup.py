@@ -62,17 +62,25 @@ module = Extension(
 )
 
 setup(
-    name="kaiju",
+    name="sdss-kaiju",
     version=getVersion(),
     license="BSD3",
     author="Conor Sayres",
     author_email="csayres@uw.edu",
     description="Collision Avoidance for SDSS-V Positioners",
+    long_description=open('README.rst').read(),
     packages=["python/kaiju"],
     url="https://github.com/sdss/kaiju",
     keywords="astronomy software",
     ext_modules=[module],
-    install_requires=[line.strip() for line in open("requirements.txt")]
+    install_requires=[line.strip() for line in open("requirements.txt")],
+    classifiers = [
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: BSD License',
+        'Natural Language :: English',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python',
+    ]
 )
 
 if sys.argv[-1] == "build":
