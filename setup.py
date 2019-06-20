@@ -51,9 +51,9 @@ sources = [
     'src/betaArm.cpp'
 ]
 
-extra_compile_args = ["--std=c++11", "-fPIC", "-v", "-O3", '-stdlib=libc++']
+extra_compile_args = ["--std=c++11", "-fPIC", "-v", "-O3"]
 if sys.platform == 'darwin':
-    extra_compile_args += ['-mmacosx-version-min=10.9']
+    extra_compile_args += ['-stdlib=libc++', '-mmacosx-version-min=10.9']
 
 module = Extension(
     'python/kaiju/cKaiju',
