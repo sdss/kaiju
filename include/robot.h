@@ -1,6 +1,7 @@
 # pragma once
 #include <stdio.h>      /* printf, scanf, puts, NULL */
 #include <stdlib.h>     /* srand, rand */
+#include <memory>
 #include <vector>
 #include <list>
 #include <array>
