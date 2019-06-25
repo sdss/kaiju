@@ -1,5 +1,6 @@
 import sys
 from setuptools import setup, Extension, find_packages
+from shutil import rmtree
 import glob
 import os
 
@@ -89,6 +90,11 @@ requirements = [line.strip() for line in open(requirementsFile)]
 runSetup(requirements)
 
 if sys.argv[-1] == "build":
+    target = "build/lib"
+    if os.path.exists(target):
+        print("removing target")
+        rmtree(target)
+    # clean up the old lib directory if present
     # put the shared object in a standard location
     buildDir = glob.glob("build/lib*")[0]
-    os.rename(buildDir, "build/lib")
+    os.rename(buildDir, target)
