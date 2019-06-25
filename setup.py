@@ -62,7 +62,7 @@ module = Extension(
     sources=sources
 )
 
-def runSetup(requirements):
+def runSetup(packages, requirements):
     setup(
         name="sdss-kaiju",
         version=getVersion(),
@@ -71,12 +71,13 @@ def runSetup(requirements):
         author_email="csayres@uw.edu",
         description="Collision Avoidance for SDSS-V Positioners",
         long_description=open('README.rst').read(),
-        packages=find_packages(), #["python/kaiju"],
+        packages=packages, #["python/kaiju"],
+        package_dir={'': 'python'},
         url="https://github.com/sdss/kaiju",
         keywords="astronomy software",
         ext_modules=[module],
         install_requires=requirements,
-        classifiers = [
+        classifiers=[
             'Intended Audience :: Science/Research',
             'License :: OSI Approved :: BSD License',
             'Natural Language :: English',
@@ -87,7 +88,9 @@ def runSetup(requirements):
 
 requirementsFile = os.path.join(os.path.dirname(__file__), "requirements.txt")
 requirements = [line.strip() for line in open(requirementsFile)]
-runSetup(requirements)
+packages = find_packages(where="python")
+print("found packages", packages)
+runSetup(packages, requirements)
 
 if sys.argv[-1] == "build":
     target = "build/lib"
