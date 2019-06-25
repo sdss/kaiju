@@ -56,7 +56,7 @@ if sys.platform == 'darwin':
     extra_compile_args += ['-mmacosx-version-min=10.9']#, '-stdlib=libc++']
 
 module = Extension(
-    'python/kaiju/cKaiju',
+    'kaiju/cKaiju',
     include_dirs=getIncludes(),
     extra_compile_args=extra_compile_args,
     sources=sources
