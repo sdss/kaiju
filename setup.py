@@ -1,6 +1,5 @@
 import sys
-from setuptools import setup, Extension
-# import pybind11
+from setuptools import setup, Extension, find_packages
 import glob
 import os
 
@@ -71,7 +70,7 @@ def runSetup(requirements):
         author_email="csayres@uw.edu",
         description="Collision Avoidance for SDSS-V Positioners",
         long_description=open('README.rst').read(),
-        packages=["python/kaiju"],
+        packages=find_packages(), #["python/kaiju"],
         url="https://github.com/sdss/kaiju",
         keywords="astronomy software",
         ext_modules=[module],
