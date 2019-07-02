@@ -52,13 +52,18 @@ sources = [
 ]
 
 extra_compile_args = ["--std=c++11", "-fPIC", "-v", "-O3"]
+extra_link_args = None
 if sys.platform == 'darwin':
-    extra_compile_args += ['-mmacosx-version-min=10.9']#, '-stdlib=libc++']
+    extra_compile_args += ['-stdlib=libc++', '-mmacosx-version-min=10.9']
+    extra_link_args = ["-v", '-mmacosx-version-min=10.9']
+
+    # extra_compile_args += ['-mmacosx-version-min=10.9', '-stdlib=libc++']
 
 module = Extension(
     'kaiju/cKaiju',
     include_dirs=getIncludes(),
     extra_compile_args=extra_compile_args,
+    extra_link_args = extra_link_args,
     sources=sources
 )
 
@@ -92,12 +97,12 @@ packages = find_packages(where="python")
 print("found packages", packages)
 runSetup(packages, requirements)
 
-if sys.argv[-1] == "build":
-    target = "build/lib"
-    if os.path.exists(target):
-        print("removing target")
-        rmtree(target)
-    # clean up the old lib directory if present
-    # put the shared object in a standard location
-    buildDir = glob.glob("build/lib*")[0]
-    os.rename(buildDir, target)
+# if sys.argv[-1] == "build":
+#     target = "build/lib"
+#     if os.path.exists(target):
+#         print("removing target")
+#         rmtree(target)
+#     # clean up the old lib directory if present
+#     # put the shared object in a standard location
+#     buildDir = glob.glob("build/lib*")[0]
+#     os.rename(buildDir, target)
