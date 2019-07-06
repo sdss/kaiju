@@ -30,8 +30,8 @@ on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.autosummary',
               'sphinx.ext.todo', 'sphinx.ext.viewcode', 'sphinx.ext.mathjax',
-              'sphinx.ext.intersphinx', 'sphinxcontrib_trio', 'releases',
-              'sphinx_click.ext']
+              'sphinx.ext.intersphinx', 'sphinxcontrib_trio']  #, #'releases',
+              #'sphinx_click.ext']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -101,13 +101,13 @@ pygments_style = 'sphinx'
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
 
-releases_github_path = 'sdss/kaiju'
-releases_document_name = ['changelog']
-releases_unstable_prehistory = True
+# releases_github_path = 'sdss/kaiju'
+# releases_document_name = ['changelog']
+# releases_unstable_prehistory = True
 
 # Intersphinx mappings
 intersphinx_mapping = {'python': ('https://docs.python.org/3.7', None),
-                       'can': ('https://python-can.readthedocs.io/en/develop/', None),
+                       # 'can': ('https://python-can.readthedocs.io/en/develop/', None),
                        'numpy': ('http://docs.scipy.org/doc/numpy/', None)}
 # 'astropy': ('http://docs.astropy.org/en/latest', None),
 # 'matplotlib': ('https://matplotlib.org/', None),
@@ -137,7 +137,7 @@ html_theme = 'alabaster'
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    'logo': 'sdss_logo.png',
+    'logo': 'kaiju_logo.png',
     'github_user': 'sdss',
     'github_repo': 'kaiju',
     'github_button': True,

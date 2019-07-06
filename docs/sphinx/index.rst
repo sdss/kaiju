@@ -1,8 +1,8 @@
 
-jaeger's documentation
+kaiju's documentation
 =======================
 
-This is the Sphinx documentation for the SDSS Python product jaeger.
+This is the Sphinx documentation for the SDSS Python product kaiju.
 
 Contents
 --------
@@ -12,23 +12,8 @@ Contents
 
   intro
 
-  shatterdome
-
-  maskbits
-
-  testing
+  install
 
   api
-  commands
-
-  cli
 
   changelog
-
-
-
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
