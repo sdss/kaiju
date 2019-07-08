@@ -10,10 +10,26 @@
 namespace py = pybind11;
 
 PYBIND11_MODULE(cKaiju, m) {
-    m.def("initBetaArms", &initBetaArms);
+
+    m.def("initBetaArms", &initBetaArms, R"pbdoc(
+        Initialize Beta arms
+
+        This routine must be run before any path planning.
+
+    )pbdoc");
+
     m.def("getBetaGeom", &getBetaGeom);
-    py::class_<Robot, std::shared_ptr<Robot>>(m, "Robot")
-        .def_readwrite("alpha", &Robot::alpha)
+
+    py::class_<Robot, std::shared_ptr<Robot>>(m, "Robot", R"pbdoc(
+        A robot positioner class
+
+        This class is something totally awesome.
+
+        )pbdoc")
+
+        .def_readwrite("alpha", &Robot::alpha, R"pbdoc(
+            Robot's alpha position (degrees).
+            )pbdoc")
         .def_readwrite("beta", &Robot::beta)
         .def_readwrite("xPos", &Robot::xPos)
         .def_readwrite("yPos", &Robot::yPos)
@@ -37,7 +53,11 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("roughBetaX", &Robot::roughBetaX)
         .def_readwrite("roughBetaY", &Robot::roughBetaY)
         .def_readwrite("interpCollisions", &Robot::interpCollisions)
-        .def("setAlphaBeta", &Robot::setAlphaBeta)
+        .def("setAlphaBeta", &Robot::setAlphaBeta, R"pbdoc(
+            Set alpha beta
+
+            And some other bs.
+        )pbdoc")
         .def("setAlphaBetaRand", &Robot::setAlphaBetaRand)
         .def("isCollided", &Robot::isCollided)
         .def("checkFiberXYLocal", &Robot::checkFiberXYLocal)
@@ -45,7 +65,11 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("setFiberXY", &Robot::setFiberXY)
         .def("decollide", &Robot::decollide);
 
-    py::class_<RobotGrid, std::shared_ptr<RobotGrid>>(m, "RobotGrid")
+    py::class_<RobotGrid, std::shared_ptr<RobotGrid>>(m, "RobotGrid", R"pbdoc(
+            Robot Grid Class
+
+            A class for holding a grid of robots.
+        )pbdoc")
         .def(py::init<int, double, int, int, double, double, int>())
         // warning!!! iterating over this gives you copies!!!! use getRobot if you want a reference
         .def_readwrite("allRobots", &RobotGrid::allRobots)
