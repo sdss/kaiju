@@ -89,6 +89,7 @@ double linearInterpolate(std::vector<Eigen::Vector2d> & sparseXYPoints, double x
 //    Input:  two 3D line segments S1 and S2
 //    Return: the shortest distance between S1 and S2
 double dist3D_Segment_to_Segment(
+    // return distance squared
     Eigen::Vector3d S1_P0, Eigen::Vector3d S1_P1,
     Eigen::Vector3d S2_P0, Eigen::Vector3d S2_P1)
 {

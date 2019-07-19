@@ -11,14 +11,14 @@ namespace py = pybind11;
 
 PYBIND11_MODULE(cKaiju, m) {
 
-    m.def("initBetaArms", &initBetaArms, R"pbdoc(
-        Initialize Beta arms
+    // m.def("initBetaArms", &initBetaArms, R"pbdoc(
+    //     Initialize Beta arms
 
-        This routine must be run before any path planning.
+    //     This routine must be run before any path planning.
 
-    )pbdoc");
+    // )pbdoc");
 
-    m.def("getBetaGeom", &getBetaGeom);
+    // m.def("getBetaGeom", &getBetaGeom);
 
     py::class_<Robot, std::shared_ptr<Robot>>(m, "Robot", R"pbdoc(
         A robot positioner class
@@ -26,16 +26,20 @@ PYBIND11_MODULE(cKaiju, m) {
         This class is something totally awesome.
 
         )pbdoc")
-
+        .def(py::init<int, double, double, double>())
         .def_readwrite("alpha", &Robot::alpha, R"pbdoc(
             Robot's alpha position (degrees).
             )pbdoc")
         .def_readwrite("beta", &Robot::beta)
         .def_readwrite("xPos", &Robot::xPos)
         .def_readwrite("yPos", &Robot::yPos)
+        .def_readwrite("metFiberPos", &Robot::metFiberPos)
+        .def_readwrite("bossFiberPos", &Robot::bossFiberPos)
+        .def_readwrite("apFiberPos", &Robot::apFiberPos)
         .def_readwrite("nDecollide", &Robot::nDecollide)
-        .def_readwrite("betaOrientation", &Robot::betaOrientation)
-        .def_readwrite("betaModel", &Robot::betaModel)
+        .def_readwrite("betaCollisionSegment", &Robot::betaCollisionSegment)
+        // .def_readwrite("betaOrientation", &Robot::betaOrientation)
+        // .def_readwrite("betaModel", &Robot::betaModel)
         .def_readwrite("id", &Robot::id)
         // .def_readwrite("lastStepNum", &Robot::lastStepNum)
         .def_readwrite("alphaPath", &Robot::alphaPath)
@@ -58,6 +62,8 @@ PYBIND11_MODULE(cKaiju, m) {
 
             And some other bs.
         )pbdoc")
+        .def("setXYUniform", &Robot::setXYUniform)
+        .def("alphaBetaFromFiberXY", &Robot::alphaBetaFromFiberXY)
         .def("setAlphaBetaRand", &Robot::setAlphaBetaRand)
         .def("isCollided", &Robot::isCollided)
         .def("checkFiberXYLocal", &Robot::checkFiberXYLocal)
@@ -70,7 +76,7 @@ PYBIND11_MODULE(cKaiju, m) {
 
             A class for holding a grid of robots.
         )pbdoc")
-        .def(py::init<int, double, int, int, double, double, int>())
+        .def(py::init<int, double, double, double, int>())
         // warning!!! iterating over this gives you copies!!!! use getRobot if you want a reference
         .def_readwrite("allRobots", &RobotGrid::allRobots)
         .def_readwrite("smoothCollisions", &RobotGrid::smoothCollisions)

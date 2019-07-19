@@ -3,11 +3,7 @@
 // #include <pybind11/stl_bind.h>
 
 // move constants to cpp file?
-extern const double alpha_arm_len;
-extern const double beta_arm_len;
 extern const double pitch;
-extern const double min_reach;
-extern const double max_reach;
 
 extern const double radius_buffer;
 
@@ -29,11 +25,9 @@ public:
     int smoothCollisions;
     double xFocalMax, yFocalMax, xFocalMin, yFocalMin;
     std::vector<std::shared_ptr<Robot>> allRobots;
-    RobotGrid (int nDia, double myAng_step, int betaGeomID, int myPrintEvery, double collisionBuffer, double myEpsilon, int seed);
+    RobotGrid (int nDia, double myAng_step, double collisionBuffer, double myEpsilon, int seed);
     void decollide();
     int getNCollisions();
-    // void toFile(const char*);
-    // void printStats(const char*);
     void pathGen();
     void smoothPaths();
     void verifySmoothed();
