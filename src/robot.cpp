@@ -243,25 +243,24 @@ bool Robot::isCollided(){
     }
     if (!iAmCollided){
         iAmCollided = isFiducialCollided();
-        std::cout << "is fiducial collided " << iAmCollided << std::endl;
     }
 
     return iAmCollided;
 }
 
 bool Robot::isFiducialCollided(){
-    double dist2, rad1, rad2, collideDist2;
+    double dist2, collideDist2;
     bool iAmCollided = false;
+    // std::cout << "n fiducials " << fiducials.size() << std::endl;
     for (auto fiducial : fiducials){
         // squared distance
-        dist2 = dist3D_Segment_to_Segment(
-                betaCollisionSegment[0], betaCollisionSegment[1],
-                fiducial, fiducial
-            );
-        collideDist2 = (betaCollisionRadius+collisionBuffer+fiducialBuffer)*
-                        (betaCollisionRadius+collisionBuffer+fiducialBuffer);
+        dist2 = dist3D_Point_to_Segment(
+                fiducial, betaCollisionSegment[0], betaCollisionSegment[1]
+                );
+        collideDist2 = (betaCollisionRadius+collisionBuffer+fiducialBuffer+2)*
+                        (betaCollisionRadius+collisionBuffer+fiducialBuffer+2);
         if (dist2 < collideDist2){
-            // std::cout << "dist " << dist2 - collide_dist_squared << std::endl;
+            std::cout << "we're collided! " << sqrt(dist2) << std::endl;
             iAmCollided = true;
             break;
     }

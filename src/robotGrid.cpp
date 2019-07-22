@@ -69,7 +69,7 @@ void RobotGrid::initGrid(){
             dx = r1->xPos - fiducial[0];
             dy = r1->yPos - fiducial[1];
             dist = hypot(dx, dy);
-            if (dist < pitch+0.1) {
+            if (dist < pitch+2) {
                 r1->addFiducial(fiducial);
             }
         }

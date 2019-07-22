@@ -161,6 +161,31 @@ double dist3D_Segment_to_Segment(
     return dP.dot(dP);   // return the closest distance squared
 }
 
+// dist_Point_to_Segment(): get the distance of a point to a segment
+//     Input:  a Point P and a Segment S (in any dimension)
+//     Return: the shortest distance from P to S
+// dist_Point_to_Segment( Point P, Segment S)
+double dist3D_Point_to_Segment( Eigen::Vector3d Point, Eigen::Vector3d Seg_P0, Eigen::Vector3d Seg_P1)
+{
+    Eigen::Vector3d d, Pb;
+    Eigen::Vector3d v = Seg_P1 - Seg_P0;
+    Eigen::Vector3d w = Point - Seg_P0;
+
+    double c1 = w.dot(v);
+    if ( c1 <= 0 ){
+        d = Point - Seg_P0;
+        return d.dot(d);
+    }
+
+    double c2 = v.dot(v);
+    if ( c2 <= c1 ){
+        d = Point - Seg_P1;
+        return d.dot(d);
+    }
+    double b = c1 / c2;
+    Pb = Seg_P0 + (b * v);
+    return Point.dot(Pb);
+}
 
 // Ramer-Douglas-Peucker for segmentizing paths!
 // https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm

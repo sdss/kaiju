@@ -44,7 +44,7 @@ module-whatis Sets up $product/$version in your environment.
 # command.  An optional dependency is not followed by a prereq statement.
 #
 
-
+module load eigen
 
 #
 # ENVIRONMENT SECTION
@@ -59,6 +59,7 @@ set PRODUCT_DIR $PRODUCT_ROOT/$product/$version
 # directory of your product.
 #
 setenv [string toupper $product]_DIR $PRODUCT_DIR
+setenv CPPFLAGS -I$env(EIGENROOT)/include/eigen3
 #
 # The lines below set various other environment variables.  They assume the
 # template product layout.  These will be set or commented as needed by the
