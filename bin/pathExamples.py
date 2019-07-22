@@ -2,13 +2,9 @@ from kaiju import cKaiju
 import matplotlib.pyplot as plt
 import numpy
 
-
-cKaiju.initBetaArms()
-collisionBuffer = 1.5
-betaGeom = 9
+collisionBuffer = 0.25
 stepSize = 0.03 # degrees
 nDia = 25
-printEvery = 0
 epsilon = stepSize * 2.2
 b_smooth = 0.04
 # max speed = 30 deg per sec
@@ -21,7 +17,7 @@ totalRobots = 0
 maxPts = []
 
 for seed in range(15):
-    rg = cKaiju.RobotGrid(nDia, stepSize, betaGeom, printEvery, collisionBuffer, epsilon, seed)
+    rg = cKaiju.RobotGrid(nDia, stepSize, collisionBuffer, epsilon, seed)
     totalRobots += rg.nRobots
     rg.decollide()
     rg.pathGen()

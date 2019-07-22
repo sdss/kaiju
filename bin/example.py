@@ -1,8 +1,7 @@
 import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy
-from kaiju import cKaiju
+from kaiju import cKaiju, utils
 from shapely.geometry import LineString
 from descartes import PolygonPatch
 from multiprocessing import Pool, cpu_count
@@ -10,9 +9,8 @@ from subprocess import Popen
 import glob
 import os
 
+matplotlib.use('Agg')
 
-betaGeom = 9 # 1mm widefin!
-printEvery = 0
 stepSize = 1 # degrees
 nDia = 15
 # r_phys = 2
@@ -20,10 +18,14 @@ b_step = 0.02
 b_smooth = 0.04
 epsilon = stepSize * 2.2
 
-collisionBuffer = 1.5
+internalBuffer = 1.5
+collisionBuffer = 0.25
 
-cKaiju.initBetaArms()
-rg = cKaiju.RobotGrid(nDia, stepSize, betaGeom, printEvery, collisionBuffer, epsilon, 0)
+rg = cKaiju.RobotGrid(stepSize, collisionBuffer, epsilon, 0)
+xPos, yPos = utils.hexFromDia(nDia, pitch=22.4)
+for ii, (xp,yp) in enumerate(zip(xPos,yPos)):
+    rg.addRobot(ii, xp, yp)
+rg.initGrid()
 rg.decollide()
 rg.pathGen()
 
@@ -41,7 +43,7 @@ def plotOne(step):
 
         topCollideLine = LineString(
             [(alphaX, alphaY), (betaX, betaY)]
-        ).buffer(collisionBuffer, cap_style=1)
+        ).buffer(internalBuffer, cap_style=1)
         topcolor = 'blue'
         edgecolor = 'black'
         patch = PolygonPatch(topCollideLine, fc=topcolor, ec=edgecolor, alpha=0.5, zorder=10)

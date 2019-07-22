@@ -3,7 +3,7 @@
 #include <pybind11/stl.h>
 // #include <pybind11/stl_bind.h>
 #include "robotGrid.h"
-#include "betaArm.h"
+// #include "betaArm.h"
 
 // PYBIND11_MAKE_OPAQUE(std::vector<Robot>);
 
@@ -26,7 +26,7 @@ PYBIND11_MODULE(cKaiju, m) {
         This class is something totally awesome.
 
         )pbdoc")
-        .def(py::init<int, double, double, double>())
+        .def(py::init<int, double, double, double, bool>())
         .def_readwrite("alpha", &Robot::alpha, R"pbdoc(
             Robot's alpha position (degrees).
             )pbdoc")
@@ -76,13 +76,17 @@ PYBIND11_MODULE(cKaiju, m) {
 
             A class for holding a grid of robots.
         )pbdoc")
-        .def(py::init<int, double, double, double, int>())
+        .def(py::init<double, double, double, int>())
         // warning!!! iterating over this gives you copies!!!! use getRobot if you want a reference
         .def_readwrite("allRobots", &RobotGrid::allRobots)
         .def_readwrite("smoothCollisions", &RobotGrid::smoothCollisions)
         .def_readwrite("didFail", &RobotGrid::didFail)
         .def_readwrite("nSteps", &RobotGrid::nSteps)
         .def_readwrite("nRobots", &RobotGrid::nRobots)
+        .def_readwrite("fiducialList", &RobotGrid::fiducialList)
+        .def("addRobot", &RobotGrid::addRobot)
+        .def("addFiducial", &RobotGrid::addFiducial)
+        .def("initGrid", &RobotGrid::initGrid)
         .def("optimizeTargets", &RobotGrid::optimizeTargets)
         .def("decollide", &RobotGrid::decollide)
         .def("smoothPaths", &RobotGrid::smoothPaths)

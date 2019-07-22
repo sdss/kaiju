@@ -10,60 +10,67 @@
 
 const double pitch = 22.4; // distance to next nearest neighbor
 
-// const double ang_step = 1; // degrees
-// const int maxPathStepsGlob = (int)(ceil(700.0/ang_step));
+// const double angStep = 1; // degrees
+// const int maxPathStepsGlob = (int)(ceil(700.0/angStep));
 // line smoothing factor
-// const double epsilon =  5 * ang_step; // was 7*ang_step for 0.1 step size
+// const double epsilon =  5 * angStep; // was 7*angStep for 0.1 step size
 
 // const double min_targ_sep = 8; // mm
 const double min_targ_sep = 0; // mm
 
-
-RobotGrid::RobotGrid(int nDia, double myAng_step, double collisionBuffer, double myEpsilon, int seed){
+// there is a better way to use the constructor to set attrs....look it up
+RobotGrid::RobotGrid(double myAngStep, double myCollisionBuffer, double myEpsilon, int seed){
     // nDia is number of robots along equator of grid
     srand(seed);
-    smoothCollisions = 0;
-    ang_step = myAng_step;
     epsilon = myEpsilon;
-    maxPathSteps = (int)(ceil(700.0/ang_step));
-    // printEvery = myPrintEvery; // default to not printing
-    Eigen::MatrixXd xyHexPos = getHexPositions(nDia, pitch);
-    nRobots = xyHexPos.rows();
+    collisionBuffer = myCollisionBuffer;
+    angStep = myAngStep;
+    smoothCollisions = 0;
+    maxPathSteps = (int)(ceil(700.0/angStep));
+}
 
-    // get desired betaArm shape
-    // std::pair<betaGeometry, std::vector<double>> betaPair = getBetaGeom(betaGeomID);
-
-    // determine min/max x/y values in grid
-
-    xFocalMax = xyHexPos.colwise().maxCoeff()(0) + maxReach;
-    yFocalMax = xyHexPos.colwise().maxCoeff()(1) + maxReach;
-    xFocalMin = xyHexPos.colwise().minCoeff()(0) - minReach;
-    yFocalMin = xyHexPos.colwise().minCoeff()(1) - minReach;
-    // add in robot reach to xyFocalBox
-    for (int ii=0; ii<nRobots; ii++){
-        auto rptr = std::make_shared<Robot>(ii, xyHexPos(ii, 0), xyHexPos(ii, 1), ang_step);
+void RobotGrid::addRobot(int robotID, double xPos, double yPos, bool hasApogee){
+        auto rptr = std::make_shared<Robot>(robotID, xPos, yPos, angStep, hasApogee);
         rptr->setCollisionBuffer(collisionBuffer);
-        // Robot robot(ii, xyHexPos(ii, 0), xyHexPos(ii, 1), ang_step, betaPair.first, betaPair.second);
+        // Robot robot(ii, xyHexPos(ii, 0), xyHexPos(ii, 1), angStep, betaPair.first, betaPair.second);
         // robot.setCollisionBuffer(collisionBuffer);
         // hack set all alpha betas home
         allRobots.push_back(std::move(rptr));
+}
 
-    }
+void RobotGrid::addFiducial(double xPos, double yPos){
+        std::array<double, 2> fiducial;
+        fiducial[0] = xPos;
+        fiducial[1] = yPos;
+        fiducialList.push_back(fiducial);
+}
 
-    // for each robot, give it access to its neighbors
-    // and initialze to random alpha betas
+void RobotGrid::initGrid(){
+    // sets robots to random points
+    double dx, dy, dist;
+    nRobots = allRobots.size();
     for (auto r1 : allRobots){
         // r1.setAlphaBeta(0,180);
         for (auto r2 : allRobots){
+            // add neighbors (potential to collide with)
             if (r1->id==r2->id){
                 continue;
             }
-            double dx = r1->xPos - r2->xPos;
-            double dy = r1->yPos - r2->yPos;
-            double dist = hypot(dx, dy);
+            dx = r1->xPos - r2->xPos;
+            dy = r1->yPos - r2->yPos;
+            dist = hypot(dx, dy);
             if (dist < (2*pitch+0.1)){ // make this 2*pitch?
                 // these robots are neighbors
                 r1->addNeighbor(r2);
+            }
+        }
+        // add fiducials (potential to collide with)
+        for (auto fiducial : fiducialList){
+            dx = r1->xPos - fiducial[0];
+            dy = r1->yPos - fiducial[1];
+            dist = hypot(dx, dy);
+            if (dist < pitch+0.1) {
+                r1->addFiducial(fiducial);
             }
         }
     }

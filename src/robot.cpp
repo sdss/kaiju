@@ -64,41 +64,44 @@ const int MET_FIBER_ID = 0;
 
 // beta arm collision segments
 // beta geometries in beta arm reference frame
+const double focalZ = 30; // height to focal plane (where fiber lives)
 const double betaAxis2End = 19.2 - 3.0; //mm
 const double betaEndRadius = 1.2; // mm
-const double betaEnvPt1Data[] = {0, 0, 30}; // beta axis
+const double betaEnvPt1Data[] = {0, 0, focalZ}; // beta axis
 Eigen::Vector3d betaEnvPt1(betaEnvPt1Data);
-const double betaEnvPt2Data[] = {betaAxis2End - betaEndRadius, 0, 30};
+const double betaEnvPt2Data[] = {betaAxis2End - betaEndRadius, 0, focalZ};
 Eigen::Vector3d betaEnvPt2(betaEnvPt2Data);
 const std::array<Eigen::Vector3d, 2> neutralBetaCollisionSegment{ {betaEnvPt1, betaEnvPt2} };
 // radius containing beta arm for collision detection
 const double betaCollisionRadius = 1.5; // mm (3mm wide)
+const double fiducialBuffer = 1.5; // 3mm wide fiducial
 
 // xyz pos of fiber in beta neutra position
 // const double fiberNeutral_data[] = {betaLen, 0, 0};
 // Eigen::Vector3d fiberNeutral(fiberNeutral_data);
 
-Robot::Robot(int myid, double myxPos, double myyPos, double myAng_step) {
+Robot::Robot(int myid, double myxPos, double myyPos, double myAngStep, bool myHasApogee) {
     // std::cout << "robot constructor called" << std::endl;
     xPos = myxPos;
     yPos = myyPos;
-    ang_step = myAng_step;
+    angStep = myAngStep;
     transXY = Eigen::Vector3d(myxPos, myyPos, 0);
     id = myid;
+    hasApogee = myHasApogee;
     betaCollisionSegment = neutralBetaCollisionSegment;
     // std::pair<betaGeometry, std::vector<double>> betaPair = getBetaGeom(8);
     // betaModel = betaPair.first;
     // betaOrientation = betaPair.first;
     // modelRadii = betaPair.second;
 
-    alphaBetaArr <<  -ang_step,  ang_step,
-                             0,  ang_step,
-                      ang_step,  ang_step,
-                     -ang_step,         0,
-                      ang_step,         0,
-                     -ang_step, -ang_step,
-                             0, -ang_step,
-                      ang_step, -ang_step;
+    alphaBetaArr <<  -angStep,  angStep,
+                             0,  angStep,
+                      angStep,  angStep,
+                     -angStep,         0,
+                      angStep,         0,
+                     -angStep, -angStep,
+                             0, -angStep,
+                      angStep, -angStep;
 }
 
 void Robot::setCollisionBuffer(double newBuffer){
@@ -143,6 +146,10 @@ void Robot::addNeighbor(std::shared_ptr<Robot> rNeighbor){
     neighbors.push_back(rNeighbor);
 }
 
+void Robot::addFiducial(std::array<double, 2> fiducial){
+
+    fiducials.push_back(Eigen::Vector3d(fiducial[0], fiducial[1], focalZ));
+}
 
 void Robot::setAlphaBeta(double newAlpha, double newBeta){
     targetAssigned = true;
@@ -211,10 +218,10 @@ void Robot::setXYUniform(){
     setAlphaBeta(ab[0], ab[1]);
 }
 
-
 bool Robot::isCollided(){
     double dist2, rad1, rad2, collideDist2;
     bool iAmCollided = false;
+    // check collisions with neighboring robots
     for (auto robot : neighbors){
 
         // squared distance
@@ -234,9 +241,33 @@ bool Robot::isCollided(){
         }
 
     }
+    if (!iAmCollided){
+        iAmCollided = isFiducialCollided();
+        std::cout << "is fiducial collided " << iAmCollided << std::endl;
+    }
+
     return iAmCollided;
 }
 
+bool Robot::isFiducialCollided(){
+    double dist2, rad1, rad2, collideDist2;
+    bool iAmCollided = false;
+    for (auto fiducial : fiducials){
+        // squared distance
+        dist2 = dist3D_Segment_to_Segment(
+                betaCollisionSegment[0], betaCollisionSegment[1],
+                fiducial, fiducial
+            );
+        collideDist2 = (betaCollisionRadius+collisionBuffer+fiducialBuffer)*
+                        (betaCollisionRadius+collisionBuffer+fiducialBuffer);
+        if (dist2 < collideDist2){
+            // std::cout << "dist " << dist2 - collide_dist_squared << std::endl;
+            iAmCollided = true;
+            break;
+    }
+    return iAmCollided;
+    }
+}
 
 
 // the old decollide routine seems too complicated?

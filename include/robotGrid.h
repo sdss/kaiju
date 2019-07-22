@@ -15,17 +15,21 @@ extern const double min_targ_sep;
 
 class RobotGrid {
 public:
-    double ang_step;
-    double epsilon;
     int nRobots;
+    double epsilon;
+    double collisionBuffer;
+    double angStep;
     bool didFail;
     int nSteps;
     int maxPathSteps;
-    int printEvery; // if -1 just print final if -2 print final and start
     int smoothCollisions;
-    double xFocalMax, yFocalMax, xFocalMin, yFocalMin;
+    // double xFocalMax, yFocalMax, xFocalMin, yFocalMin;
     std::vector<std::shared_ptr<Robot>> allRobots;
-    RobotGrid (int nDia, double myAng_step, double collisionBuffer, double myEpsilon, int seed);
+    std::vector<std::array<double, 2>> fiducialList;
+    RobotGrid (double myAngStep, double myCollisionBuffer, double myEpsilon, int seed);
+    void addRobot(int robotID, double xPos, double yPos, bool hasApogee);
+    void addFiducial(double xPos, double yPos);
+    void initGrid();
     void decollide();
     int getNCollisions();
     void pathGen();

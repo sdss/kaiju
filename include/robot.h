@@ -7,7 +7,7 @@
 #include <array>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include "betaArm.h"
+// #include "betaArm.h"
 
 extern const double alphaLen;
 extern const double betaLen;
@@ -20,8 +20,9 @@ public:
     int nDecollide = 0;
     int lastStepNum = 0;
     bool targetAssigned = false;
+    bool hasApogee;
     double xPos, yPos, alpha, beta;
-    double ang_step;
+    double angStep;
     double collisionBuffer = 0;
     Eigen::Array<double, 8, 2> alphaBetaArr;
     Eigen::Affine3d betaRot, alphaRot;
@@ -42,14 +43,17 @@ public:
     std::vector<Eigen::Vector2d> interpCollisions; // boolean points for collided or not
     // std::vector<Robot *> neighbors;
     std::vector<std::shared_ptr<Robot>> neighbors;
-    Robot (int myid, double myxPos, double myyPos, double myAng_step);
+    std::vector<Eigen::Vector3d> fiducials;
+    Robot (int myid, double myxPos, double myyPos, double myAngStep, bool myHasApogee);
     void setAlphaBeta (double nextAlpha, double nextBeta);
     void setFiberXY (double xFiberGlobal, double yFiberGlobal, int fiberID); // xy in focal plane coord sys
     bool checkFiberXYLocal (double xFiberLocal, double yFiberLocal, int fiberID); // check if robot can reach
     bool checkFiberXYGlobal (double xFiberGlobal, double yFiberGlobal, int fiberID); // check if robot can reach
     void setAlphaBetaRand();
     void addNeighbor(std::shared_ptr<Robot>);
+    void addFiducial(std::array<double, 2> fiducial);
     bool isCollided();
+    bool isFiducialCollided();
     void decollide();
     void setXYUniform();
     void stepTowardFold(int stepNum);
