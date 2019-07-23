@@ -219,8 +219,9 @@ void Robot::setXYUniform(){
 }
 
 bool Robot::isCollided(){
-    double dist2, rad1, rad2, collideDist2;
-    bool iAmCollided = false;
+    // so scope really fucked me on this one?
+    // lots of returns fixed it.
+    double dist2, collideDist2;
     // check collisions with neighboring robots
     for (auto robot : neighbors){
 
@@ -230,42 +231,36 @@ bool Robot::isCollided(){
                 robot->betaCollisionSegment[0], robot->betaCollisionSegment[1]
             );
 
-        // rad1 = modelRadii[ii];
-        // rad2 = robot->modelRadii[ii];
         collideDist2 = (2*betaCollisionRadius+collisionBuffer)*
                         (2*betaCollisionRadius+robot->collisionBuffer);
         if (dist2 < collideDist2){
             // std::cout << "dist " << dist2 - collide_dist_squared << std::endl;
-            iAmCollided = true;
-            break;
+            return true;
         }
 
     }
-    if (!iAmCollided){
-        iAmCollided = isFiducialCollided();
-    }
+    // std::cout << "testing collision" << std::endl;
 
-    return iAmCollided;
+    return isFiducialCollided();
 }
 
 bool Robot::isFiducialCollided(){
+    // std::cout << "isFiducialCollided" << std::endl;
     double dist2, collideDist2;
-    bool iAmCollided = false;
     // std::cout << "n fiducials " << fiducials.size() << std::endl;
     for (auto fiducial : fiducials){
         // squared distance
         dist2 = dist3D_Point_to_Segment(
                 fiducial, betaCollisionSegment[0], betaCollisionSegment[1]
                 );
-        collideDist2 = (betaCollisionRadius+collisionBuffer+fiducialBuffer+2)*
-                        (betaCollisionRadius+collisionBuffer+fiducialBuffer+2);
+        collideDist2 = (betaCollisionRadius+collisionBuffer+fiducialBuffer)*
+                        (betaCollisionRadius+collisionBuffer+fiducialBuffer);
         if (dist2 < collideDist2){
-            std::cout << "we're collided! " << sqrt(dist2) << std::endl;
-            iAmCollided = true;
-            break;
+            // std::cout << "we're collided! " << sqrt(dist2) << std::endl;
+            return true;
+        }
     }
-    return iAmCollided;
-    }
+    return false;
 }
 
 
