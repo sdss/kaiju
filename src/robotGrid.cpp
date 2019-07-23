@@ -48,6 +48,16 @@ void RobotGrid::initGrid(){
     double dx, dy, dist;
     nRobots = allRobots.size();
     for (auto r1 : allRobots){
+        // add fiducials (potential to collide with)
+        for (auto fiducial : fiducialList){
+            dx = r1->xPos - fiducial[0];
+            dy = r1->yPos - fiducial[1];
+            dist = hypot(dx, dy);
+            if (dist < pitch+1) { // +1 for numerical buffer
+                // std::cout << "add fiducial " << dist << std::endl;
+                r1->addFiducial(fiducial);
+            }
+        }
         for (auto r2 : allRobots){
             // add neighbors (potential to collide with)
             if (r1->id==r2->id){
@@ -56,19 +66,9 @@ void RobotGrid::initGrid(){
             dx = r1->xPos - r2->xPos;
             dy = r1->yPos - r2->yPos;
             dist = hypot(dx, dy);
-            if (dist < (2*pitch+1)){ //+1 for roundoff
+            if (dist < (2*pitch+1)){ //+1 for numerical buffer
                 // these robots are neighbors
                 r1->addNeighbor(r2);
-            }
-        }
-        // add fiducials (potential to collide with)
-        for (auto fiducial : fiducialList){
-            dx = r1->xPos - fiducial[0];
-            dy = r1->yPos - fiducial[1];
-            dist = hypot(dx, dy);
-            if (dist < pitch+1) {
-                // std::cout << "add fiducial " << dist << std::endl;
-                r1->addFiducial(fiducial);
             }
         }
     }

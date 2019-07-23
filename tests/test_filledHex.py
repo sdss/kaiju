@@ -6,7 +6,7 @@ def test_filledHex():
     rg = robotGridFromFilledHex(stepSize, collisionBuffer)
     rg.decollide()
     rg.pathGen()
-    # plotPaths(rg)
+    plotPaths(rg)
 
 def test_initialPlacements():
 

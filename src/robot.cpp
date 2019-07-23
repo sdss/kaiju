@@ -209,12 +209,12 @@ void Robot::setXYUniform(){
     // perhaps get rid of this and just use setAlphaBetaRand()?
     std::array<double, 2> xy = sampleAnnulus(minReach, maxReach);
     // use a science fiber ID (matches min/max reach)
-    std::cout.precision(20);
+    // std::cout.precision(20);
     std::array<double, 2> ab = alphaBetaFromFiberXY(xy[0], xy[1], 1);
-    if (ab[1] > 180.0){
-        std::cout << "x " << xy[0] << " y " << xy[1] << " a " << ab[0]
-        << " b " << ab[1] << std::endl;
-    }
+    // if (ab[1] > 180.0){
+    //     std::cout << "x " << xy[0] << " y " << xy[1] << " a " << ab[0]
+    //     << " b " << ab[1] << std::endl;
+    // }
     setAlphaBeta(ab[0], ab[1]);
 }
 
@@ -255,6 +255,11 @@ bool Robot::isFiducialCollided(){
                 );
         collideDist2 = (betaCollisionRadius+collisionBuffer+fiducialBuffer)*
                         (betaCollisionRadius+collisionBuffer+fiducialBuffer);
+        if (hypot(xPos+89.6, yPos+116.3938) < 0.01){
+            // double dist3 = hypot(xPos-fiducial(0), yPos-fiducial(1));
+            Eigen::Vector3d offVec = betaCollisionSegment[0]-fiducial;
+            std::cout << id << ": "<< dist2 << " : "  << offVec.norm() << std::endl;
+        }
         if (dist2 < collideDist2){
             // std::cout << "we're collided! " << sqrt(dist2) << std::endl;
             return true;
@@ -528,9 +533,9 @@ std::array<double, 2> Robot::alphaBetaFromFiberXY(double x, double y, int fiberI
     while (alphaAngDeg < 0){
         alphaAngDeg += 360;
     }
-    std::array<double, 2> outArr;
-    outArr[0] = alphaAngDeg;
-    outArr[1] = betaAngDeg;
+    std::array<double, 2> outArr = {alphaAngDeg, betaAngDeg};
+    // outArr[0] = alphaAngDeg;
+    // outArr[1] = betaAngDeg;
     return outArr;
 }
 
