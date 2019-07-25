@@ -10,7 +10,7 @@ def test_filledHex():
 
 def test_initialPlacements():
 
-    for i in range(5):
+    for i in range(1):
         stepSize = 1
         collisionBuffer = 0.1
         rg = robotGridFromFilledHex(stepSize, collisionBuffer, i)

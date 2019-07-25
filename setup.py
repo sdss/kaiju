@@ -48,7 +48,7 @@ sources = [
     'src/robot.cpp',
     'src/robotGrid.cpp',
     'src/utils.cpp',
-    # 'src/betaArm.cpp'
+    'src/target.cpp'
 ]
 
 extra_compile_args = ["--std=c++11", "-fPIC", "-v", "-O3"]

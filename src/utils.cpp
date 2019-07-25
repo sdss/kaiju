@@ -1,3 +1,4 @@
+#include <iostream>
 #include "utils.h"
 
 double randomSample(){
@@ -10,9 +11,9 @@ std::array<double, 2> sampleAnnulus(double rMin, double rMax){
     // https://ridlow.wordpress.com/2014/10/22/uniform-random-points-in-disk-annulus-ring-cylinder-and-sphere/
     double rPick = sqrt((rMax*rMax - rMin*rMin)*randomSample() + rMin*rMin);
     double thetaPick = randomSample() * 2 * M_PI;
-    std::array<double, 2> outArr;
-    outArr[0] = rPick * cos(thetaPick);
-    outArr[1] = rPick * sin(thetaPick);
+    std::array<double, 2> outArr = {rPick * cos(thetaPick), rPick * sin(thetaPick)};
+    // outArr[0] = rPick * cos(thetaPick);
+    // outArr[1] = rPick * sin(thetaPick);
     return outArr;
 }
 
@@ -158,7 +159,34 @@ double dist3D_Segment_to_Segment(
     // get the difference of the two closest points
     Eigen::Vector3d   dP = w + (sc * u) - (tc * v);  // =  S1(sc) - S2(tc)
 
-    return dP.dot(dP);   // return the closest distance squared
+    // this routine hasn't shown numerical instability
+    // but just for paranoia explicitly check endpoints
+    double minDist = dP.dot(dP);
+    Eigen::Vector3d x2, x3, x4;
+    double dw, dx2, dx3, dx4;
+
+    x2 = S1_P0 - S2_P1;
+    x3 = S1_P1 - S2_P0;
+    x4 = S1_P1 - S2_P1;
+    dw = w.dot(w);
+    dx2 = x2.dot(x2);
+    dx3 = x3.dot(x3);
+    dx4 = x4.dot(x4);
+    if (dw < minDist){
+        minDist = dw;
+    }
+    if (dx2 < minDist){
+        minDist = dx2;
+    }
+    if (dx3 < minDist){
+        minDist = dx3;
+    }
+    if (dx4 < minDist){
+        minDist = dx4;
+    }
+
+
+    return minDist;   // return the closest distance squared
 }
 
 // dist_Point_to_Segment(): get the distance of a point to a segment
@@ -170,6 +198,8 @@ double dist3D_Point_to_Segment( Eigen::Vector3d Point, Eigen::Vector3d Seg_P0, E
     Eigen::Vector3d d, Pb;
     Eigen::Vector3d v = Seg_P1 - Seg_P0;
     Eigen::Vector3d w = Point - Seg_P0;
+    Eigen::Vector3d x = Point - Seg_P1;
+    double d1, d2, d3, minDist;
 
     double c1 = w.dot(v);
     if ( c1 <= 0 ){
@@ -184,8 +214,34 @@ double dist3D_Point_to_Segment( Eigen::Vector3d Point, Eigen::Vector3d Seg_P0, E
     }
     double b = c1 / c2;
     Pb = Seg_P0 + (b * v);
-    return Point.dot(Pb);
+
+    // this routine has some numerical instability
+    // this probably insn't the best fix but it seems
+    // to behave?
+    d1 = Point.dot(Pb);
+    d2 = x.dot(x);
+    d3 = w.dot(w);
+    minDist = d1;
+    if (d2 < minDist){
+        minDist = d2;
+    }
+    if (d3 < minDist){
+        minDist = d3;
+    }
+
+    return minDist;
 }
+
+// double dist3D_Point_to_Segment( Eigen::Vector3d Point, Eigen::Vector3d Seg_P0, Eigen::Vector3d Seg_P1)
+// {
+
+//     Eigen::Vector3d v = Seg_P1 - Seg_P0;
+//     double vMag = v.norm();
+//     Eigen::Vector3d unitV = v / vMag;
+//     Eigen::Vector3d u = Point - Seg_P0;
+//     double projectedDist = u.cross(unitV);
+
+// }
 
 // Ramer-Douglas-Peucker for segmentizing paths!
 // https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm

@@ -164,75 +164,99 @@ void RobotGrid::pathGen(){
     nSteps = ii;
 }
 
-
-void RobotGrid::optimizeTargets(){
-    // warning...only considering boss fibers
-    // at the moment
-    double myX,myY,nX,nY;
-    bool swapWorked;
-    // Robot * rn;
-    // int randIndex;
-    // int randNeighborIndex;
-
-    // could compile all this stuff into lookup
-    // tables but this is working ok
-
+void RobotGrid::setTargetList(std::vector<std::array<double, 5>> myTargetList){
+    // targetID, x, y, priority, fiberID (1=apogee 2=boss)
+    std::array<double, 2> ab;
+    targetList.clear();
+    // clear all robot target lists
     for (auto r : allRobots){
-        if (!r->isCollided()){
-            continue;  // this robot isn't collided skip it
-        }
-        swapWorked = false;
-        // save current assignment
-        myX = r->bossFiberPos(0);
-        myY = r->bossFiberPos(1);
-        std::vector<int> swappableNeighbors;
-        for (int ii=0; ii < r->neighbors.size(); ii++){
-            auto rn = r->neighbors[ii];
-            nX = rn->bossFiberPos(0);
-            nY = rn->bossFiberPos(1);
-            if (!rn->checkFiberXYGlobal(myX, myY, 2)){
-                // neighbor can't reach mine
-                // move to next robot
-                continue;
-            }
-            if (!r->checkFiberXYGlobal(nX, nY, 2)){
-                // i cant reach neighbor
-                // move to next robot
-                continue;
-            }
-            // we can reach eachother, test it
-            swappableNeighbors.push_back(ii);
-            r->setFiberXY(nX, nY, 2);
-            rn->setFiberXY(myX, myY, 2);
-            if (!r->isCollided()){
-                // no longer collided
-                // keep this swap!
-                // first one that's good
-                swapWorked = true;
-                break;
-            }
-            // swap them back
-            r->setFiberXY(myX, myY, 2);
-            rn->setFiberXY(nX, nY, 2);
-        }
-
-        // if (!swapWorked and swappableNeighbors.size()>0){
-        //     // we didn't find any swap that got rid
-        //     // of collision, pick a random valid
-        //     // swap for this robot
-        //     // set them back,
-        //     // swap didn't work
-        //     randIndex = rand() % swappableNeighbors.size();
-        //     rn = r.neighbors[swappableNeighbors[randIndex]];
-        //     nX = rn->fiber_XYZ(0);
-        //     nY = rn->fiber_XYZ(1);
-
-        //     r.setFiberXY(nX, nY);
-        //     rn->setFiberXY(myX, myY);
-        // }
-
-
+        r->targetList.clear();
     }
 
-
+    for (auto target : myTargetList){
+        Target nextTarget((int)target[0], target[1], target[2], (int)target[3], (int)target[4] );
+        for (auto r : allRobots){
+            if (r->isValidTarget(nextTarget)){
+                nextTarget.validRobots.push_back(r);
+                r->targetList.push_back(nextTarget);
+            }
+        }
+        targetList.push_back(nextTarget);
+    }
 }
+
+void RobotGrid::optimizeTargets(){
+    // rewrite!!!
+}
+
+// void RobotGrid::optimizeTargets(){
+//     // warning...only considering boss fibers
+//     // at the moment
+//     double myX,myY,nX,nY;
+//     bool swapWorked;
+//     // Robot * rn;
+//     // int randIndex;
+//     // int randNeighborIndex;
+
+//     // could compile all this stuff into lookup
+//     // tables but this is working ok
+
+//     for (auto r : allRobots){
+//         if (!r->isCollided()){
+//             continue;  // this robot isn't collided skip it
+//         }
+//         swapWorked = false;
+//         // save current assignment
+//         myX = r->bossFiberPos(0);
+//         myY = r->bossFiberPos(1);
+//         std::vector<int> swappableNeighbors;
+//         for (int ii=0; ii < r->neighbors.size(); ii++){
+//             auto rn = r->neighbors[ii];
+//             nX = rn->bossFiberPos(0);
+//             nY = rn->bossFiberPos(1);
+//             if (!rn->checkFiberXYGlobal(myX, myY, 2)){
+//                 // neighbor can't reach mine
+//                 // move to next robot
+//                 continue;
+//             }
+//             if (!r->checkFiberXYGlobal(nX, nY, 2)){
+//                 // i cant reach neighbor
+//                 // move to next robot
+//                 continue;
+//             }
+//             // we can reach eachother, test it
+//             swappableNeighbors.push_back(ii);
+//             r->setFiberXY(nX, nY, 2);
+//             rn->setFiberXY(myX, myY, 2);
+//             if (!r->isCollided()){
+//                 // no longer collided
+//                 // keep this swap!
+//                 // first one that's good
+//                 swapWorked = true;
+//                 break;
+//             }
+//             // swap them back
+//             r->setFiberXY(myX, myY, 2);
+//             rn->setFiberXY(nX, nY, 2);
+//         }
+
+//         // if (!swapWorked and swappableNeighbors.size()>0){
+//         //     // we didn't find any swap that got rid
+//         //     // of collision, pick a random valid
+//         //     // swap for this robot
+//         //     // set them back,
+//         //     // swap didn't work
+//         //     randIndex = rand() % swappableNeighbors.size();
+//         //     rn = r.neighbors[swappableNeighbors[randIndex]];
+//         //     nX = rn->fiber_XYZ(0);
+//         //     nY = rn->fiber_XYZ(1);
+
+//         //     r.setFiberXY(nX, nY);
+//         //     rn->setFiberXY(myX, myY);
+//         // }
+
+
+//     }
+
+
+// }

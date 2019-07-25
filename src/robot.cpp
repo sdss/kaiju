@@ -109,34 +109,33 @@ void Robot::setCollisionBuffer(double newBuffer){
 }
 
 
-bool Robot::checkFiberXYGlobal(double xFiberGlobal, double yFiberGlobal, int fiberID){
-    double xFiberLocal = xFiberGlobal - xPos;
-    double yFiberLocal = yFiberGlobal - yPos;
-    bool canReach = checkFiberXYLocal(xFiberLocal, yFiberLocal, fiberID);
-    return canReach;
-}
+// bool Robot::checkFiberXYGlobal(double xFiberGlobal, double yFiberGlobal, int fiberID){
+//     double xFiberLocal = xFiberGlobal - xPos;
+//     double yFiberLocal = yFiberGlobal - yPos;
+//     bool canReach = checkFiberXYLocal(xFiberLocal, yFiberLocal, fiberID);
+//     return canReach;
+// }
 
-bool Robot::checkFiberXYLocal(double xFiberLocal, double yFiberLocal, int fiberID){
-    double rad = hypot(xFiberLocal, yFiberLocal);
-    bool canReach = false;
-    double beta2Fiber = hypot(neutralFiberList[fiberID](0), neutralFiberList[fiberID](1));
-    double maxReach = alphaLen + beta2Fiber;
-    double minReach = betaLen - alphaLen;
-    if (rad > minReach and rad < maxReach) {
-        canReach = true;
-    }
-    return canReach;
+// bool Robot::checkFiberXYLocal(double xFiberLocal, double yFiberLocal, int fiberID){
+//     double rad = hypot(xFiberLocal, yFiberLocal);
+//     bool canReach = false;
+//     double beta2Fiber = hypot(neutralFiberList[fiberID](0), neutralFiberList[fiberID](1));
+//     double maxReach = alphaLen + beta2Fiber;
+//     double minReach = betaLen - alphaLen;
+//     if (rad > minReach and rad < maxReach) {
+//         canReach = true;
+//     }
+//     return canReach;
 
-}
+// }
 
 void Robot::setFiberXY(double xFiberGlobal, double yFiberGlobal, int fiberID){
-    double xFiberLocal = xFiberGlobal - xPos;
-    double yFiberLocal = yFiberGlobal - yPos;
-    bool canReach = checkFiberXYLocal(xFiberLocal, yFiberLocal, fiberID);
+    Target testTarget(0, xFiberGlobal, yFiberGlobal, 1, fiberID);
+    bool canReach = isValidTarget(testTarget);
     if (!canReach){
         throw std::runtime_error("cannot reach target xy");
     }
-    std::array<double, 2> newAlphaBeta = alphaBetaFromFiberXY(xFiberLocal, yFiberLocal, fiberID);
+    auto newAlphaBeta = alphaBetaFromFiberXY(xFiberGlobal, yFiberGlobal, fiberID);
     setAlphaBeta(newAlphaBeta[0], newAlphaBeta[1]);
 
 }
@@ -207,10 +206,10 @@ void Robot::setAlphaBetaRand(){
 
 void Robot::setXYUniform(){
     // perhaps get rid of this and just use setAlphaBetaRand()?
-    std::array<double, 2> xy = sampleAnnulus(minReach, maxReach);
+    auto xy = sampleAnnulus(minReach, maxReach);
     // use a science fiber ID (matches min/max reach)
     // std::cout.precision(20);
-    std::array<double, 2> ab = alphaBetaFromFiberXY(xy[0], xy[1], 1);
+    auto ab = alphaBetaFromFiberXY(xy[0]+xPos, xy[1]+yPos, 1);
     // if (ab[1] > 180.0){
     //     std::cout << "x " << xy[0] << " y " << xy[1] << " a " << ab[0]
     //     << " b " << ab[1] << std::endl;
@@ -255,11 +254,7 @@ bool Robot::isFiducialCollided(){
                 );
         collideDist2 = (betaCollisionRadius+collisionBuffer+fiducialBuffer)*
                         (betaCollisionRadius+collisionBuffer+fiducialBuffer);
-        if (hypot(xPos+89.6, yPos+116.3938) < 0.01){
-            // double dist3 = hypot(xPos-fiducial(0), yPos-fiducial(1));
-            Eigen::Vector3d offVec = betaCollisionSegment[0]-fiducial;
-            std::cout << id << ": "<< dist2 << " : "  << offVec.norm() << std::endl;
-        }
+
         if (dist2 < collideDist2){
             // std::cout << "we're collided! " << sqrt(dist2) << std::endl;
             return true;
@@ -487,13 +482,15 @@ void Robot::stepTowardFold(int stepNum){
 }
 
 
-std::array<double, 2> Robot::alphaBetaFromFiberXY(double x, double y, int fiberID){
+std::array<double, 2> Robot::alphaBetaFromFiberXY(double xFiberGlobal, double yFiberGlobal, int fiberID){
     // origin is at alpha axis
     // +x is aligned with alpha angle = 0
     // fiberID = 0 metrology
     // fiberID = 1 apogee
     // fiberID = 2 boss
     // law of cosines at work here...
+    double x = xFiberGlobal - xPos;
+    double y = yFiberGlobal - yPos;
     double xyMag = hypot(x, y);
     // beta2Fiber is length from beta axis to fiber
     // default to metrology to avoid numerical issues
@@ -537,6 +534,29 @@ std::array<double, 2> Robot::alphaBetaFromFiberXY(double x, double y, int fiberI
     // outArr[0] = alphaAngDeg;
     // outArr[1] = betaAngDeg;
     return outArr;
+}
+
+bool Robot::isValidTarget(Target target){
+    if (target.fiberID == AP_FIBER_ID and !hasApogee){
+        return false;
+    }
+    auto ab = alphaBetaFromFiberXY(target.x, target.y, target.fiberID);
+    // check alpha beta valid
+    if (isnan(ab[0]) or isnan(ab[1])){
+        return false;
+    }
+    // check alpha beta in range
+    if (ab[0]<0 or ab[0]>=360){
+        return false;
+    }
+    if (ab[1]<0 or ab[1]>180){
+        return false;
+    }
+    setAlphaBeta(ab[0], ab[1]);
+    if (isFiducialCollided()){
+        return false;
+    }
+    return true;
 }
 
 

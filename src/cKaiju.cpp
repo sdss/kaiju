@@ -3,7 +3,7 @@
 #include <pybind11/stl.h>
 // #include <pybind11/stl_bind.h>
 #include "robotGrid.h"
-// #include "betaArm.h"
+#include "target.h"
 
 // PYBIND11_MAKE_OPAQUE(std::vector<Robot>);
 
@@ -19,6 +19,10 @@ PYBIND11_MODULE(cKaiju, m) {
     // )pbdoc");
 
     // m.def("getBetaGeom", &getBetaGeom);
+    py::class_<Target, std::shared_ptr<Target>>(m, "Target")
+        .def_readwrite("x", &Target::x)
+        .def_readwrite("y", &Target::y)
+        .def_readwrite("validRobots", &Target::validRobots);
 
     py::class_<Robot, std::shared_ptr<Robot>>(m, "Robot", R"pbdoc(
         A robot positioner class
@@ -66,8 +70,8 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("alphaBetaFromFiberXY", &Robot::alphaBetaFromFiberXY)
         .def("setAlphaBetaRand", &Robot::setAlphaBetaRand)
         .def("isCollided", &Robot::isCollided)
-        .def("checkFiberXYLocal", &Robot::checkFiberXYLocal)
-        .def("checkFiberXYGlobal", &Robot::checkFiberXYGlobal)
+        // .def("checkFiberXYLocal", &Robot::checkFiberXYLocal)
+        // .def("checkFiberXYGlobal", &Robot::checkFiberXYGlobal)
         .def("setFiberXY", &Robot::setFiberXY)
         .def("decollide", &Robot::decollide);
 
@@ -79,11 +83,13 @@ PYBIND11_MODULE(cKaiju, m) {
         .def(py::init<double, double, double, int>())
         // warning!!! iterating over this gives you copies!!!! use getRobot if you want a reference
         .def_readwrite("allRobots", &RobotGrid::allRobots)
+        .def_readwrite("targetList", &RobotGrid::targetList)
         .def_readwrite("smoothCollisions", &RobotGrid::smoothCollisions)
         .def_readwrite("didFail", &RobotGrid::didFail)
         .def_readwrite("nSteps", &RobotGrid::nSteps)
         .def_readwrite("nRobots", &RobotGrid::nRobots)
         .def_readwrite("fiducialList", &RobotGrid::fiducialList)
+        .def_readwrite("targetList", &RobotGrid::targetList)
         .def("addRobot", &RobotGrid::addRobot)
         .def("addFiducial", &RobotGrid::addFiducial)
         .def("initGrid", &RobotGrid::initGrid)
@@ -93,6 +99,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("verifySmoothed", &RobotGrid::verifySmoothed)
         .def("setCollisionBuffer", &RobotGrid::setCollisionBuffer)
         .def("pathGen", &RobotGrid::pathGen)
+        .def("setTargetList", &RobotGrid::setTargetList)
         .def("getRobot", &RobotGrid::getRobot);
 }
 

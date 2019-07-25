@@ -1,5 +1,6 @@
 #pragma once
 #include "robot.h"
+#include "target.h"
 // #include <pybind11/stl_bind.h>
 
 // move constants to cpp file?
@@ -26,6 +27,8 @@ public:
     // double xFocalMax, yFocalMax, xFocalMin, yFocalMin;
     std::vector<std::shared_ptr<Robot>> allRobots;
     std::vector<std::array<double, 2>> fiducialList;
+    std::vector<Target> targetList;
+    // std::vector<std::vector<int>> target2RobotMap, robot2TargetMap;
     RobotGrid (double myAngStep, double myCollisionBuffer, double myEpsilon, int seed);
     void addRobot(int robotID, double xPos, double yPos, bool hasApogee);
     void addFiducial(double xPos, double yPos);
@@ -37,5 +40,6 @@ public:
     void verifySmoothed();
     void optimizeTargets();
     void setCollisionBuffer(double newBuffer);
+    void setTargetList(std::vector<std::array<double, 5>> myTargetList);
     std::shared_ptr<Robot> getRobot(int);
 };
