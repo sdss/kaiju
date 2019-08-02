@@ -1,28 +1,22 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
 #include <pybind11/stl.h>
-// #include <pybind11/stl_bind.h>
 #include "robotGrid.h"
 #include "target.h"
 
-// PYBIND11_MAKE_OPAQUE(std::vector<Robot>);
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(cKaiju, m) {
 
-    // m.def("initBetaArms", &initBetaArms, R"pbdoc(
-    //     Initialize Beta arms
-
-    //     This routine must be run before any path planning.
-
-    // )pbdoc");
-
-    // m.def("getBetaGeom", &getBetaGeom);
     py::class_<Target, std::shared_ptr<Target>>(m, "Target")
         .def_readwrite("x", &Target::x)
         .def_readwrite("y", &Target::y)
-        .def_readwrite("validRobots", &Target::validRobots);
+        .def_readwrite("id", &Target::id)
+        .def_readwrite("priority", &Target::priority)
+        .def_readwrite("fiberID", &Target::fiberID)
+        .def_readwrite("validRobots", &Target::validRobots)
+        .def("isAssigned", &Target::isAssigned);
 
     py::class_<Robot, std::shared_ptr<Robot>>(m, "Robot", R"pbdoc(
         A robot positioner class
@@ -37,15 +31,15 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("beta", &Robot::beta)
         .def_readwrite("xPos", &Robot::xPos)
         .def_readwrite("yPos", &Robot::yPos)
+        .def_readwrite("targetList", &Robot::targetList)
+        .def_readwrite("hasApogee", &Robot::hasApogee)
+        .def_readwrite("hasBoss", &Robot::hasBoss)
         .def_readwrite("metFiberPos", &Robot::metFiberPos)
         .def_readwrite("bossFiberPos", &Robot::bossFiberPos)
         .def_readwrite("apFiberPos", &Robot::apFiberPos)
         .def_readwrite("nDecollide", &Robot::nDecollide)
         .def_readwrite("betaCollisionSegment", &Robot::betaCollisionSegment)
-        // .def_readwrite("betaOrientation", &Robot::betaOrientation)
-        // .def_readwrite("betaModel", &Robot::betaModel)
         .def_readwrite("id", &Robot::id)
-        // .def_readwrite("lastStepNum", &Robot::lastStepNum)
         .def_readwrite("alphaPath", &Robot::alphaPath)
         .def_readwrite("betaPath", &Robot::betaPath)
         .def_readwrite("smoothAlphaPath", &Robot::smoothAlphaPath)
@@ -70,10 +64,9 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("alphaBetaFromFiberXY", &Robot::alphaBetaFromFiberXY)
         .def("setAlphaBetaRand", &Robot::setAlphaBetaRand)
         .def("isCollided", &Robot::isCollided)
-        // .def("checkFiberXYLocal", &Robot::checkFiberXYLocal)
-        // .def("checkFiberXYGlobal", &Robot::checkFiberXYGlobal)
         .def("setFiberXY", &Robot::setFiberXY)
-        .def("decollide", &Robot::decollide);
+        .def("decollide", &Robot::decollide)
+        .def("isAssigned", &Robot::isAssigned);
 
     py::class_<RobotGrid, std::shared_ptr<RobotGrid>>(m, "RobotGrid", R"pbdoc(
             Robot Grid Class
@@ -83,13 +76,13 @@ PYBIND11_MODULE(cKaiju, m) {
         .def(py::init<double, double, double, int>())
         // warning!!! iterating over this gives you copies!!!! use getRobot if you want a reference
         .def_readwrite("allRobots", &RobotGrid::allRobots)
-        .def_readwrite("targetList", &RobotGrid::targetList)
         .def_readwrite("smoothCollisions", &RobotGrid::smoothCollisions)
         .def_readwrite("didFail", &RobotGrid::didFail)
         .def_readwrite("nSteps", &RobotGrid::nSteps)
         .def_readwrite("nRobots", &RobotGrid::nRobots)
         .def_readwrite("fiducialList", &RobotGrid::fiducialList)
         .def_readwrite("targetList", &RobotGrid::targetList)
+        .def("getNCollisions", &RobotGrid::getNCollisions)
         .def("addRobot", &RobotGrid::addRobot)
         .def("addFiducial", &RobotGrid::addFiducial)
         .def("initGrid", &RobotGrid::initGrid)
@@ -100,6 +93,14 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("setCollisionBuffer", &RobotGrid::setCollisionBuffer)
         .def("pathGen", &RobotGrid::pathGen)
         .def("setTargetList", &RobotGrid::setTargetList)
-        .def("getRobot", &RobotGrid::getRobot);
+        .def("targetlessRobots", &RobotGrid::targetlessRobots)
+        .def("unreachableTargets", &RobotGrid::unreachableTargets)
+        .def("assignedTargets", &RobotGrid::assignedTargets)
+        .def("getRobot", &RobotGrid::getRobot)
+        .def("clearTargetList", &RobotGrid::clearTargetList)
+        .def("assignRobot2Target", &RobotGrid::assignRobot2Target)
+        .def("pairwiseSwap", &RobotGrid::pairwiseSwap)
+        .def("unassignedRobots", &RobotGrid::unassignedRobots)
+        .def("greedyAssign", &RobotGrid::greedyAssign);
 }
 

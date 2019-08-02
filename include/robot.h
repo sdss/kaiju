@@ -21,14 +21,14 @@ public:
     int id;
     int nDecollide = 0;
     int lastStepNum = 0;
-    bool targetAssigned = false;
+    std::shared_ptr<Target> assignedTarget;
     bool hasApogee;
+    bool hasBoss;
     double xPos, yPos, alpha, beta;
     double angStep;
     double collisionBuffer = 0;
     Eigen::Array<double, 8, 2> alphaBetaArr;
     Eigen::Affine3d betaRot, alphaRot;
-    // Eigen::Vector3d fiber_XYZ;
     Eigen::Vector3d metFiberPos;
     Eigen::Vector3d bossFiberPos;
     Eigen::Vector3d apFiberPos;
@@ -40,15 +40,12 @@ public:
     std::vector<Eigen::Vector2d> interpAlphaX, interpAlphaY, interpBetaX, interpBetaY; // smoothed
     std::vector<Eigen::Vector2d> roughAlphaX, roughAlphaY, roughBetaX, roughBetaY; // jiggly
     std::vector<Eigen::Vector2d> interpCollisions; // boolean points for collided or not
-    // std::vector<Robot *> neighbors;
     std::vector<std::shared_ptr<Robot>> neighbors;
     std::vector<Eigen::Vector3d> fiducials;
-    std::vector<Target> targetList; // anyreason for a pointer rather than instance?
+    std::vector<std::shared_ptr<Target>> targetList;
     Robot (int myid, double myxPos, double myyPos, double myAngStep, bool myHasApogee);
     void setAlphaBeta (double nextAlpha, double nextBeta);
     void setFiberXY (double xFiberGlobal, double yFiberGlobal, int fiberID); // xy in focal plane coord sys
-    // bool checkFiberXYLocal (double xFiberLocal, double yFiberLocal, int fiberID); // check if robot can reach
-    // bool checkFiberXYGlobal (double xFiberGlobal, double yFiberGlobal, int fiberID); // check if robot can reach
     void setAlphaBetaRand();
     void addNeighbor(std::shared_ptr<Robot>);
     void addFiducial(std::array<double, 2> fiducial);
@@ -64,5 +61,8 @@ public:
     // fiberID 1 = apogee
     // fiberID 2 = boss
     std::array<double, 2> convFiberXY(double x, double y, int fromFiberID, int toFiberID);
-    bool isValidTarget(Target target);
+    bool isValidTarget(std::shared_ptr<Target>);
+    void assignTarget(std::shared_ptr<Target>);
+    bool isAssigned();
+    bool canSwapTarget(std::shared_ptr<Robot> robot);
 };

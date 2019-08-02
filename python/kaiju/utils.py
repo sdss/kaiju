@@ -15,17 +15,26 @@ internalBuffer = 1.5
 rg = None # need global because C++ obj can't be pickled for multiprocessing
 
 
-def plotOne(step, robotGrid=None, figname=None):
+def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=False):
     global rg
     if robotGrid is not None:
         rg = robotGrid
     plt.figure(figsize=(10,10))
     ax = plt.gca()
     for robot in rg.allRobots:
-        alphaX = robot.roughAlphaX[step][1]
-        alphaY = robot.roughAlphaY[step][1]
-        betaX = robot.roughBetaX[step][1]
-        betaY = robot.roughBetaY[step][1]
+        if isSequence:
+            alphaX = robot.roughAlphaX[step][1]
+            alphaY = robot.roughAlphaY[step][1]
+            betaX = robot.roughBetaX[step][1]
+            betaY = robot.roughBetaY[step][1]
+        else:
+            # step input is ignored!!
+            alphaPoint = robot.betaCollisionSegment[0]
+            betaPoint = robot.betaCollisionSegment[1]
+            alphaX = alphaPoint[0]
+            alphaY = alphaPoint[1]
+            betaX = betaPoint[0]
+            betaY = betaPoint[1]
         plt.plot([robot.xPos, alphaX], [robot.yPos, alphaY], color='black', linewidth=2, alpha=0.5)
 
         topCollideLine = LineString(
@@ -33,6 +42,10 @@ def plotOne(step, robotGrid=None, figname=None):
         ).buffer(internalBuffer, cap_style=1)
         topcolor = 'blue'
         edgecolor = 'black'
+        if robot.isCollided():
+            topcolor = "red"
+        if not robot.isAssigned():
+            topcolor = "skyblue"
         patch = PolygonPatch(topCollideLine, fc=topcolor, ec=edgecolor, alpha=0.5, zorder=10)
         ax.add_patch(patch)
     for fiducial in rg.fiducialList:
@@ -40,7 +53,6 @@ def plotOne(step, robotGrid=None, figname=None):
         patch = PolygonPatch(fPoint, fc="cyan", ec="black", alpha=0.8, zorder=10)
         ax.add_patch(patch)
 
-    print("fig", step)
     if figname is None:
         figname = "step_%04d.png"%(step)
     plt.savefig(figname, dpi=250)

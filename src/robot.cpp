@@ -38,8 +38,15 @@ const double beta2metX = beta2sciX - met2sciX;
 // const double minReach = hypot(beta2sciX, 0.375) - alphaLen;
 // max reach is the distance from alpha axis to science fiber when beta = 0
 // const double maxReach = betaLen + alphaLen;
-const double maxReach = hypot(alphaLen+beta2sciX, 0.375);
-const double minReach = hypot(alphaLen-beta2sciX, 0.375);
+
+// these max/min Reaches are the slightly more restrictive ones
+// based on the small angular offset of the science fibers
+// with respect to the beta axis...
+// const double maxReach = hypot(alphaLen+beta2sciX, 0.375);
+// const double minReach = hypot(alphaLen-beta2sciX, 0.375);
+
+const double maxReach = alphaLen + betaLen;
+const double minReach = betaLen - alphaLen;
 
 const double metFiberData[] = {beta2metX, 0, 0}; // from uw shop
 Eigen::Vector3d metFiberNeutral(metFiberData);
@@ -88,6 +95,7 @@ Robot::Robot(int myid, double myxPos, double myyPos, double myAngStep, bool myHa
     transXY = Eigen::Vector3d(myxPos, myyPos, 0);
     id = myid;
     hasApogee = myHasApogee;
+    hasBoss = true; // break this out into a config/constructor
     betaCollisionSegment = neutralBetaCollisionSegment;
     // std::pair<betaGeometry, std::vector<double>> betaPair = getBetaGeom(8);
     // betaModel = betaPair.first;
@@ -130,13 +138,15 @@ void Robot::setCollisionBuffer(double newBuffer){
 // }
 
 void Robot::setFiberXY(double xFiberGlobal, double yFiberGlobal, int fiberID){
-    Target testTarget(0, xFiberGlobal, yFiberGlobal, 1, fiberID);
-    bool canReach = isValidTarget(testTarget);
+    // Target testTarget(0, xFiberGlobal, yFiberGlobal, 1, fiberID);
+    auto targPtr = std::make_shared<Target>(0, xFiberGlobal, yFiberGlobal, 1, fiberID );
+    bool canReach = isValidTarget(targPtr);
     if (!canReach){
         throw std::runtime_error("cannot reach target xy");
     }
     auto newAlphaBeta = alphaBetaFromFiberXY(xFiberGlobal, yFiberGlobal, fiberID);
     setAlphaBeta(newAlphaBeta[0], newAlphaBeta[1]);
+    // should I explicitly delete the targPtr? or does this happen automatically
 
 }
 
@@ -151,7 +161,7 @@ void Robot::addFiducial(std::array<double, 2> fiducial){
 }
 
 void Robot::setAlphaBeta(double newAlpha, double newBeta){
-    targetAssigned = true;
+    // targetAssigned = true;
     alpha = newAlpha;
     beta = newBeta;
     double alphaRad = alpha * M_PI / 180.0;
@@ -264,50 +274,9 @@ bool Robot::isFiducialCollided(){
 }
 
 
-// the old decollide routine seems too complicated?
-// void Robot::decollide(){
-//     // randomly replace alpha beta values until collisions vanish
-//     // get neighbors positions to ensure we dont
-//     // break the minimum target separation
-//     // std::cout << "decollide beta orientation size: " << betaOrientation.size() << std::endl;
-//     std::vector<Eigen::Vector2d> assignments;
-//     for (auto robot: neighbors){
-//         Eigen::Vector2d neighborPos;
-//         if (robot->targetAssigned){
-//             neighborPos(0) = robot->fiber_XYZ(0); // could just taka block?
-//             neighborPos(1) = robot->fiber_XYZ(1);
-//             assignments.push_back(neighborPos);
-//         }
-//     }
-//     for (int ii=0; ii<300; ii++){
-//         while (true) {
-//             setXYUniform();
-//             Eigen::Vector2d nextAssign;
-//             nextAssign(0) = fiber_XYZ(0);
-//             nextAssign(1) = fiber_XYZ(1);
-//             bool assignOK = true;
-//             for (auto &assigned: assignments){
-//                 Eigen::Vector2d diff = nextAssign - assigned;
-//                 if (diff.norm() < min_targ_sep){
-//                     assignOK = false;
-//                     // std::cout << "assignment not ok" << std::endl;
-//                     break; // for loop break
-//                 }
-//             }
-//             if (assignOK){
-//                 break; // break while loop for min separation
-//             }
-//         }
-//         // check if this assignment is collided
-//         nDecollide ++;
-//         if (!isCollided()){
-//             // break for loop
-//             break;
-//         }
-//     }
-// }
-
 void Robot::decollide(){
+    // remove assigned target if present
+    assignedTarget.reset();
     for (int ii=0; ii<1000; ii++){
         setXYUniform();
         nDecollide ++;
@@ -531,16 +500,19 @@ std::array<double, 2> Robot::alphaBetaFromFiberXY(double xFiberGlobal, double yF
         alphaAngDeg += 360;
     }
     std::array<double, 2> outArr = {alphaAngDeg, betaAngDeg};
-    // outArr[0] = alphaAngDeg;
-    // outArr[1] = betaAngDeg;
     return outArr;
 }
 
-bool Robot::isValidTarget(Target target){
-    if (target.fiberID == AP_FIBER_ID and !hasApogee){
+bool Robot::isValidTarget(std::shared_ptr<Target> target){
+    // first a quick position cut
+    double targDist = hypot(target->x - xPos, target->y - yPos);
+    if (targDist > maxReach or targDist < minReach) {
         return false;
     }
-    auto ab = alphaBetaFromFiberXY(target.x, target.y, target.fiberID);
+    if (target->fiberID == AP_FIBER_ID and !hasApogee){
+        return false;
+    }
+    auto ab = alphaBetaFromFiberXY(target->x, target->y, target->fiberID);
     // check alpha beta valid
     if (isnan(ab[0]) or isnan(ab[1])){
         return false;
@@ -552,11 +524,41 @@ bool Robot::isValidTarget(Target target){
     if (ab[1]<0 or ab[1]>180){
         return false;
     }
+    // save current alpha beta
+    double savedAlpha, savedBeta;
+    savedAlpha = alpha;
+    savedBeta = beta;
     setAlphaBeta(ab[0], ab[1]);
+    bool isValid = true;
     if (isFiducialCollided()){
+        isValid = false;
+    }
+    // reset alpha beta
+    setAlphaBeta(savedAlpha, savedBeta);
+    return isValid;
+}
+
+void Robot::assignTarget(std::shared_ptr<Target> target){
+    if (!isValidTarget(target)){
+        throw std::runtime_error("assignTarget failure, target not valid");
+    }
+    assignedTarget = target;
+    auto ab = alphaBetaFromFiberXY(target->x, target->y, target->fiberID);
+    setAlphaBeta(ab[0], ab[1]);
+}
+
+bool Robot::isAssigned(){
+    return (bool)assignedTarget;
+}
+
+bool Robot::canSwapTarget(std::shared_ptr<Robot> robot){
+    if (!robot->isAssigned() or !isAssigned()){
         return false;
     }
-    return true;
+    if (robot->isValidTarget(assignedTarget) & isValidTarget(robot->assignedTarget)){
+        return true;
+    }
+    return false;
 }
 
 
