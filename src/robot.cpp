@@ -214,6 +214,11 @@ void Robot::setAlphaBetaRand(){
     // std::cout << "robot " << id << " set rand " << betaOrientation.size() << std::endl;
 }
 
+std::array<double, 2> Robot::randomXYUniform(){
+	  std::array<double, 2> xy = sampleAnnulus(minReach, maxReach);
+    return xy;
+}
+
 void Robot::setXYUniform(){
     // perhaps get rid of this and just use setAlphaBetaRand()?
     auto xy = sampleAnnulus(minReach, maxReach);

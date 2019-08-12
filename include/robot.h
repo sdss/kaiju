@@ -53,6 +53,7 @@ public:
     bool isFiducialCollided();
     void decollide();
     void setXYUniform();
+    std::array<double, 2> randomXYUniform();
     void stepTowardFold(int stepNum);
     void smoothPath(double epsilon);
     void setCollisionBuffer(double newBuffer);

@@ -39,6 +39,7 @@ public:
     void optimizeTargets();
     void setCollisionBuffer(double newBuffer);
     void setTargetList(Eigen::MatrixXd myTargetList); //std::vector<std::array<double, 5>> myTargetList);
+    void addTargetList(Eigen::MatrixXd myTargetList);
     std::shared_ptr<Robot> getRobot(int);
     std::vector<std::shared_ptr<Robot>> targetlessRobots();
     std::vector<std::shared_ptr<Target>> unreachableTargets();
@@ -48,5 +49,6 @@ public:
     void greedyAssign();
     void clearTargetList();
     void assignRobot2Target(int robotInd, int targID);
+    bool isValidRobotTarget(int robotInd, int targID);
     std::vector<std::shared_ptr<Robot>> unassignedRobots();
 };

@@ -7,7 +7,7 @@ double randomSample(){
 }
 
 std::array<double, 2> sampleAnnulus(double rMin, double rMax){
-    // random anululs sampling:
+    // random annulus sampling:
     // https://ridlow.wordpress.com/2014/10/22/uniform-random-points-in-disk-annulus-ring-cylinder-and-sphere/
     double rPick = sqrt((rMax*rMax - rMin*rMin)*randomSample() + rMin*rMin);
     double thetaPick = randomSample() * 2 * M_PI;

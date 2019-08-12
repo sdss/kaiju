@@ -203,12 +203,7 @@ void RobotGrid::clearTargetList(){
     }
 }
 
-void RobotGrid::setTargetList(Eigen::MatrixXd myTargetList){ //std::vector<std::array<double, 5>> myTargetList){
-    // targetID, x, y, priority, fiberID (1=apogee 2=boss)
-    // std::array<double, 2> ab;
-
-
-    clearTargetList();
+void RobotGrid::addTargetList(Eigen::MatrixXd myTargetList){ 
     int nRows = myTargetList.rows();
     // sort by ascending priority 0 first
     // std::sort(myTargetList.begin(), myTargetList.end(), sortTargList);
@@ -229,6 +224,14 @@ void RobotGrid::setTargetList(Eigen::MatrixXd myTargetList){ //std::vector<std::
     for (auto r : allRobots){
         std::sort(r->targetList.begin(), r->targetList.end(), sortTargList);
     }
+}
+
+void RobotGrid::setTargetList(Eigen::MatrixXd myTargetList){ //std::vector<std::array<double, 5>> myTargetList){
+    // targetID, x, y, priority, fiberID (1=apogee 2=boss)
+    // std::array<double, 2> ab;
+
+	clearTargetList();
+	addTargetList(myTargetList);
 }
 
 void RobotGrid::greedyAssign(){
@@ -329,6 +332,16 @@ std::vector<std::shared_ptr<Target>> RobotGrid::assignedTargets(){
         }
     }
     return assignedTargs;
+}
+
+bool RobotGrid::isValidRobotTarget(int robotInd, int targID){
+    auto robot = allRobots[robotInd];
+    for (auto target : robot->targetList){
+        if (target->id == targID and !target->isAssigned()){
+					return(true);
+        }
+    }
+    return(false);
 }
 
 void RobotGrid::assignRobot2Target(int robotInd, int targID){
