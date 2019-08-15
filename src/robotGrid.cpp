@@ -119,6 +119,8 @@ void RobotGrid::setCollisionBuffer(double newBuffer){
 void RobotGrid::decollide(){
     // iterate over robots and resolve collisions
     // sort by target priority
+	  // This segmentation faults if any robot doesn't have
+    // an assigned target
     std::sort(allRobots.begin(), allRobots.end(), sortRobotPriority);
 
     while(getNCollisions()){
@@ -356,6 +358,11 @@ void RobotGrid::assignRobot2Target(int robotInd, int targID){
         }
     }
     if (!targetValid){
+			for (auto target : robot->targetList){
+        if (target->id == targID and target->isAssigned()){
+           throw std::runtime_error("assignRobot2Target() failure, targetID already assigned");
+        }
+			}
         throw std::runtime_error("assignRobot2Target() failure, targetID not valid for robot");
     }
 }

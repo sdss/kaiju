@@ -40,6 +40,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("nDecollide", &Robot::nDecollide)
         .def_readwrite("betaCollisionSegment", &Robot::betaCollisionSegment)
         .def_readwrite("id", &Robot::id)
+        .def_readwrite("assignedTarget", &Robot::assignedTarget)
         .def_readwrite("alphaPath", &Robot::alphaPath)
         .def_readwrite("betaPath", &Robot::betaPath)
         .def_readwrite("smoothAlphaPath", &Robot::smoothAlphaPath)
