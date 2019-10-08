@@ -21,7 +21,7 @@ public:
     int id;
     int nDecollide = 0;
     int lastStepNum = 0;
-    std::shared_ptr<Target> assignedTarget;
+    int assignedTargetInd = -1;
     bool hasApogee;
     bool hasBoss;
     double xPos, yPos, alpha, beta;
@@ -40,14 +40,14 @@ public:
     std::vector<Eigen::Vector2d> interpAlphaX, interpAlphaY, interpBetaX, interpBetaY; // smoothed
     std::vector<Eigen::Vector2d> roughAlphaX, roughAlphaY, roughBetaX, roughBetaY; // jiggly
     std::vector<Eigen::Vector2d> interpCollisions; // boolean points for collided or not
-    std::vector<std::shared_ptr<Robot>> neighbors;
+    std::vector<int> neighborInds; // indices in RobotGrid.allRobots that are neighbors
     std::vector<Eigen::Vector3d> fiducials;
-    std::vector<std::shared_ptr<Target>> targetList;
+    std::vector<int> targetInds; // indicies in RobotGrid.targetList that I can reach
     Robot (int myid, double myxPos, double myyPos, double myAngStep, bool myHasApogee);
     void setAlphaBeta (double nextAlpha, double nextBeta);
     void setFiberXY (double xFiberGlobal, double yFiberGlobal, int fiberID); // xy in focal plane coord sys
     void setAlphaBetaRand();
-    void addNeighbor(std::shared_ptr<Robot>);
+    void addNeighbor(int);
     void addFiducial(std::array<double, 2> fiducial);
     bool isCollided();
     bool isFiducialCollided();
@@ -62,8 +62,8 @@ public:
     // fiberID 1 = apogee
     // fiberID 2 = boss
     std::array<double, 2> convFiberXY(double x, double y, int fromFiberID, int toFiberID);
-    bool isValidTarget(std::shared_ptr<Target>);
-    void assignTarget(std::shared_ptr<Target>);
+    bool isValidTarget(double x, double y, int fiberID);
+    void assignTarget(int targetInd, double x, double y, int fiberID);
     bool isAssigned();
-    bool canSwapTarget(std::shared_ptr<Robot> robot);
+    // bool canSwapTarget(std::shared_ptr<Robot> robot);
 };

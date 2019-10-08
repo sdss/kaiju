@@ -151,8 +151,8 @@ void Robot::setFiberXY(double xFiberGlobal, double yFiberGlobal, int fiberID){
 }
 
 
-void Robot::addNeighbor(std::shared_ptr<Robot> rNeighbor){
-    neighbors.push_back(rNeighbor);
+void Robot::addNeighbor(int robotInd){
+    neighbors.push_back(robotInd);
 }
 
 void Robot::addFiducial(std::array<double, 2> fiducial){
@@ -508,16 +508,16 @@ std::array<double, 2> Robot::alphaBetaFromFiberXY(double xFiberGlobal, double yF
     return outArr;
 }
 
-bool Robot::isValidTarget(std::shared_ptr<Target> target){
+bool Robot::isValidTarget(double x, double y, int fiberID){
     // first a quick position cut
-    double targDist = hypot(target->x - xPos, target->y - yPos);
+    double targDist = hypot(x - xPos, y - yPos);
     if (targDist > maxReach or targDist < minReach) {
         return false;
     }
-    if (target->fiberID == AP_FIBER_ID and !hasApogee){
+    if (fiberID == AP_FIBER_ID and !hasApogee){
         return false;
     }
-    auto ab = alphaBetaFromFiberXY(target->x, target->y, target->fiberID);
+    auto ab = alphaBetaFromFiberXY(x, y, fiberID);
     // check alpha beta valid
     if (isnan(ab[0]) or isnan(ab[1])){
         return false;
@@ -543,28 +543,28 @@ bool Robot::isValidTarget(std::shared_ptr<Target> target){
     return isValid;
 }
 
-void Robot::assignTarget(std::shared_ptr<Target> target){
-    if (!isValidTarget(target)){
+void Robot::assignTarget(int targetInd, double x, double y, int fiberID){
+    if (!isValidTarget(x, y, fiberID)){
         throw std::runtime_error("assignTarget failure, target not valid");
     }
-    assignedTarget = target;
-    auto ab = alphaBetaFromFiberXY(target->x, target->y, target->fiberID);
+    assignedTargetInd = targetInd;
+    auto ab = alphaBetaFromFiberXY(x, y, fiberID);
     setAlphaBeta(ab[0], ab[1]);
 }
 
 bool Robot::isAssigned(){
-    return (bool)assignedTarget;
+    return assignedTargetInd != 0;
 }
 
-bool Robot::canSwapTarget(std::shared_ptr<Robot> robot){
-    if (!robot->isAssigned() or !isAssigned()){
-        return false;
-    }
-    if (robot->isValidTarget(assignedTarget) & isValidTarget(robot->assignedTarget)){
-        return true;
-    }
-    return false;
-}
+// bool Robot::canSwapTarget(std::shared_ptr<Robot> robot){
+//     if (!robot->isAssigned() or !isAssigned()){
+//         return false;
+//     }
+//     if (robot->isValidTarget(assignedTarget) & isValidTarget(robot->assignedTarget)){
+//         return true;
+//     }
+//     return false;
+// }
 
 
 

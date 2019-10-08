@@ -51,4 +51,5 @@ public:
     void assignRobot2Target(int robotInd, int targID);
     bool isValidRobotTarget(int robotInd, int targID);
     std::vector<std::shared_ptr<Robot>> unassignedRobots();
+    bool RobotGrid::canSwapTarget(std::shared_ptr<Robot> r1, std::shared_ptr<Robot> r2);
 };

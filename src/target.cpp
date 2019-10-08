@@ -11,16 +11,12 @@ Target::Target(int myID, double myX, double myY, int myPriority, int myFiberID){
     fiberID = myFiberID;
 }
 
-void Target::assignRobot(std::shared_ptr<Robot> robot){
-    // should i reset the shared pointer first?
-    // assignedRobot.reset()
-    return;
-    // assignedRobot = robot;
+void Target::assignRobot(int robotInd){
+    assignedRobotInd = robotInd;
 }
 
 bool Target::isAssigned(){
-    return false;
-    // return (bool)assignedRobot;
+    return assignedRobotInd != 0;
 }
 
 

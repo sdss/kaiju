@@ -197,11 +197,11 @@ void RobotGrid::pathGen(){
 }
 
 void RobotGrid::clearTargetList(){
-    targetList.clear();
+    targetList.clear(); // does clear destroy the shared_ptrs?
     // clear all robot target lists
     for (auto r : allRobots){
         r->targetList.clear();
-        r->assignedTarget.reset();
+        r->assignedTargetInd = -1;
     }
 }
 
@@ -214,18 +214,22 @@ void RobotGrid::addTargetList(Eigen::MatrixXd myTargetList){
     for (int ii = 0; ii < nRows; ii++){
         auto targPtr = std::make_shared<Target>((int)myTargetList(ii, 0), myTargetList(ii, 1), myTargetList(ii, 2), (int)myTargetList(ii, 3), (int)myTargetList(ii, 4) );
         targetList.push_back(std::move(targPtr));
+    }
+    // sort target list in order of priority
+    std::sort(targetList.begin(), targetList.end(), sortTargList)
+
+    // associate available targets to robots
+    int targInd = -1;
+    for (auto t : targetList){
+        targInd++;
+        int robotInd = -1;
         for (auto r : allRobots){
-            if (r->isValidTarget(targetList.back())){
-                targetList.back()->validRobots.push_back(r);
-                r->targetList.push_back(targetList.back());
+            robotInd++;
+            if (r->isValidTarget(t->x, t->y, t->fiberID)){
+                r.targetInds.push_back(targInd);  // should be sorted by priority
+                t.robotInds.push_back(robotInd);
             }
         }
-
-    }
-
-    // iterate over robots and arrange targets in order of decreasing priority
-    for (auto r : allRobots){
-        std::sort(r->targetList.begin(), r->targetList.end(), sortTargList);
     }
 }
 
@@ -241,35 +245,44 @@ void RobotGrid::greedyAssign(){
     // assign the highest priority targets to robots
     // initialize each robot to its highest priority target
     // only allow one target per robot
+    int robotInd = -1;
     for (auto r : allRobots){
+        robotInd++;
+        targetInd = -1;
         for (auto targ : r->targetList){
+            targetInd++;
             if (targ->isAssigned()){
                 // target has been assigned to other robot
                 continue;
             }
-            targ->assignRobot(r);
-            r->assignTarget(targ);
-            break;
+            if (r->isValidTarget(targ->x, targ->y, targ->fiberID)){
+                targ->assignRobot(robotInd)
+                r->assignTarget(targetInd, targ->x, targ->y, targ->fiberID);
+                break; // break from target loop
+            }
         }
     }
 }
 
 void RobotGrid::pairwiseSwap(){
     // look for pairwise swaps that reduce collisions
+    r1ind = -1;
     for (auto r1 : allRobots){
+        r1ind++;
         if (r1->isCollided()){
             // use getNCollisions because the swap may
             // decolide the robot, but may introduce a new
             // collision
             double initialCollisions = getNCollisions();
-            for (auto r2 : r1->neighbors){
-                if (r1->canSwapTarget(r2)){
-                    swapTargets(r1, r2);
+            for (auto r2ind : r1->neighborInds){
+                auto r2 = allRobots[r2ind];
+                if (canSwapTarget(r1, r2)){
+                    swapTargets(r1ind, r2ind);
                     if (initialCollisions <= getNCollisions()){
                         // swap targets back
                         // collision still exists
                         // or is worse!
-                        swapTargets(r1, r2);
+                        swapTargets(r1ind, r2ind);
                     }
                     else {
                         // collision resolved
@@ -281,13 +294,32 @@ void RobotGrid::pairwiseSwap(){
     }
 }
 
-void RobotGrid::swapTargets(std::shared_ptr<Robot> r1, std::shared_ptr<Robot> r2){
-    std::shared_ptr<Target> savedTarget = r1->assignedTarget;
-    r1->assignTarget(r2->assignedTarget);
-    r2->assignTarget(savedTarget);
-    // update target->robot assignments
-    r1->assignedTarget->assignRobot(r1);
-    r2->assignedTarget->assignRobot(r2);
+bool RobotGrid::canSwapTarget(std::shared_ptr<Robot> r1, std::shared_ptr<Robot> r2){
+    auto r1targ = targetList[r1->assignedTargetInd];
+    auto r2targ = targetList[r2->assignedTargetInd];
+    bool r1canReach = r1->isValidTarget(r2targ->x, r2targ->y, r2targ->fiberID);
+    bool r2canReach = r2->isValidTarget(r1targ->x, r1targ->y, r1targ->fiberID);
+    return r1canReach and r2canReach;
+}
+
+void RobotGrid::swapTargets(int r1Ind, int r2Ind){
+    // std::shared_ptr<Target> savedTarget = r1->assignedTarget;
+    // r1->assignTarget(r2->assignedTarget);
+    // r2->assignTarget(savedTarget);
+    // // update target->robot assignments
+    // r1->assignedTarget->assignRobot(r1);
+    // r2->assignedTarget->assignRobot(r2);
+    auto r1 = allRobots[r1Ind];
+    auto r2 = allRobots[r2Ind];
+
+    auto r1targ = targetList[r1->assignedTargetInd];
+    auto r2targ = targetList[r2->assignedTargetInd];
+    r1->assignTarget(r2->assignedTargetInd, r2targ->x, r2targ->y, r2targ->fiberID);
+    r2->assignTarget(r1->assignedTargetInd, r1targ->x, r1targ->y, r1targ->fiberID);
+
+    r1targ->assignRobot(r2Ind);
+    r2targ->assignRobot(r1Ind);
+
 }
 
 std::vector<std::shared_ptr<Robot>> RobotGrid::unassignedRobots(){
