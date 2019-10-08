@@ -26,4 +26,5 @@ target.o: target.cpp
 	$(CC) $(CFLAGS) $(INC) -c target.cpp
 
 clean:
-	rm -f kaiju cKaiju.so *.o *.dSYM
+	rm -f kaiju cKaiju.so *.o
+	rm -r *.dSYM

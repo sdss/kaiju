@@ -1,7 +1,9 @@
+#include <iostream>
 #include "target.h"
 
 
 Target::Target(int myID, double myX, double myY, int myPriority, int myFiberID){
+    std:: cout << "target created" << std::endl;
     id = myID;
     x = myX;
     y = myY;
@@ -12,11 +14,13 @@ Target::Target(int myID, double myX, double myY, int myPriority, int myFiberID){
 void Target::assignRobot(std::shared_ptr<Robot> robot){
     // should i reset the shared pointer first?
     // assignedRobot.reset()
-    assignedRobot = robot;
+    return;
+    // assignedRobot = robot;
 }
 
 bool Target::isAssigned(){
-    return (bool)assignedRobot;
+    return false;
+    // return (bool)assignedRobot;
 }
 
 

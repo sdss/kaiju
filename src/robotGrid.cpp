@@ -205,7 +205,7 @@ void RobotGrid::clearTargetList(){
     }
 }
 
-void RobotGrid::addTargetList(Eigen::MatrixXd myTargetList){ 
+void RobotGrid::addTargetList(Eigen::MatrixXd myTargetList){
     int nRows = myTargetList.rows();
     // sort by ascending priority 0 first
     // std::sort(myTargetList.begin(), myTargetList.end(), sortTargList);
@@ -213,13 +213,14 @@ void RobotGrid::addTargetList(Eigen::MatrixXd myTargetList){
     // add targets to robots and robots to targets
     for (int ii = 0; ii < nRows; ii++){
         auto targPtr = std::make_shared<Target>((int)myTargetList(ii, 0), myTargetList(ii, 1), myTargetList(ii, 2), (int)myTargetList(ii, 3), (int)myTargetList(ii, 4) );
+        targetList.push_back(std::move(targPtr));
         for (auto r : allRobots){
-            if (r->isValidTarget(targPtr)){
-                targPtr->validRobots.push_back(r);
-                r->targetList.push_back(targPtr);
+            if (r->isValidTarget(targetList.back())){
+                targetList.back()->validRobots.push_back(r);
+                r->targetList.push_back(targetList.back());
             }
         }
-        targetList.push_back(std::move(targPtr));
+
     }
 
     // iterate over robots and arrange targets in order of decreasing priority

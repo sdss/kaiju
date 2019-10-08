@@ -24,7 +24,7 @@ void doOne(){
 
 
 int main(){
-    int maxIter = 4000;
+    int maxIter = 2000;
     int ii = 0;
     while(ii < maxIter){
         doOne();
