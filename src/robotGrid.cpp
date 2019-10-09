@@ -558,7 +558,7 @@ void RobotGrid::stepTowardFold(std::shared_ptr<Robot> robot, int stepNum){
 }
 
 bool RobotGrid::isCollidedInd(int robotInd){
-    robot = allRobots[robotInd];
+    auto robot = allRobots[robotInd];
     return isCollided(robot);
 }
 
