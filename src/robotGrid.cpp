@@ -422,7 +422,7 @@ bool RobotGrid::isCollided(std::shared_ptr<Robot> robot1){
         auto robot2 = allRobots[robotInd];
         // squared distance
         dist2 = dist3D_Segment_to_Segment(
-                robot1->betaCollisionSegment[0], robot2->betaCollisionSegment[1],
+                robot2->betaCollisionSegment[0], robot2->betaCollisionSegment[1],
                 robot1->betaCollisionSegment[0], robot1->betaCollisionSegment[1]
             );
 
@@ -441,13 +441,13 @@ bool RobotGrid::isCollided(std::shared_ptr<Robot> robot1){
 
 void RobotGrid::decollideRobot(std::shared_ptr<Robot> robot){
     // remove assigned target if present
-    std::cout << "decolliding robot " << robot->id << std::endl;
+    // std::cout << "decolliding robot " << robot->id << std::endl;
     robot->assignedTargetInd = -1;
     for (int ii=0; ii<1000; ii++){
         robot->setXYUniform();
         // nDecollide ++;
         if (!isCollided(robot)){
-            std::cout << "decollide successful " << std::endl;
+            // std::cout << "decollide successful " << std::endl;
             break;
         }
     }
