@@ -6,7 +6,7 @@ class Robot; // defined in robot.h
 
 class Target{
 public:
-    int assignedRobotInd; // index in RobotGrid.allRobots
+    int assignedRobotInd = -1; // index in RobotGrid.allRobots
     int id;
     int priority,fiberID;
     float x,y;

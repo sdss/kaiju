@@ -87,6 +87,8 @@ def test_one():
     rg = robotGridFromFilledHex(stepSize, collisionBuffer, 0)
     targetList = generateTargetList(nTargs)
     rg.setTargetList(targetList)
+    rg.greedyAssign()
+    rg.pairwiseSwap()
     plotOne(0, robotGrid=rg, figname="one.png", isSequence=False)
     ats = rg.assignedTargets()
     targIDs = [at.id for at in ats]

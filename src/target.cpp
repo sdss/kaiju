@@ -3,7 +3,7 @@
 
 
 Target::Target(int myID, double myX, double myY, int myPriority, int myFiberID){
-    std:: cout << "target created" << std::endl;
+    // std:: cout << "target created" << std::endl;
     id = myID;
     x = myX;
     y = myY;
@@ -16,7 +16,7 @@ void Target::assignRobot(int robotInd){
 }
 
 bool Target::isAssigned(){
-    return assignedRobotInd != 0;
+    return assignedRobotInd != -1;
 }
 
 

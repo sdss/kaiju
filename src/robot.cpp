@@ -552,7 +552,7 @@ void Robot::assignTarget(int targetInd, double x, double y, int fiberID){
 }
 
 bool Robot::isAssigned(){
-    return assignedTargetInd != 0;
+    return assignedTargetInd != -1;
 }
 
 // bool Robot::canSwapTarget(std::shared_ptr<Robot> robot){
