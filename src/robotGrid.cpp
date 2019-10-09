@@ -302,6 +302,11 @@ void RobotGrid::pairwiseSwap(){
 }
 
 bool RobotGrid::canSwapTarget(std::shared_ptr<Robot> r1, std::shared_ptr<Robot> r2){
+    // std::cout << "in canSwapTarget" << std::endl;
+    if (!r1->isAssigned() or !r2->isAssigned()){
+        // one positioner is without a target
+        return false;
+    }
     auto r1targ = targetList[r1->assignedTargetInd];
     auto r2targ = targetList[r2->assignedTargetInd];
     bool r1canReach = r1->isValidTarget(r2targ->x, r2targ->y, r2targ->fiberID);
@@ -321,8 +326,11 @@ void RobotGrid::swapTargets(int r1Ind, int r2Ind){
 
     auto r1targ = targetList[r1->assignedTargetInd];
     auto r2targ = targetList[r2->assignedTargetInd];
-    r1->assignTarget(r2->assignedTargetInd, r2targ->x, r2targ->y, r2targ->fiberID);
-    r2->assignTarget(r1->assignedTargetInd, r1targ->x, r1targ->y, r1targ->fiberID);
+    auto r1targInd = r1->assignedTargetInd;
+    auto r2targInd = r2->assignedTargetInd;
+
+    r1->assignTarget(r2targInd, r2targ->x, r2targ->y, r2targ->fiberID);
+    r2->assignTarget(r1targInd, r1targ->x, r1targ->y, r1targ->fiberID);
 
     r1targ->assignRobot(r2Ind);
     r2targ->assignRobot(r1Ind);
