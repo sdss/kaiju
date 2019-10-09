@@ -139,8 +139,7 @@ void Robot::setCollisionBuffer(double newBuffer){
 
 void Robot::setFiberXY(double xFiberGlobal, double yFiberGlobal, int fiberID){
     // Target testTarget(0, xFiberGlobal, yFiberGlobal, 1, fiberID);
-    auto targPtr = std::make_shared<Target>(0, xFiberGlobal, yFiberGlobal, 1, fiberID );
-    bool canReach = isValidTarget(targPtr);
+    bool canReach = isValidTarget(xFiberGlobal, yFiberGlobal, fiberID);
     if (!canReach){
         throw std::runtime_error("cannot reach target xy");
     }
@@ -152,7 +151,7 @@ void Robot::setFiberXY(double xFiberGlobal, double yFiberGlobal, int fiberID){
 
 
 void Robot::addNeighbor(int robotInd){
-    neighbors.push_back(robotInd);
+    neighborInds.push_back(robotInd);
 }
 
 void Robot::addFiducial(std::array<double, 2> fiducial){
@@ -232,31 +231,31 @@ void Robot::setXYUniform(){
     setAlphaBeta(ab[0], ab[1]);
 }
 
-bool Robot::isCollided(){
-    // so scope really fucked me on this one?
-    // lots of returns fixed it.
-    double dist2, collideDist2;
-    // check collisions with neighboring robots
-    for (auto robot : neighbors){
+// bool Robot::isCollided(){
+//     // so scope really fucked me on this one?
+//     // lots of returns fixed it.
+//     double dist2, collideDist2;
+//     // check collisions with neighboring robots
+//     for (auto robot : neighborInds){
 
-        // squared distance
-        dist2 = dist3D_Segment_to_Segment(
-                betaCollisionSegment[0], betaCollisionSegment[1],
-                robot->betaCollisionSegment[0], robot->betaCollisionSegment[1]
-            );
+//         // squared distance
+//         dist2 = dist3D_Segment_to_Segment(
+//                 betaCollisionSegment[0], betaCollisionSegment[1],
+//                 robot->betaCollisionSegment[0], robot->betaCollisionSegment[1]
+//             );
 
-        collideDist2 = (2*betaCollisionRadius+collisionBuffer)*
-                        (2*betaCollisionRadius+robot->collisionBuffer);
-        if (dist2 < collideDist2){
-            // std::cout << "dist " << dist2 - collide_dist_squared << std::endl;
-            return true;
-        }
+//         collideDist2 = (2*betaCollisionRadius+collisionBuffer)*
+//                         (2*betaCollisionRadius+robot->collisionBuffer);
+//         if (dist2 < collideDist2){
+//             // std::cout << "dist " << dist2 - collide_dist_squared << std::endl;
+//             return true;
+//         }
 
-    }
-    // std::cout << "testing collision" << std::endl;
+//     }
+//     // std::cout << "testing collision" << std::endl;
 
-    return isFiducialCollided();
-}
+//     return isFiducialCollided();
+// }
 
 bool Robot::isFiducialCollided(){
     // std::cout << "isFiducialCollided" << std::endl;
@@ -279,181 +278,181 @@ bool Robot::isFiducialCollided(){
 }
 
 
-void Robot::decollide(){
-    // remove assigned target if present
-    assignedTarget.reset();
-    for (int ii=0; ii<1000; ii++){
-        setXYUniform();
-        nDecollide ++;
-        if (!isCollided()){
-            break;
-        }
-    }
-    // are we still collided?
-    if (isCollided()){
-        throw std::runtime_error("Unable do decollide robot!!!");
-    }
-}
+// void Robot::decollide(){
+//     // remove assigned target if present
+//     assignedTarget.reset();
+//     for (int ii=0; ii<1000; ii++){
+//         setXYUniform();
+//         nDecollide ++;
+//         if (!isCollided()){
+//             break;
+//         }
+//     }
+//     // are we still collided?
+//     if (isCollided()){
+//         throw std::runtime_error("Unable do decollide robot!!!");
+//     }
+// }
 
 
-void Robot::smoothPath(double epsilon){
-    // smooth a previously generated path
-    double interpSmoothAlpha, interpSmoothBeta;
-    int npts;
-    Eigen::Vector2d atemp, btemp;
-    RamerDouglasPeucker(alphaPath, epsilon, smoothAlphaPath);
-    // bias alpha positive direction because we are approaching zero
-    npts = smoothAlphaPath.size();
-    for (int ii=1; ii<npts-1; ii++){
-        // only shift internal (not end) points
-        smoothAlphaPath[ii](1) = smoothAlphaPath[ii](1);// + epsilon;
-    }
+// void Robot::smoothPath(double epsilon){
+//     // smooth a previously generated path
+//     double interpSmoothAlpha, interpSmoothBeta;
+//     int npts;
+//     Eigen::Vector2d atemp, btemp;
+//     RamerDouglasPeucker(alphaPath, epsilon, smoothAlphaPath);
+//     // bias alpha positive direction because we are approaching zero
+//     npts = smoothAlphaPath.size();
+//     for (int ii=1; ii<npts-1; ii++){
+//         // only shift internal (not end) points
+//         smoothAlphaPath[ii](1) = smoothAlphaPath[ii](1);// + epsilon;
+//     }
 
-    RamerDouglasPeucker(betaPath, epsilon, smoothBetaPath);
-    // bias beta negative direction because we are approaching 180
-    // linearly interpolate smooth paths to same step values
-    // as computed
-    // bias alpha positive direction because we are approaching zero
-    npts = smoothBetaPath.size();
-    for (int ii=1; ii<npts-1; ii++){
-        // only shift internal (not end) points
-        smoothBetaPath[ii](1) = smoothBetaPath[ii](1);// - epsilon;
-    }
+//     RamerDouglasPeucker(betaPath, epsilon, smoothBetaPath);
+//     // bias beta negative direction because we are approaching 180
+//     // linearly interpolate smooth paths to same step values
+//     // as computed
+//     // bias alpha positive direction because we are approaching zero
+//     npts = smoothBetaPath.size();
+//     for (int ii=1; ii<npts-1; ii++){
+//         // only shift internal (not end) points
+//         smoothBetaPath[ii](1) = smoothBetaPath[ii](1);// - epsilon;
+//     }
 
-    // calculate smoothed alpha betas at every step
-    int nDensePoints = alphaPath.size();
-    for (int ii=0; ii<nDensePoints; ii++){
-        double xVal = alphaPath[ii](0);
-        atemp(0) = xVal; // interpolation step
-        btemp(0) = xVal;
-        interpSmoothAlpha = linearInterpolate(smoothAlphaPath, xVal);
-        // bias alpha in positive direction because we're approaching zero
-        atemp(1) = interpSmoothAlpha;
-        interpSmoothAlphaPath.push_back(atemp);
-        interpSmoothBeta = linearInterpolate(smoothBetaPath, xVal);
-        btemp(1) = interpSmoothBeta;
-        interpSmoothBetaPath.push_back(btemp);
+//     // calculate smoothed alpha betas at every step
+//     int nDensePoints = alphaPath.size();
+//     for (int ii=0; ii<nDensePoints; ii++){
+//         double xVal = alphaPath[ii](0);
+//         atemp(0) = xVal; // interpolation step
+//         btemp(0) = xVal;
+//         interpSmoothAlpha = linearInterpolate(smoothAlphaPath, xVal);
+//         // bias alpha in positive direction because we're approaching zero
+//         atemp(1) = interpSmoothAlpha;
+//         interpSmoothAlphaPath.push_back(atemp);
+//         interpSmoothBeta = linearInterpolate(smoothBetaPath, xVal);
+//         btemp(1) = interpSmoothBeta;
+//         interpSmoothBetaPath.push_back(btemp);
 
-        // populate interpXY points for alpha/beta ends
-        setAlphaBeta(interpSmoothAlpha, interpSmoothBeta);
-        atemp(1) = betaCollisionSegment[0](0); // xAlphaEnd
-        interpAlphaX.push_back(atemp);
-        atemp(1) = betaCollisionSegment[0](1); // yAlphaEnd
-        interpAlphaY.push_back(atemp);
-        atemp(1) = betaCollisionSegment.back()(0); // xBetaEnd
-        interpBetaX.push_back(atemp);
-        atemp(1) = betaCollisionSegment.back()(1); // yBetaEnd
-        interpBetaY.push_back(atemp);
+//         // populate interpXY points for alpha/beta ends
+//         setAlphaBeta(interpSmoothAlpha, interpSmoothBeta);
+//         atemp(1) = betaCollisionSegment[0](0); // xAlphaEnd
+//         interpAlphaX.push_back(atemp);
+//         atemp(1) = betaCollisionSegment[0](1); // yAlphaEnd
+//         interpAlphaY.push_back(atemp);
+//         atemp(1) = betaCollisionSegment.back()(0); // xBetaEnd
+//         interpBetaX.push_back(atemp);
+//         atemp(1) = betaCollisionSegment.back()(1); // yBetaEnd
+//         interpBetaY.push_back(atemp);
 
-        atemp(1) = 0; // not collided
-        if (isCollided()){
-            atemp(1) = 1;
-        }
-        interpCollisions.push_back(atemp);
+//         atemp(1) = 0; // not collided
+//         if (isCollided()){
+//             atemp(1) = 1;
+//         }
+//         interpCollisions.push_back(atemp);
 
-    }
+//     }
 
-}
+// }
 
-void Robot::stepTowardFold(int stepNum){
-    double currAlpha = alpha;
-    double currBeta = beta;
-    Eigen::Vector2d alphaPathPoint;
-    Eigen::Vector2d betaPathPoint;
-    Eigen::Vector2d temp;
-    alphaPathPoint(0) = stepNum;
-    betaPathPoint(0) = stepNum;
-    if (currBeta==180 and currAlpha==0){
-        // done folding don't move
-        alphaPathPoint(1) = currAlpha;
-        betaPathPoint(1) = currBeta;
-        alphaPath.push_back(alphaPathPoint);
-        betaPath.push_back(betaPathPoint);
+// void Robot::stepTowardFold(int stepNum){
+//     double currAlpha = alpha;
+//     double currBeta = beta;
+//     Eigen::Vector2d alphaPathPoint;
+//     Eigen::Vector2d betaPathPoint;
+//     Eigen::Vector2d temp;
+//     alphaPathPoint(0) = stepNum;
+//     betaPathPoint(0) = stepNum;
+//     if (currBeta==180 and currAlpha==0){
+//         // done folding don't move
+//         alphaPathPoint(1) = currAlpha;
+//         betaPathPoint(1) = currBeta;
+//         alphaPath.push_back(alphaPathPoint);
+//         betaPath.push_back(betaPathPoint);
 
-        temp(0) = stepNum;
-        temp(1) = betaCollisionSegment[0](0); // xAlphaEnd
-        roughAlphaX.push_back(temp);
-        temp(1) = betaCollisionSegment[0](1); // yAlphaEnd
-        roughAlphaY.push_back(temp);
-        temp(1) = betaCollisionSegment.back()(0); // xBetaEnd
-        roughBetaX.push_back(temp);
-        temp(1) = betaCollisionSegment.back()(1); // yBetaEnd
-        roughBetaY.push_back(temp);
+//         temp(0) = stepNum;
+//         temp(1) = betaCollisionSegment[0](0); // xAlphaEnd
+//         roughAlphaX.push_back(temp);
+//         temp(1) = betaCollisionSegment[0](1); // yAlphaEnd
+//         roughAlphaY.push_back(temp);
+//         temp(1) = betaCollisionSegment.back()(0); // xBetaEnd
+//         roughBetaX.push_back(temp);
+//         temp(1) = betaCollisionSegment.back()(1); // yBetaEnd
+//         roughBetaY.push_back(temp);
 
-        return;
-    }
-    // this is for keeping track of last step
-    // only updates if robot hasn't reached fold
-    lastStepNum = stepNum;
-    // begin trying options pick first that works
-    for (int ii=0; ii<alphaBetaArr.rows(); ii++){
-        double nextAlpha = currAlpha + alphaBetaArr(ii, 0);
-        double nextBeta = currBeta + alphaBetaArr(ii, 1);
-        if (nextAlpha > 360){
-            nextAlpha = 360;
-        }
-        if (nextAlpha < 0){
-            nextAlpha = 0;
-        }
-        if (nextBeta > 180){
-            nextBeta = 180;
-        }
-        if (nextBeta < 0){
-            nextBeta = 0;
-        }
-        // if next choice results in no move skip it
-        // always favor a move
-        if (nextBeta==currBeta and nextAlpha==currAlpha){
-            continue;
-        }
-        setAlphaBeta(nextAlpha, nextBeta);
-        if (!isCollided()){
-            alphaPathPoint(1) = nextAlpha;
-            betaPathPoint(1) = nextBeta;
-            alphaPath.push_back(alphaPathPoint);
-            betaPath.push_back(betaPathPoint);
+//         return;
+//     }
+//     // this is for keeping track of last step
+//     // only updates if robot hasn't reached fold
+//     lastStepNum = stepNum;
+//     // begin trying options pick first that works
+//     for (int ii=0; ii<alphaBetaArr.rows(); ii++){
+//         double nextAlpha = currAlpha + alphaBetaArr(ii, 0);
+//         double nextBeta = currBeta + alphaBetaArr(ii, 1);
+//         if (nextAlpha > 360){
+//             nextAlpha = 360;
+//         }
+//         if (nextAlpha < 0){
+//             nextAlpha = 0;
+//         }
+//         if (nextBeta > 180){
+//             nextBeta = 180;
+//         }
+//         if (nextBeta < 0){
+//             nextBeta = 0;
+//         }
+//         // if next choice results in no move skip it
+//         // always favor a move
+//         if (nextBeta==currBeta and nextAlpha==currAlpha){
+//             continue;
+//         }
+//         setAlphaBeta(nextAlpha, nextBeta);
+//         if (!isCollided()){
+//             alphaPathPoint(1) = nextAlpha;
+//             betaPathPoint(1) = nextBeta;
+//             alphaPath.push_back(alphaPathPoint);
+//             betaPath.push_back(betaPathPoint);
 
-            // add alpha/beta xy points
+//             // add alpha/beta xy points
 
-            temp(0) = stepNum;
-            // std::cout << "beta orientation size: " << betaOrientation.size() << std::endl;
-            // std::cout << "beta model size: " << betaModel.size() << std::endl;
-            temp(1) = betaCollisionSegment[0](0); // xAlphaEnd
-            // std::cout << "step toward fold " << ii << std::endl;
+//             temp(0) = stepNum;
+//             // std::cout << "beta orientation size: " << betaOrientation.size() << std::endl;
+//             // std::cout << "beta model size: " << betaModel.size() << std::endl;
+//             temp(1) = betaCollisionSegment[0](0); // xAlphaEnd
+//             // std::cout << "step toward fold " << ii << std::endl;
 
-            roughAlphaX.push_back(temp);
+//             roughAlphaX.push_back(temp);
 
-            temp(1) = betaCollisionSegment[0](1); // yAlphaEnd
-            roughAlphaY.push_back(temp);
-            temp(1) = betaCollisionSegment.back()(0); // xBetaEnd
-            roughBetaX.push_back(temp);
-            temp(1) = betaCollisionSegment.back()(1); // yBetaEnd
-            roughBetaY.push_back(temp);
+//             temp(1) = betaCollisionSegment[0](1); // yAlphaEnd
+//             roughAlphaY.push_back(temp);
+//             temp(1) = betaCollisionSegment.back()(0); // xBetaEnd
+//             roughBetaX.push_back(temp);
+//             temp(1) = betaCollisionSegment.back()(1); // yBetaEnd
+//             roughBetaY.push_back(temp);
 
-            return;
-        }
-    }
+//             return;
+//         }
+//     }
 
-    // no move options worked,
-    // settle for a non-move
-    setAlphaBeta(currAlpha, currBeta);
-    alphaPathPoint(1) = currAlpha;
-    betaPathPoint(1) = currBeta;
-    alphaPath.push_back(alphaPathPoint);
-    betaPath.push_back(betaPathPoint);
+//     // no move options worked,
+//     // settle for a non-move
+//     setAlphaBeta(currAlpha, currBeta);
+//     alphaPathPoint(1) = currAlpha;
+//     betaPathPoint(1) = currBeta;
+//     alphaPath.push_back(alphaPathPoint);
+//     betaPath.push_back(betaPathPoint);
 
-    // add alpha/beta xy points
-    // Eigen::Vector2d temp;
-    temp(0) = stepNum;
-    temp(1) = betaCollisionSegment[0](0); // xAlphaEnd
-    roughAlphaX.push_back(temp);
-    temp(1) = betaCollisionSegment[0](1); // yAlphaEnd
-    roughAlphaY.push_back(temp);
-    temp(1) = betaCollisionSegment.back()(0); // xBetaEnd
-    roughBetaX.push_back(temp);
-    temp(1) = betaCollisionSegment.back()(1); // yBetaEnd
-    roughBetaY.push_back(temp);
-}
+//     // add alpha/beta xy points
+//     // Eigen::Vector2d temp;
+//     temp(0) = stepNum;
+//     temp(1) = betaCollisionSegment[0](0); // xAlphaEnd
+//     roughAlphaX.push_back(temp);
+//     temp(1) = betaCollisionSegment[0](1); // yAlphaEnd
+//     roughAlphaY.push_back(temp);
+//     temp(1) = betaCollisionSegment.back()(0); // xBetaEnd
+//     roughBetaX.push_back(temp);
+//     temp(1) = betaCollisionSegment.back()(1); // yBetaEnd
+//     roughBetaY.push_back(temp);
+// }
 
 
 std::array<double, 2> Robot::alphaBetaFromFiberXY(double xFiberGlobal, double yFiberGlobal, int fiberID){

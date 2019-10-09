@@ -49,13 +49,13 @@ public:
     void setAlphaBetaRand();
     void addNeighbor(int);
     void addFiducial(std::array<double, 2> fiducial);
-    bool isCollided();
+    // bool isCollided();
     bool isFiducialCollided();
-    void decollide();
+    // void decollide();
     void setXYUniform();
     std::array<double, 2> randomXYUniform();
-    void stepTowardFold(int stepNum);
-    void smoothPath(double epsilon);
+    // void stepTowardFold(int stepNum);
+    // void smoothPath(double epsilon);
     void setCollisionBuffer(double newBuffer);
     std::array<double, 2> alphaBetaFromFiberXY(double x, double y, int fiberID);
     // fiberID 0 = metrology

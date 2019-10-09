@@ -34,8 +34,8 @@ public:
     void decollide();
     int getNCollisions();
     void pathGen();
-    void smoothPaths();
-    void verifySmoothed();
+    // void smoothPaths();
+    // void verifySmoothed();
     void optimizeTargets();
     void setCollisionBuffer(double newBuffer);
     void setTargetList(Eigen::MatrixXd myTargetList); //std::vector<std::array<double, 5>> myTargetList);
@@ -45,11 +45,16 @@ public:
     std::vector<std::shared_ptr<Target>> unreachableTargets();
     std::vector<std::shared_ptr<Target>> assignedTargets();
     void pairwiseSwap();
-    void swapTargets(std::shared_ptr<Robot> r1, std::shared_ptr<Robot> r2);
+    void swapTargets(int r1ind, int r2ind);
     void greedyAssign();
     void clearTargetList();
     void assignRobot2Target(int robotInd, int targID);
     bool isValidRobotTarget(int robotInd, int targID);
     std::vector<std::shared_ptr<Robot>> unassignedRobots();
-    bool RobotGrid::canSwapTarget(std::shared_ptr<Robot> r1, std::shared_ptr<Robot> r2);
+    bool canSwapTarget(std::shared_ptr<Robot> r1, std::shared_ptr<Robot> r2);
+    bool isCollided(std::shared_ptr<Robot> r1);
+    bool isCollidedInd(int robotInd);
+    void decollideRobot(std::shared_ptr<Robot> r1);
+    void stepTowardFold(std::shared_ptr<Robot> r1, int stepNum);
+    // void smoothPath(std::shared_ptr<Robot> robot, double epsilon)
 };

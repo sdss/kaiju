@@ -15,7 +15,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("id", &Target::id)
         .def_readwrite("priority", &Target::priority)
         .def_readwrite("fiberID", &Target::fiberID)
-        .def_readwrite("validRobots", &Target::validRobots)
+        .def_readwrite("robotInds", &Target::robotInds)
         .def("isAssigned", &Target::isAssigned);
 
     py::class_<Robot, std::shared_ptr<Robot>>(m, "Robot", R"pbdoc(
@@ -31,7 +31,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("beta", &Robot::beta)
         .def_readwrite("xPos", &Robot::xPos)
         .def_readwrite("yPos", &Robot::yPos)
-        .def_readwrite("targetList", &Robot::targetList)
+        .def_readwrite("targetList", &Robot::targetInds)
         .def_readwrite("hasApogee", &Robot::hasApogee)
         .def_readwrite("hasBoss", &Robot::hasBoss)
         .def_readwrite("metFiberPos", &Robot::metFiberPos)
@@ -40,7 +40,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("nDecollide", &Robot::nDecollide)
         .def_readwrite("betaCollisionSegment", &Robot::betaCollisionSegment)
         .def_readwrite("id", &Robot::id)
-        .def_readwrite("assignedTarget", &Robot::assignedTarget)
+        .def_readwrite("assignedTarget", &Robot::assignedTargetInd)
         .def_readwrite("alphaPath", &Robot::alphaPath)
         .def_readwrite("betaPath", &Robot::betaPath)
         .def_readwrite("smoothAlphaPath", &Robot::smoothAlphaPath)
@@ -65,9 +65,9 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("randomXYUniform", &Robot::randomXYUniform)
         .def("alphaBetaFromFiberXY", &Robot::alphaBetaFromFiberXY)
         .def("setAlphaBetaRand", &Robot::setAlphaBetaRand)
-        .def("isCollided", &Robot::isCollided)
+        // .def("isCollided", &Robot::isCollided)
         .def("setFiberXY", &Robot::setFiberXY)
-        .def("decollide", &Robot::decollide)
+        // .def("decollide", &Robot::decollide)
         .def("isAssigned", &Robot::isAssigned);
 
     py::class_<RobotGrid, std::shared_ptr<RobotGrid>>(m, "RobotGrid", R"pbdoc(
@@ -90,8 +90,8 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("initGrid", &RobotGrid::initGrid)
         .def("optimizeTargets", &RobotGrid::optimizeTargets)
         .def("decollide", &RobotGrid::decollide)
-        .def("smoothPaths", &RobotGrid::smoothPaths)
-        .def("verifySmoothed", &RobotGrid::verifySmoothed)
+        // .def("smoothPaths", &RobotGrid::smoothPaths)
+        // .def("verifySmoothed", &RobotGrid::verifySmoothed)
         .def("setCollisionBuffer", &RobotGrid::setCollisionBuffer)
         .def("pathGen", &RobotGrid::pathGen)
         .def("setTargetList", &RobotGrid::setTargetList)
@@ -105,6 +105,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("assignRobot2Target", &RobotGrid::assignRobot2Target)
         .def("pairwiseSwap", &RobotGrid::pairwiseSwap)
         .def("unassignedRobots", &RobotGrid::unassignedRobots)
+        .def("isCollidedInd", &RobotGrid::isCollidedInd)
         .def("greedyAssign", &RobotGrid::greedyAssign);
 }
 
