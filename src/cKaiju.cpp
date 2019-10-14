@@ -90,6 +90,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("initGrid", &RobotGrid::initGrid)
         .def("optimizeTargets", &RobotGrid::optimizeTargets)
         .def("decollide", &RobotGrid::decollide)
+        .def("decollide2", &RobotGrid::decollide2)
         // .def("smoothPaths", &RobotGrid::smoothPaths)
         // .def("verifySmoothed", &RobotGrid::verifySmoothed)
         .def("setCollisionBuffer", &RobotGrid::setCollisionBuffer)

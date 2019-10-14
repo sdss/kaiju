@@ -32,6 +32,7 @@ public:
     void addFiducial(double xPos, double yPos);
     void initGrid();
     void decollide();
+    void decollide2();
     int getNCollisions();
     void pathGen();
     // void smoothPaths();

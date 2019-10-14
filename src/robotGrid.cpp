@@ -113,6 +113,36 @@ void RobotGrid::setCollisionBuffer(double newBuffer){
     }
 }
 
+void RobotGrid::decollide2(){
+        // iterate over robots and resolve collisions
+    // sort by target priority
+      // This segmentation faults if any robot doesn't have
+    // an assigned target
+
+    // decollide robots, throwing out lowest priority targets first
+
+
+    // std::sort(allRobots.begin(), allRobots.end(), sortRobotPriority);
+    for (int ii=0; ii<1000; ii++){
+        // std::cout << "n collisions " << getNCollisions() << std::endl;
+        if (!getNCollisions()){
+            break;
+        }
+
+        for (auto r : allRobots){
+            if (isCollided(r)){
+                decollideRobot(r);
+            }
+        }
+    }
+
+    if (getNCollisions()){
+        std::cout << "cannot decolide 2 grid" << std::endl;
+        throw std::runtime_error("Unable do decollide robot!!!");
+    }
+
+}
+
 void RobotGrid::decollide(){
     // iterate over robots and resolve collisions
     // sort by target priority
@@ -123,8 +153,10 @@ void RobotGrid::decollide(){
 
 
     // std::sort(allRobots.begin(), allRobots.end(), sortRobotPriority);
-
-    while(getNCollisions()){
+    for (int ii=0; ii<1000; ii++){
+        if (getNCollisions()){
+            break;
+        }
         // first try moving unassigned robots
         for (auto r : targetlessRobots()){
             if (isCollided(r)){
@@ -141,6 +173,11 @@ void RobotGrid::decollide(){
                 decollideRobot(r);
             }
         }
+    }
+
+    if (getNCollisions()){
+        std::cout << "cannot decolide grid" << std::endl;
+        throw std::runtime_error("Unable do decollide robot!!!");
     }
 }
 
@@ -189,7 +226,7 @@ void RobotGrid::pathGen(){
             // std::cout << "path gen " << r.betaOrientation.size() << " " << r.betaModel.size() << std::endl;
             // std::cout << "alpha beta " << r.alpha << " " << r.beta << std::endl;
             stepTowardFold(r, ii);
-            if (allFolded and r->beta!=180) { // stop when beta = 180} or r.alpha!=0)){
+            if (r->beta!=180 or r->alpha!=0) { // stop when beta = 180} or r.alpha!=0)){
                 allFolded = false;
             }
         }
@@ -460,9 +497,9 @@ void RobotGrid::decollideRobot(std::shared_ptr<Robot> robot){
         }
     }
     // are we still collided?
-    if (isCollided(robot)){
-        throw std::runtime_error("Unable do decollide robot!!!");
-    }
+    // if (isCollided(robot)){
+    //     throw std::runtime_error("Unable do decollide robot!!!");
+    // }
 }
 
 void RobotGrid::stepTowardFold(std::shared_ptr<Robot> robot, int stepNum){
