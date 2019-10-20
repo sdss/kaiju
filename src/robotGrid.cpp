@@ -218,6 +218,23 @@ void RobotGrid::pathGen(){
     // robots closest to alpha = 0 are at highest risk with extended
     // betas for getting locked, so try to move those first
     didFail = true;
+    for (auto r: allRobots){
+        // clear any existing path
+        r->alphaPath.clear();
+        r->betaPath.clear();
+        r->smoothAlphaPath.clear();
+        r->smoothBetaPath.clear(); // sparse
+        r->interpSmoothAlphaPath.clear();
+        r->interpSmoothBetaPath.clear(); // dense
+        r->interpAlphaX.clear();
+        r->interpAlphaY.clear();
+        r->interpBetaX.clear();
+        r->interpBetaY.clear(); // smoothed
+        r->roughAlphaX.clear();
+        r->roughAlphaY.clear();
+        r->roughBetaX.clear();
+        r->roughBetaY.clear();
+    }
     int ii;
     for (ii=0; ii<maxPathSteps; ii++){
         bool allFolded = true;

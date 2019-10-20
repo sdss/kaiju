@@ -224,6 +224,13 @@ void Robot::setXYUniform(){
     // use a science fiber ID (matches min/max reach)
     // std::cout.precision(20);
     auto ab = alphaBetaFromFiberXY(xy[0]+xPos, xy[1]+yPos, 1);
+
+    while (isnan(ab[0]) or isnan(ab[1])){
+        xy = sampleAnnulus(minReach, maxReach);
+        // use a science fiber ID (matches min/max reach)
+        // std::cout.precision(20);
+        ab = alphaBetaFromFiberXY(xy[0]+xPos, xy[1]+yPos, 1);
+    }
     // if (ab[1] > 180.0){
     //     std::cout << "x " << xy[0] << " y " << xy[1] << " a " << ab[0]
     //     << " b " << ab[1] << std::endl;

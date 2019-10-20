@@ -11,12 +11,13 @@ from .cKaiju import RobotGrid
 
 matplotlib.use('Agg')
 
-internalBuffer = 1.5
+# internalBuffer = 1.5
 rg = None # need global because C++ obj can't be pickled for multiprocessing
 
 
-def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=False):
+def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=False, internalBuffer=1.5):
     global rg
+
     if robotGrid is not None:
         rg = robotGrid
     plt.figure(figsize=(10,10))
