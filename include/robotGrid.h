@@ -31,7 +31,7 @@ public:
     void addRobot(int robotID, double xPos, double yPos, bool hasApogee);
     void addFiducial(double xPos, double yPos);
     void initGrid();
-    void decollide();
+    // void decollide();
     void decollide2();
     int getNCollisions();
     void pathGen();
@@ -54,6 +54,7 @@ public:
     std::vector<std::shared_ptr<Robot>> unassignedRobots();
     bool canSwapTarget(std::shared_ptr<Robot> r1, std::shared_ptr<Robot> r2);
     bool isCollided(std::shared_ptr<Robot> r1);
+    // bool isFiducialCollided(std::shared_ptr<Robot> r1);
     bool isCollidedInd(int robotInd);
     void decollideRobot(std::shared_ptr<Robot> r1);
     void stepTowardFold(std::shared_ptr<Robot> r1, int stepNum);

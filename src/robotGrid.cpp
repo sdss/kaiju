@@ -6,7 +6,7 @@
 // #include "betaArm.h"
 
 // define constants
-const double betaCollisionRadius = 1.5; // mm (3mm wide)
+// const double betaCollisionRadius = 1.5; // mm (3mm wide)
 
 const double pitch = 22.4; // distance to next nearest neighbor
 
@@ -108,6 +108,7 @@ std::shared_ptr<Robot> RobotGrid::getRobot(int robotInd){
 }
 
 void RobotGrid::setCollisionBuffer(double newBuffer){
+    collisionBuffer = newBuffer;
     for (auto r : allRobots){
         r->setCollisionBuffer(newBuffer);
     }
@@ -143,43 +144,43 @@ void RobotGrid::decollide2(){
 
 }
 
-void RobotGrid::decollide(){
-    // iterate over robots and resolve collisions
-    // sort by target priority
-	  // This segmentation faults if any robot doesn't have
-    // an assigned target
+// void RobotGrid::decollide(){
+//     // iterate over robots and resolve collisions
+//     // sort by target priority
+// 	  // This segmentation faults if any robot doesn't have
+//     // an assigned target
 
-    // decollide robots, throwing out lowest priority targets first
+//     // decollide robots, throwing out lowest priority targets first
 
 
-    // std::sort(allRobots.begin(), allRobots.end(), sortRobotPriority);
-    for (int ii=0; ii<1000; ii++){
-        if (getNCollisions()){
-            break;
-        }
-        // first try moving unassigned robots
-        for (auto r : targetlessRobots()){
-            if (isCollided(r)){
-                decollideRobot(r);
-            }
-        }
+//     // std::sort(allRobots.begin(), allRobots.end(), sortRobotPriority);
+//     for (int ii=0; ii<1000; ii++){
+//         if (getNCollisions()){
+//             break;
+//         }
+//         // first try moving unassigned robots
+//         for (auto r : targetlessRobots()){
+//             if (isCollided(r)){
+//                 decollideRobot(r);
+//             }
+//         }
 
-        // next start throwing out lowest priority targets
-        auto targets = assignedTargets();
-        std::sort(targets.begin(), targets.end(), reverseSortTargList);
-        for (auto t : targets){
-            auto r = allRobots[t->assignedRobotInd];
-            if (isCollided(r)){
-                decollideRobot(r);
-            }
-        }
-    }
+//         // next start throwing out lowest priority targets
+//         auto targets = assignedTargets();
+//         std::sort(targets.begin(), targets.end(), reverseSortTargList);
+//         for (auto t : targets){
+//             auto r = allRobots[t->assignedRobotInd];
+//             if (isCollided(r)){
+//                 decollideRobot(r);
+//             }
+//         }
+//     }
 
-    if (getNCollisions()){
-        std::cout << "cannot decolide grid" << std::endl;
-        throw std::runtime_error("Unable do decollide robot!!!");
-    }
-}
+//     if (getNCollisions()){
+//         std::cout << "cannot decolide grid" << std::endl;
+//         throw std::runtime_error("Unable do decollide robot!!!");
+//     }
+// }
 
 
 // void RobotGrid::smoothPaths(){
@@ -488,8 +489,7 @@ bool RobotGrid::isCollided(std::shared_ptr<Robot> robot1){
                 robot1->betaCollisionSegment[0], robot1->betaCollisionSegment[1]
             );
 
-        collideDist2 = (2*betaCollisionRadius+robot2->collisionBuffer)*
-                        (2*betaCollisionRadius+robot1->collisionBuffer);
+        collideDist2 = (2*collisionBuffer)*(2*collisionBuffer);
         if (dist2 < collideDist2){
             // std::cout << "dist " << dist2 - collide_dist_squared << std::endl;
             return true;
@@ -500,6 +500,26 @@ bool RobotGrid::isCollided(std::shared_ptr<Robot> robot1){
 
     return robot1->isFiducialCollided();
 }
+
+// bool RobotGrid::isFiducialCollided(std::shared_ptr<Robot> robot1){
+//     // std::cout << "isFiducialCollided" << std::endl;
+//     double dist2, collideDist2;
+//     // std::cout << "n fiducials " << fiducials.size() << std::endl;
+//     for (auto fiducial : robot1_>fiducials){
+//         // squared distance
+//         dist2 = dist3D_Point_to_Segment(
+//                 fiducial, betaCollisionSegment[0], betaCollisionSegment[1]
+//                 );
+//         collideDist2 = (2*collisionBuffer)*(2*collisionBuffer);
+
+//         if (dist2 < collideDist2){
+//             // std::cout << "we're collided! " << sqrt(dist2) << std::endl;
+//             return true;
+//         }
+//     }
+//     return false;
+// }
+
 
 void RobotGrid::decollideRobot(std::shared_ptr<Robot> robot){
     // remove assigned target if present

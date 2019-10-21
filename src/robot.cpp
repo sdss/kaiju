@@ -80,7 +80,7 @@ const double betaEnvPt2Data[] = {betaAxis2End - betaEndRadius, 0, focalZ};
 Eigen::Vector3d betaEnvPt2(betaEnvPt2Data);
 const std::array<Eigen::Vector3d, 2> neutralBetaCollisionSegment{ {betaEnvPt1, betaEnvPt2} };
 // radius containing beta arm for collision detection
-const double betaCollisionRadius = 1.5; // mm (3mm wide)
+// const double betaCollisionRadius = 1.5; // mm (3mm wide)
 const double fiducialBuffer = 1.5; // 3mm wide fiducial
 
 // xyz pos of fiber in beta neutra position
@@ -273,8 +273,7 @@ bool Robot::isFiducialCollided(){
         dist2 = dist3D_Point_to_Segment(
                 fiducial, betaCollisionSegment[0], betaCollisionSegment[1]
                 );
-        collideDist2 = (betaCollisionRadius+collisionBuffer+fiducialBuffer)*
-                        (betaCollisionRadius+collisionBuffer+fiducialBuffer);
+        collideDist2 = (2*(collisionBuffer+fiducialBuffer))*(2*(collisionBuffer+fiducialBuffer));
 
         if (dist2 < collideDist2){
             // std::cout << "we're collided! " << sqrt(dist2) << std::endl;
