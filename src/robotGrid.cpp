@@ -182,24 +182,30 @@ void RobotGrid::decollide2(){
 //     }
 // }
 
+void RobotGrid::smoothVelocities(int points){
+    for (auto r : allRobots){
+        r->smoothVelocity(points);
+    }
+}
 
-// void RobotGrid::smoothPaths(){
-//     for (auto r : allRobots){
-//         r->smoothPath(epsilon);
-//     }
-// }
 
-// void RobotGrid::verifySmoothed(){
-//     smoothCollisions = 0;
-//     for (int ii = 0; ii < nSteps; ii++){
-//         for (auto r : allRobots){
-//             r->setAlphaBeta(r->interpSmoothAlphaPath[ii](1), r->interpSmoothBetaPath[ii](1));
-//             // std::cout << " robot id " << r.id << std::endl;
-//         }
-//         smoothCollisions += getNCollisions();
-//     }
-//     // std::cout << "interp collisions: " << nCollisions << std::endl;
-// }
+void RobotGrid::smoothPaths(){
+    for (auto r : allRobots){
+        r->smoothPath(epsilon);
+    }
+}
+
+void RobotGrid::verifySmoothed(){
+    smoothCollisions = 0;
+    for (int ii = 0; ii < nSteps; ii++){
+        for (auto r : allRobots){
+            r->setAlphaBeta(r->interpSmoothAlphaPath[ii](1), r->interpSmoothBetaPath[ii](1));
+            // std::cout << " robot id " << r.id << std::endl;
+        }
+        smoothCollisions += getNCollisions();
+    }
+    // std::cout << "interp collisions: " << nCollisions << std::endl;
+}
 
 
 

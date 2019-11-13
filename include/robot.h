@@ -36,6 +36,7 @@ public:
     std::array<Eigen::Vector3d, 2> betaCollisionSegment;
     std::vector<Eigen::Vector2d> alphaPath, betaPath;
     std::vector<Eigen::Vector2d> smoothAlphaPath, smoothBetaPath; // sparse
+    std::vector<Eigen::Vector2d> averagedAlphaPath, averagedBetaPath;
     std::vector<Eigen::Vector2d> interpSmoothAlphaPath, interpSmoothBetaPath; // dense
     std::vector<Eigen::Vector2d> interpAlphaX, interpAlphaY, interpBetaX, interpBetaY; // smoothed
     std::vector<Eigen::Vector2d> roughAlphaX, roughAlphaY, roughBetaX, roughBetaY; // jiggly
@@ -55,7 +56,8 @@ public:
     void setXYUniform();
     std::array<double, 2> randomXYUniform();
     // void stepTowardFold(int stepNum);
-    // void smoothPath(double epsilon);
+    void smoothPath(double epsilon);
+    void smoothVelocity(int points);
     void setCollisionBuffer(double newBuffer);
     std::array<double, 2> alphaBetaFromFiberXY(double x, double y, int fiberID);
     // fiberID 0 = metrology

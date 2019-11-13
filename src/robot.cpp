@@ -2,6 +2,7 @@
 #include <time.h>       /* time */
 #include <cmath>
 #include <thread>
+#include <deque>
 #include "utils.h"
 #include "robot.h"
 #include "robotGrid.h"
@@ -300,65 +301,159 @@ bool Robot::isFiducialCollided(){
 //     }
 // }
 
+void Robot::smoothVelocity(int points){
+    // points must be odd
+    // this assumes path gen worked and robot
+    // ends at zero velocity!!!
+    std::vector<double> alphaVel;
+    std::vector<double> betaVel;
+    std::vector<double> smoothAlphaVel;
+    std::vector<double> smoothBetaVel;
+    std::deque<double> alphaBuffer;
+    std::deque<double> betaBuffer;
+    Eigen::Vector2d temp;
+    double av, bv;
 
-// void Robot::smoothPath(double epsilon){
-//     // smooth a previously generated path
-//     double interpSmoothAlpha, interpSmoothBeta;
-//     int npts;
-//     Eigen::Vector2d atemp, btemp;
-//     RamerDouglasPeucker(alphaPath, epsilon, smoothAlphaPath);
-//     // bias alpha positive direction because we are approaching zero
-//     npts = smoothAlphaPath.size();
-//     for (int ii=1; ii<npts-1; ii++){
-//         // only shift internal (not end) points
-//         smoothAlphaPath[ii](1) = smoothAlphaPath[ii](1);// + epsilon;
-//     }
+    // calculate velocity vs step
+    for (int ii=1; ii < alphaPath.size(); ii++){
+        av = alphaPath[ii](1) - alphaPath[ii-1](1);
+        bv = betaPath[ii](1) - betaPath[ii-1](1);
+        alphaVel.push_back(av);
+        betaVel.push_back(bv);
+    }
 
-//     RamerDouglasPeucker(betaPath, epsilon, smoothBetaPath);
-//     // bias beta negative direction because we are approaching 180
-//     // linearly interpolate smooth paths to same step values
-//     // as computed
-//     // bias alpha positive direction because we are approaching zero
-//     npts = smoothBetaPath.size();
-//     for (int ii=1; ii<npts-1; ii++){
-//         // only shift internal (not end) points
-//         smoothBetaPath[ii](1) = smoothBetaPath[ii](1);// - epsilon;
-//     }
+    // add a zero to ensure were at a stop at the end
+    // wasn't needed afterall
+    // alphaVel.push_back(0);
+    // betaVel.push_back(0);
 
-//     // calculate smoothed alpha betas at every step
-//     int nDensePoints = alphaPath.size();
-//     for (int ii=0; ii<nDensePoints; ii++){
-//         double xVal = alphaPath[ii](0);
-//         atemp(0) = xVal; // interpolation step
-//         btemp(0) = xVal;
-//         interpSmoothAlpha = linearInterpolate(smoothAlphaPath, xVal);
-//         // bias alpha in positive direction because we're approaching zero
-//         atemp(1) = interpSmoothAlpha;
-//         interpSmoothAlphaPath.push_back(atemp);
-//         interpSmoothBeta = linearInterpolate(smoothBetaPath, xVal);
-//         btemp(1) = interpSmoothBeta;
-//         interpSmoothBetaPath.push_back(btemp);
+    // load the buffers
+    for (int ii=0; ii < points; ii++){
+        alphaBuffer.push_back(alphaVel[ii]);
+        betaBuffer.push_back(betaVel[ii]);
+    }
 
-//         // populate interpXY points for alpha/beta ends
-//         setAlphaBeta(interpSmoothAlpha, interpSmoothBeta);
-//         atemp(1) = betaCollisionSegment[0](0); // xAlphaEnd
-//         interpAlphaX.push_back(atemp);
-//         atemp(1) = betaCollisionSegment[0](1); // yAlphaEnd
-//         interpAlphaY.push_back(atemp);
-//         atemp(1) = betaCollisionSegment.back()(0); // xBetaEnd
-//         interpBetaX.push_back(atemp);
-//         atemp(1) = betaCollisionSegment.back()(1); // yBetaEnd
-//         interpBetaY.push_back(atemp);
+    int startInd = points / 2 + 1;
+    int endInd = alphaPath.size() - (points / 2);
+    // compute the running average
+    for (int ii=0; ii < alphaVel.size(); ii++){
+        if (ii < startInd){
+            // dont average first points
+            smoothAlphaVel.push_back(alphaVel[ii]);
+            smoothBetaVel.push_back(betaVel[ii]);
+        }
 
-//         atemp(1) = 0; // not collided
-//         if (isCollided()){
-//             atemp(1) = 1;
-//         }
-//         interpCollisions.push_back(atemp);
+        else if (ii >= endInd){
+            // or last points
+            smoothAlphaVel.push_back(alphaVel[ii]);
+            smoothBetaVel.push_back(betaVel[ii]);
+        }
 
-//     }
+        else {
+            // we're in the middle of the buffer
+            // start smoothing
+            double aAvg = 0;
+            double bAvg = 0;
+            for (int jj=0; jj < points; jj++){
+                aAvg += alphaBuffer[jj];
+                bAvg += betaBuffer[jj];
+            }
+            aAvg /= (float)points;
+            bAvg /= (float)points;
 
-// }
+            smoothAlphaVel.push_back(aAvg);
+            smoothBetaVel.push_back(bAvg);
+            alphaBuffer.pop_front();
+            betaBuffer.pop_front();
+            alphaBuffer.push_back(alphaVel[ii+startInd]);
+            betaBuffer.push_back(betaVel[ii+startInd]);
+
+        }
+
+    }
+
+    // convert back into position / time series, a cumulative sum
+    double cumSumAlpha = alphaPath[0](1);
+    double cumSumBeta = betaPath[0](1);
+    int cumStep = 0;
+    temp(0) = cumStep;
+    temp(1) = cumSumAlpha;
+    averagedAlphaPath.push_back(temp);
+    temp(1) = cumSumBeta;
+    averagedBetaPath.push_back(temp);
+    cumStep++;
+    for (int ii=0; ii < smoothAlphaVel.size(); ii++){
+        cumSumAlpha += smoothAlphaVel[ii];
+        cumSumBeta += smoothBetaVel[ii];
+        temp(0) = cumStep;
+        temp(1) = cumSumAlpha;
+        averagedAlphaPath.push_back(temp);
+        temp(1) = cumSumBeta;
+        averagedBetaPath.push_back(temp);
+        cumStep++;
+    }
+
+}
+
+void Robot::smoothPath(double epsilon){
+    // smooth a previously generated path
+    double interpSmoothAlpha, interpSmoothBeta;
+    int npts;
+    Eigen::Vector2d atemp, btemp;
+    RamerDouglasPeucker(alphaPath, epsilon, smoothAlphaPath);
+    // bias alpha positive direction because we are approaching zero
+    npts = smoothAlphaPath.size();
+    for (int ii=1; ii<npts-1; ii++){
+        // only shift internal (not end) points
+        smoothAlphaPath[ii](1) = smoothAlphaPath[ii](1);// + epsilon;
+    }
+
+    RamerDouglasPeucker(betaPath, epsilon, smoothBetaPath);
+    // bias beta negative direction because we are approaching 180
+    // linearly interpolate smooth paths to same step values
+    // as computed
+    // bias alpha positive direction because we are approaching zero
+    npts = smoothBetaPath.size();
+    for (int ii=1; ii<npts-1; ii++){
+        // only shift internal (not end) points
+        smoothBetaPath[ii](1) = smoothBetaPath[ii](1);// - epsilon;
+    }
+
+    // calculate smoothed alpha betas at every step
+    int nDensePoints = alphaPath.size();
+    for (int ii=0; ii<nDensePoints; ii++){
+        double xVal = alphaPath[ii](0);
+        atemp(0) = xVal; // interpolation step
+        btemp(0) = xVal;
+        interpSmoothAlpha = linearInterpolate(smoothAlphaPath, xVal);
+        // bias alpha in positive direction because we're approaching zero
+        atemp(1) = interpSmoothAlpha;
+        interpSmoothAlphaPath.push_back(atemp);
+        interpSmoothBeta = linearInterpolate(smoothBetaPath, xVal);
+        btemp(1) = interpSmoothBeta;
+        interpSmoothBetaPath.push_back(btemp);
+
+        // populate interpXY points for alpha/beta ends
+        setAlphaBeta(interpSmoothAlpha, interpSmoothBeta);
+        atemp(1) = betaCollisionSegment[0](0); // xAlphaEnd
+        interpAlphaX.push_back(atemp);
+        atemp(1) = betaCollisionSegment[0](1); // yAlphaEnd
+        interpAlphaY.push_back(atemp);
+        atemp(1) = betaCollisionSegment.back()(0); // xBetaEnd
+        interpBetaX.push_back(atemp);
+        atemp(1) = betaCollisionSegment.back()(1); // yBetaEnd
+        interpBetaY.push_back(atemp);
+
+        // robots can no longer check their own collisions
+        // atemp(1) = 0; // not collided
+        // if (isCollided()){
+        //     atemp(1) = 1;
+        // }
+        // interpCollisions.push_back(atemp);
+
+    }
+
+}
 
 // void Robot::stepTowardFold(int stepNum){
 //     double currAlpha = alpha;

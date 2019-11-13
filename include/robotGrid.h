@@ -35,8 +35,9 @@ public:
     void decollide2();
     int getNCollisions();
     void pathGen();
-    // void smoothPaths();
-    // void verifySmoothed();
+    void smoothPaths();
+    void smoothVelocities(int points);
+    void verifySmoothed();
     void optimizeTargets();
     void setCollisionBuffer(double newBuffer);
     void setTargetList(Eigen::MatrixXd myTargetList); //std::vector<std::array<double, 5>> myTargetList);
@@ -58,5 +59,5 @@ public:
     bool isCollidedInd(int robotInd);
     void decollideRobot(std::shared_ptr<Robot> r1);
     void stepTowardFold(std::shared_ptr<Robot> r1, int stepNum);
-    // void smoothPath(std::shared_ptr<Robot> robot, double epsilon)
+    // void smoothPath(std::shared_ptr<Robot> robot, double epsilon);
 };
