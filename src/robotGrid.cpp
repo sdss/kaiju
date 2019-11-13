@@ -182,16 +182,16 @@ void RobotGrid::decollide2(){
 //     }
 // }
 
-void RobotGrid::smoothVelocities(int points){
+void RobotGrid::smoothPaths(int points){
     for (auto r : allRobots){
         r->smoothVelocity(points);
     }
 }
 
 
-void RobotGrid::smoothPaths(){
+void RobotGrid::simplifyPaths(){
     for (auto r : allRobots){
-        r->smoothPath(epsilon);
+        r->simplifyPath(epsilon);
     }
 }
 
@@ -199,7 +199,7 @@ void RobotGrid::verifySmoothed(){
     smoothCollisions = 0;
     for (int ii = 0; ii < nSteps; ii++){
         for (auto r : allRobots){
-            r->setAlphaBeta(r->interpSmoothAlphaPath[ii](1), r->interpSmoothBetaPath[ii](1));
+            r->setAlphaBeta(r->interpSimplifiedAlphaPath[ii](1), r->interpSimplifiedBetaPath[ii](1));
             // std::cout << " robot id " << r.id << std::endl;
         }
         smoothCollisions += getNCollisions();
@@ -229,10 +229,14 @@ void RobotGrid::pathGen(){
         // clear any existing path
         r->alphaPath.clear();
         r->betaPath.clear();
-        r->smoothAlphaPath.clear();
-        r->smoothBetaPath.clear(); // sparse
-        r->interpSmoothAlphaPath.clear();
-        r->interpSmoothBetaPath.clear(); // dense
+        r->simplifiedAlphaPath.clear();
+        r->simplifiedBetaPath.clear(); // sparse
+        r->interpSimplifiedAlphaPath.clear();
+        r->interpSimplifiedBetaPath.clear(); // dense
+        r->smoothedAlphaPath.clear();
+        r->smoothedBetaPath.clear();
+        r->smoothAlphaVel.clear();
+        r->smoothBetaVel.clear();
         r->interpAlphaX.clear();
         r->interpAlphaY.clear();
         r->interpBetaX.clear();
@@ -655,23 +659,23 @@ bool RobotGrid::isCollidedInd(int robotInd){
 //     double interpSmoothAlpha, interpSmoothBeta;
 //     int npts;
 //     Eigen::Vector2d atemp, btemp;
-//     RamerDouglasPeucker(robot1->alphaPath, epsilon, robot1->smoothAlphaPath);
+//     RamerDouglasPeucker(robot1->alphaPath, epsilon, robot1->simplifiedAlphaPath);
 //     // bias alpha positive direction because we are approaching zero
-//     npts = robot1->smoothAlphaPath.size();
+//     npts = robot1->simplifiedAlphaPath.size();
 //     for (int ii=1; ii<npts-1; ii++){
 //         // only shift internal (not end) points
-//         robot1->smoothAlphaPath[ii](1) = robot1->smoothAlphaPath[ii](1);// + epsilon;
+//         robot1->simplifiedAlphaPath[ii](1) = robot1->simplifiedAlphaPath[ii](1);// + epsilon;
 //     }
 
-//     RamerDouglasPeucker(robot1->betaPath, epsilon, robot1->smoothBetaPath);
+//     RamerDouglasPeucker(robot1->betaPath, epsilon, robot1->simplifiedBetaPath);
 //     // bias beta negative direction because we are approaching 180
 //     // linearly interpolate smooth paths to same step values
 //     // as computed
 //     // bias alpha positive direction because we are approaching zero
-//     npts = robot1->smoothBetaPath.size();
+//     npts = robot1->simplifiedBetaPath.size();
 //     for (int ii=1; ii<npts-1; ii++){
 //         // only shift internal (not end) points
-//         robot1->smoothBetaPath[ii](1) = robot1->smoothBetaPath[ii](1);// - epsilon;
+//         robot1->simplifiedBetaPath[ii](1) = robot1->simplifiedBetaPath[ii](1);// - epsilon;
 //     }
 
 //     // calculate smoothed alpha betas at every step
@@ -680,13 +684,13 @@ bool RobotGrid::isCollidedInd(int robotInd){
 //         double xVal = alphaPath[ii](0);
 //         atemp(0) = xVal; // interpolation step
 //         btemp(0) = xVal;
-//         interpSmoothAlpha = linearInterpolate(robot1->smoothAlphaPath, xVal);
+//         interpSmoothAlpha = linearInterpolate(robot1->simplifiedAlphaPath, xVal);
 //         // bias alpha in positive direction because we're approaching zero
 //         atemp(1) = interpSmoothAlpha;
-//         interpSmoothAlphaPath.push_back(atemp);
-//         interpSmoothBeta = linearInterpolate(robot1->smoothBetaPath, xVal);
+//         interpSimplifiedAlphaPath.push_back(atemp);
+//         interpSmoothBeta = linearInterpolate(robot1->simplifiedBetaPath, xVal);
 //         btemp(1) = interpSmoothBeta;
-//         interpSmoothBetaPath.push_back(btemp);
+//         interpSimplifiedBetaPath.push_back(btemp);
 
 //         // populate interpXY points for alpha/beta ends
 //         robot1->setAlphaBeta(interpSmoothAlpha, interpSmoothBeta);

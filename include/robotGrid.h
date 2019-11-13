@@ -35,8 +35,8 @@ public:
     void decollide2();
     int getNCollisions();
     void pathGen();
-    void smoothPaths();
-    void smoothVelocities(int points);
+    void simplifyPaths();
+    void smoothPaths(int points);
     void verifySmoothed();
     void optimizeTargets();
     void setCollisionBuffer(double newBuffer);
