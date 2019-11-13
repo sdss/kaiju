@@ -304,17 +304,14 @@ bool Robot::isFiducialCollided(){
 //
 
 void Robot::smoothVelocity(int points){
-    // move velocity in deg/sec
 
-    // this assumes path gen worked and robot
-    // ends at zero velocity!!!
     // std::vector<double> alphaVel;
     // std::vector<double> betaVel;
     // std::vector<double> smoothAlphaVel;
     // std::vector<double> smoothBetaVel;
 
 
-    std::vector<double> movingWindow;
+    // std::vector<double> movingWindow;
     std::vector<double> bufferedAlphaVel;
     std::vector<double> bufferedBetaVel;
     Eigen::Vector2d temp;
@@ -333,7 +330,7 @@ void Robot::smoothVelocity(int points){
     double betaEnd = betaPath.back()(1);
 
     for (int ii=0; ii < points; ii++){
-        movingWindow.push_back(1/float(points));
+        // movingWindow.push_back(1/float(points));
         // beta is moving towards 180 (positive)
         // alpha is moving towards 0 (negative)
         bufferedAlphaVel.push_back(-angStep);
@@ -347,9 +344,6 @@ void Robot::smoothVelocity(int points){
     for (int ii=1; ii < alphaPath.size(); ii++){
         double av = alphaPath[ii](1) - alphaPath[ii-1](1);
         double bv = betaPath[ii](1) - betaPath[ii-1](1);
-        if (ii < 3){
-            std::cout << "start alpha, beta vel" << av << " " << bv << std::endl;
-        }
         bufferedAlphaVel.push_back(av);
         bufferedBetaVel.push_back(bv);
         // unbuffered version, for plotting if ya want
@@ -371,21 +365,8 @@ void Robot::smoothVelocity(int points){
         bufferedBetaVel.push_back(lastBetaVel);
     }
 
-    // do the convolution
-    // http://www.songho.ca/dsp/convolution/convolution.html#cpp_conv1d
-    for (int ii=points; ii < bufferedAlphaVel.size()-points; ii++){
 
-        // convoultion (i think this is the wrong thing)
-        // double convAlpha = 0;
-        // double convBeta = 0;
-        // for (int jj=0; jj < points; jj++){
-        //     int xInd = ii - jj;
-        //     // check for numerical stability...
-        //     convAlpha += bufferedAlphaVel[ii - jj] * movingWindow[jj];
-        //     convBeta += bufferedBetaVel[ii - jj] * movingWindow[jj];
-        // }
-        // smoothAlphaVel.push_back(convAlpha);
-        // smoothBetaVel.push_back(convBeta);
+    for (int ii=points; ii < bufferedAlphaVel.size()-points; ii++){
 
         double alphaAvg = 0;
         double betaAvg = 0;
