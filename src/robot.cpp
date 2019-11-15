@@ -341,9 +341,20 @@ void Robot::smoothVelocity(int points){
     // begin creating the buffered velocity starts at 0
 
     // calculate velocity vs step
-    for (int ii=1; ii < alphaPath.size(); ii++){
-        double av = alphaPath[ii](1) - alphaPath[ii-1](1);
-        double bv = betaPath[ii](1) - betaPath[ii-1](1);
+    // add tail points to alpha and beta paths
+    int tailPoints = 400; // should be more than enough
+    auto apCopy = alphaPath;
+    auto bpCopy = betaPath;
+    auto apLast = alphaPath.back();
+    auto bpLast = betaPath.back();
+    for (int ii=0; ii < tailPoints; ii++){
+        apCopy.push_back(apLast);
+        bpCopy.push_back(bpLast);
+    }
+
+    for (int ii=1; ii < apCopy.size(); ii++){
+        double av = apCopy[ii](1) - apCopy[ii-1](1);
+        double bv = bpCopy[ii](1) - bpCopy[ii-1](1);
         bufferedAlphaVel.push_back(av);
         bufferedBetaVel.push_back(bv);
         // unbuffered version, for plotting if ya want
@@ -438,28 +449,65 @@ void Robot::simplifyPath(double epsilon){
     // smooth a previously generated path
     double interpSimplifiedAlpha, interpSimplifiedBeta;
 
-    int npts;
+    // int npts;
     Eigen::Vector2d atemp, btemp;
+
+    // because we extended the tail of the smoothed alpha beta paths to
+    // allow deceleration, begin truncating it until we detect that the
+    // smooth path not longer achieves the final position, this makes
+    // the shortest move possible
+
+    auto cpSAP = smoothedAlphaPath;
+    auto cpSBP = smoothedBetaPath;
+    auto alphaTarg = smoothedAlphaPath.back()(1);
+    auto betaTarg = smoothedBetaPath.back()(1);
+    double alphaLast, betaLast;
+    std::vector<Eigen::Vector2d> tempSimpAlphaPath, tempSimpBetaPath;
+
     RamerDouglasPeucker(smoothedAlphaPath, epsilon, simplifiedAlphaPath);
-    // bias alpha positive direction because we are approaching zero
-    npts = simplifiedAlphaPath.size();
-    for (int ii=1; ii<npts-1; ii++){
-        // only shift internal (not end) points
-        simplifiedAlphaPath[ii](1) = simplifiedAlphaPath[ii](1);// + epsilon;
-    }
-
     RamerDouglasPeucker(smoothedBetaPath, epsilon, simplifiedBetaPath);
-    // bias beta negative direction because we are approaching 180
-    // linearly interpolate smooth paths to same step values
-    // as computed
-    // bias alpha positive direction because we are approaching zero
-    npts = simplifiedBetaPath.size();
-    for (int ii=1; ii<npts-1; ii++){
-        // only shift internal (not end) points
-        simplifiedBetaPath[ii](1) = simplifiedBetaPath[ii](1);// - epsilon;
-    }
 
-    // calculate smoothed alpha betas at every step
+    // loop through the smoothed path and add an extra anchor to the
+    // RMD points (were the robot first hits the target), this is to
+    // send the shortest path possible to the bot.
+    Eigen::Vector2d insertAlpha, insertBeta, currPos;
+
+    // loop backwards from smooth paths, find
+    // point when robots leave their target positions
+    // add an anchor point there it will be the final
+    // point in the trajectory for the path sent
+    // the smoothed path may converge to numerically almost
+    // the target positon, so check for 'close enough'
+    // and explicitly set it to the target position.
+
+    // for (int ii = smoothedAlphaPath.size()-1; ii >= 0; ii--){
+    //     currPos = smoothedAlphaPath[ii];
+    //     if (abs(currPos(1) - alphaTarg) > 1e-8){
+    //         break;
+    //     }
+    //     currPos(1) = alphaTarg;
+    //     insertAlpha = currPos;
+    // }
+
+    // for (int ii = smoothedBetaPath.size()-1; ii >= 0; ii--){
+    //     currPos = smoothedBetaPath[ii];
+    //     if (abs(currPos(1) - betaTarg) > 1e-8){
+    //         break;
+    //     }
+    //     currPos(1) = betaTarg;
+    //     insertBeta = currPos;
+    // }
+
+    // // instert the point in the RMD array at which robots first
+    // // achieve their target
+    // simplifiedAlphaPath.insert(simplifiedAlphaPath.end()-1, insertAlpha);
+    // simplifiedBetaPath.insert(simplifiedBetaPath.end()-1, insertBeta);
+
+
+    // calculate simplified alpha betas at every step
+    // this is used for collision detection after smoothing
+    // if alphaPath point is outside interpolation range
+    // then simply extrapolate that postion
     int nDensePoints = alphaPath.size();
     for (int ii=0; ii<nDensePoints; ii++){
         double xVal = alphaPath[ii](0);
@@ -484,14 +532,13 @@ void Robot::simplifyPath(double epsilon){
         atemp(1) = betaCollisionSegment.back()(1); // yBetaEnd
         interpBetaY.push_back(atemp);
 
-        // robots can no longer check their own collisions
-        // atemp(1) = 0; // not collided
-        // if (isCollided()){
-        //     atemp(1) = 1;
-        // }
-        // interpCollisions.push_back(atemp);
-
     }
+
+    // finially remove the last element in both RMD arrays to
+    // shorten the path sent to the robot, and not have them
+    // wait excessive time for the move to be done
+    // simplifiedAlphaPath.pop_back();
+    // simplifiedBetaPath.pop_back();
 
 }
 

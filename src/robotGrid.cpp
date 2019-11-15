@@ -65,7 +65,7 @@ void RobotGrid::initGrid(){
     nRobots = allRobots.size();
 
     // first sort robots by robotID
-    std::sort(allRobots.begin(), allRobots.end(), sortRobotID);
+    // std::sort(allRobots.begin(), allRobots.end(), sortRobotID);
 
     for (auto r1 : allRobots){
         // add fiducials (potential to collide with)
@@ -224,7 +224,7 @@ void RobotGrid::pathGen(){
     // first prioritize robots based on their alpha positions
     // robots closest to alpha = 0 are at highest risk with extended
     // betas for getting locked, so try to move those first
-    int pathPad = 20 / (float)angStep;
+    // int pathPad = 20 / (float)angStep;
     didFail = true;
     for (auto r: allRobots){
         // clear any existing path
@@ -270,14 +270,15 @@ void RobotGrid::pathGen(){
 
     // add additional points to end of path to aid
     // smoothing algorithm, here because robotGrid knows nSteps
-    for (auto r: allRobots){
-        auto lastAlpha = r->alphaPath.back();
-        auto lastBeta = r->betaPath.back();
-        for(int jj=0; jj < pathPad; jj++){
-            r->alphaPath.push_back(lastAlpha);
-            r->betaPath.push_back(lastBeta);
-        }
-    }
+
+    // for (auto r: allRobots){
+    //     auto lastAlpha = r->alphaPath.back();
+    //     auto lastBeta = r->betaPath.back();
+    //     for(int jj=0; jj < pathPad; jj++){
+    //         r->alphaPath.push_back(lastAlpha);
+    //         r->betaPath.push_back(lastBeta);
+    //     }
+    // }
     nSteps = ii;
 }
 
