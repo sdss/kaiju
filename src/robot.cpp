@@ -32,7 +32,9 @@ const double betaLen = 15; // mm to fiber
 // .375 is half that
 const double met2sciX = sqrt(0.75*0.75 - 0.375*0.375);
 const double beta2sciX = sqrt(22.4*22.4-0.375*0.375) - alphaLen;
-const double beta2metX = beta2sciX - met2sciX;
+const double beta2metX = 14.345792714510825; // beta2sciX - met2sciX;
+
+// dist to metrology 14.345792714510825
 
 
 // min reach is distance from alpha axis to science fiber when beta = 180
