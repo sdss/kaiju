@@ -21,12 +21,16 @@ public:
     int id;
     int nDecollide = 0;
     int lastStepNum = 0;
-    std::shared_ptr<Target> assignedTarget;
+    int assignedTargetInd = -1;
     bool hasApogee;
     bool hasBoss;
     double xPos, yPos, alpha, beta;
     double angStep;
     double collisionBuffer = 0;
+    std::vector<double> alphaVel;
+    std::vector<double> betaVel;
+    std::vector<double> smoothAlphaVel;
+    std::vector<double> smoothBetaVel;
     Eigen::Array<double, 8, 2> alphaBetaArr;
     Eigen::Affine3d betaRot, alphaRot;
     Eigen::Vector3d metFiberPos;
@@ -35,34 +39,37 @@ public:
     Eigen::Vector3d transXY;
     std::array<Eigen::Vector3d, 2> betaCollisionSegment;
     std::vector<Eigen::Vector2d> alphaPath, betaPath;
-    std::vector<Eigen::Vector2d> smoothAlphaPath, smoothBetaPath; // sparse
-    std::vector<Eigen::Vector2d> interpSmoothAlphaPath, interpSmoothBetaPath; // dense
+    std::vector<Eigen::Vector2d> smoothedAlphaPath, smoothedBetaPath;
+    std::vector<Eigen::Vector2d> simplifiedAlphaPath, simplifiedBetaPath; // sparse
+    std::vector<Eigen::Vector2d> interpSimplifiedAlphaPath, interpSimplifiedBetaPath; // dense
     std::vector<Eigen::Vector2d> interpAlphaX, interpAlphaY, interpBetaX, interpBetaY; // smoothed
     std::vector<Eigen::Vector2d> roughAlphaX, roughAlphaY, roughBetaX, roughBetaY; // jiggly
     std::vector<Eigen::Vector2d> interpCollisions; // boolean points for collided or not
-    std::vector<std::shared_ptr<Robot>> neighbors;
+    std::vector<int> neighborInds; // indices in RobotGrid.allRobots that are neighbors
     std::vector<Eigen::Vector3d> fiducials;
-    std::vector<std::shared_ptr<Target>> targetList;
+    std::vector<int> targetInds; // indicies in RobotGrid.targetList that I can reach
     Robot (int myid, double myxPos, double myyPos, double myAngStep, bool myHasApogee);
     void setAlphaBeta (double nextAlpha, double nextBeta);
     void setFiberXY (double xFiberGlobal, double yFiberGlobal, int fiberID); // xy in focal plane coord sys
     void setAlphaBetaRand();
-    void addNeighbor(std::shared_ptr<Robot>);
+    void addNeighbor(int);
     void addFiducial(std::array<double, 2> fiducial);
-    bool isCollided();
+    // bool isCollided();
     bool isFiducialCollided();
-    void decollide();
+    // void decollide();
     void setXYUniform();
-    void stepTowardFold(int stepNum);
-    void smoothPath(double epsilon);
+    std::array<double, 2> randomXYUniform();
+    // void stepTowardFold(int stepNum);
+    void simplifyPath(double epsilon);
+    void smoothVelocity(int points);
     void setCollisionBuffer(double newBuffer);
     std::array<double, 2> alphaBetaFromFiberXY(double x, double y, int fiberID);
     // fiberID 0 = metrology
     // fiberID 1 = apogee
     // fiberID 2 = boss
     std::array<double, 2> convFiberXY(double x, double y, int fromFiberID, int toFiberID);
-    bool isValidTarget(std::shared_ptr<Target>);
-    void assignTarget(std::shared_ptr<Target>);
+    bool isValidTarget(double x, double y, int fiberID);
+    void assignTarget(int targetInd, double x, double y, int fiberID);
     bool isAssigned();
-    bool canSwapTarget(std::shared_ptr<Robot> robot);
+    // bool canSwapTarget(std::shared_ptr<Robot> robot);
 };

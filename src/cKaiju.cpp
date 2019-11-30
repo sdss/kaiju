@@ -15,7 +15,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("id", &Target::id)
         .def_readwrite("priority", &Target::priority)
         .def_readwrite("fiberID", &Target::fiberID)
-        .def_readwrite("validRobots", &Target::validRobots)
+        .def_readwrite("robotInds", &Target::robotInds)
         .def("isAssigned", &Target::isAssigned);
 
     py::class_<Robot, std::shared_ptr<Robot>>(m, "Robot", R"pbdoc(
@@ -28,10 +28,14 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("alpha", &Robot::alpha, R"pbdoc(
             Robot's alpha position (degrees).
             )pbdoc")
+        .def_readwrite("alphaVel", &Robot::alphaVel)
+        .def_readwrite("betaVel", &Robot::betaVel)
+        .def_readwrite("smoothAlphaVel", &Robot::smoothAlphaVel)
+        .def_readwrite("smoothBetaVel", &Robot::smoothBetaVel)
         .def_readwrite("beta", &Robot::beta)
         .def_readwrite("xPos", &Robot::xPos)
         .def_readwrite("yPos", &Robot::yPos)
-        .def_readwrite("targetList", &Robot::targetList)
+        .def_readwrite("targetList", &Robot::targetInds)
         .def_readwrite("hasApogee", &Robot::hasApogee)
         .def_readwrite("hasBoss", &Robot::hasBoss)
         .def_readwrite("metFiberPos", &Robot::metFiberPos)
@@ -40,12 +44,15 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("nDecollide", &Robot::nDecollide)
         .def_readwrite("betaCollisionSegment", &Robot::betaCollisionSegment)
         .def_readwrite("id", &Robot::id)
+        .def_readwrite("assignedTarget", &Robot::assignedTargetInd)
         .def_readwrite("alphaPath", &Robot::alphaPath)
         .def_readwrite("betaPath", &Robot::betaPath)
-        .def_readwrite("smoothAlphaPath", &Robot::smoothAlphaPath)
-        .def_readwrite("smoothBetaPath", &Robot::smoothBetaPath)
-        .def_readwrite("interpSmoothAlphaPath", &Robot::interpSmoothAlphaPath)
-        .def_readwrite("interpSmoothBetaPath", &Robot::interpSmoothBetaPath)
+        .def_readwrite("smoothedAlphaPath", &Robot::smoothedAlphaPath)
+        .def_readwrite("smoothedBetaPath", &Robot::smoothedBetaPath)
+        .def_readwrite("simplifiedAlphaPath", &Robot::simplifiedAlphaPath)
+        .def_readwrite("simplifiedBetaPath", &Robot::simplifiedBetaPath)
+        .def_readwrite("interpSimplifiedAlphaPath", &Robot::interpSimplifiedAlphaPath)
+        .def_readwrite("interpSimplifiedBetaPath", &Robot::interpSimplifiedBetaPath)
         .def_readwrite("interpAlphaX", &Robot::interpAlphaX)
         .def_readwrite("interpAlphaY", &Robot::interpAlphaY)
         .def_readwrite("interpBetaX", &Robot::interpBetaX)
@@ -61,11 +68,12 @@ PYBIND11_MODULE(cKaiju, m) {
             And some other bs.
         )pbdoc")
         .def("setXYUniform", &Robot::setXYUniform)
+        .def("randomXYUniform", &Robot::randomXYUniform)
         .def("alphaBetaFromFiberXY", &Robot::alphaBetaFromFiberXY)
         .def("setAlphaBetaRand", &Robot::setAlphaBetaRand)
-        .def("isCollided", &Robot::isCollided)
+        // .def("isCollided", &Robot::isCollided)
         .def("setFiberXY", &Robot::setFiberXY)
-        .def("decollide", &Robot::decollide)
+        // .def("decollide", &Robot::decollide)
         .def("isAssigned", &Robot::isAssigned);
 
     py::class_<RobotGrid, std::shared_ptr<RobotGrid>>(m, "RobotGrid", R"pbdoc(
@@ -76,6 +84,8 @@ PYBIND11_MODULE(cKaiju, m) {
         .def(py::init<double, double, double, int>())
         // warning!!! iterating over this gives you copies!!!! use getRobot if you want a reference
         .def_readwrite("allRobots", &RobotGrid::allRobots)
+        .def_readwrite("angStep", &RobotGrid::angStep)
+        .def_readwrite("collisionBuffer", &RobotGrid::collisionBuffer)
         .def_readwrite("smoothCollisions", &RobotGrid::smoothCollisions)
         .def_readwrite("didFail", &RobotGrid::didFail)
         .def_readwrite("nSteps", &RobotGrid::nSteps)
@@ -87,20 +97,25 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("addFiducial", &RobotGrid::addFiducial)
         .def("initGrid", &RobotGrid::initGrid)
         .def("optimizeTargets", &RobotGrid::optimizeTargets)
-        .def("decollide", &RobotGrid::decollide)
+        // .def("decollide", &RobotGrid::decollide)
+        .def("decollide2", &RobotGrid::decollide2)
+        .def("simplifyPaths", &RobotGrid::simplifyPaths)
         .def("smoothPaths", &RobotGrid::smoothPaths)
         .def("verifySmoothed", &RobotGrid::verifySmoothed)
         .def("setCollisionBuffer", &RobotGrid::setCollisionBuffer)
         .def("pathGen", &RobotGrid::pathGen)
         .def("setTargetList", &RobotGrid::setTargetList)
+        .def("addTargetList", &RobotGrid::addTargetList)
         .def("targetlessRobots", &RobotGrid::targetlessRobots)
         .def("unreachableTargets", &RobotGrid::unreachableTargets)
         .def("assignedTargets", &RobotGrid::assignedTargets)
         .def("getRobot", &RobotGrid::getRobot)
         .def("clearTargetList", &RobotGrid::clearTargetList)
+        .def("isValidRobotTarget", &RobotGrid::isValidRobotTarget)
         .def("assignRobot2Target", &RobotGrid::assignRobot2Target)
         .def("pairwiseSwap", &RobotGrid::pairwiseSwap)
         .def("unassignedRobots", &RobotGrid::unassignedRobots)
+        .def("isCollidedInd", &RobotGrid::isCollidedInd)
         .def("greedyAssign", &RobotGrid::greedyAssign);
 }
 

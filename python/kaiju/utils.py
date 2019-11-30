@@ -11,17 +11,18 @@ from .cKaiju import RobotGrid
 
 matplotlib.use('Agg')
 
-internalBuffer = 1.5
+# internalBuffer = 1.5
 rg = None # need global because C++ obj can't be pickled for multiprocessing
 
 
-def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=False):
+def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=False, internalBuffer=1.5):
     global rg
+
     if robotGrid is not None:
         rg = robotGrid
     plt.figure(figsize=(10,10))
     ax = plt.gca()
-    for robot in rg.allRobots:
+    for robotInd, robot in enumerate(rg.allRobots):
         if isSequence:
             alphaX = robot.roughAlphaX[step][1]
             alphaY = robot.roughAlphaY[step][1]
@@ -42,7 +43,7 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
         ).buffer(internalBuffer, cap_style=1)
         topcolor = 'blue'
         edgecolor = 'black'
-        if robot.isCollided():
+        if rg.isCollidedInd(robotInd):
             topcolor = "red"
         if not robot.isAssigned():
             topcolor = "skyblue"

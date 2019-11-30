@@ -7,7 +7,7 @@ double randomSample(){
 }
 
 std::array<double, 2> sampleAnnulus(double rMin, double rMax){
-    // random anululs sampling:
+    // random annulus sampling:
     // https://ridlow.wordpress.com/2014/10/22/uniform-random-points-in-disk-annulus-ring-cylinder-and-sphere/
     double rPick = sqrt((rMax*rMax - rMin*rMin)*randomSample() + rMin*rMin);
     double thetaPick = randomSample() * 2 * M_PI;
@@ -67,8 +67,16 @@ double linearInterpolate(std::vector<Eigen::Vector2d> & sparseXYPoints, double x
     double yValue;
     int nPoints = sparseXYPoints.size();
     // check that x is in range
-    if (xValue < sparseXYPoints[0](0) || xValue > sparseXYPoints[nPoints-1](0)){
-        throw std::runtime_error("x outside interpolation range");
+    // if (xValue < sparseXYPoints[0](0) || xValue > sparseXYPoints[nPoints-1](0)){
+    //     throw std::runtime_error("x outside interpolation range");
+    // }
+    if (xValue < sparseXYPoints[0](0)){
+        yValue = sparseXYPoints[0](1);
+        // constant extrapolation
+    }
+
+    if (xValue > sparseXYPoints[nPoints-1](0)){
+        yValue = sparseXYPoints[nPoints-1](1);
     }
     // check if x == last point
     if (xValue == sparseXYPoints[nPoints-1](0)){
