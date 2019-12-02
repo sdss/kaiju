@@ -48,7 +48,8 @@ sources = [
     'src/robot.cpp',
     'src/robotGrid.cpp',
     'src/utils.cpp',
-    'src/target.cpp'
+    'src/target.cpp',
+    'src/fiducial.cpp'
 ]
 
 extra_compile_args = ["--std=c++11", "-fPIC", "-v", "-O3"]

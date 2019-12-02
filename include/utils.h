@@ -9,7 +9,7 @@ const double SMALL_NUM = 0.00000001; // anything that avoids division overflow
 
 std::array<double, 2> sampleAnnulus(double rMin, double rMax);
 
-Eigen::MatrixXd getHexPositions(int nDia, double pitch);
+// Eigen::MatrixXd getHexPositions(int nDia, double pitch);
 
 double linearInterpolate(std::vector<Eigen::Vector2d> & sparseXYPoints, double xValue);
 

@@ -6,12 +6,13 @@ class Robot; // defined in robot.h
 
 class Target{
 public:
-    int assignedRobotInd = -1; // index in RobotGrid.allRobots
+    int assignedRobotID = -1; // ID of robot assigned to this target
     int id;
     int priority,fiberID;
     float x,y;
-    std::vector<int> robotInds;
+    std::vector<int> validRobotIDs; // robots that can reach this target
     Target(int myId, double myX, double myY, int myPriority, int myFiberID);
-    void assignRobot(int robotInd);
+    void assignRobot(int robotID);
+    void clearAssignment();
     bool isAssigned();
 };

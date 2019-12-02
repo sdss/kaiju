@@ -1,6 +1,7 @@
 #pragma once
 #include "robot.h"
 #include "target.h"
+#include "fiducial.h"
 // #include <pybind11/stl_bind.h>
 
 // move constants to cpp file?
@@ -24,40 +25,45 @@ public:
     int nSteps;
     int maxPathSteps;
     int smoothCollisions;
-    std::vector<std::shared_ptr<Robot>> allRobots;
-    std::vector<std::array<double, 2>> fiducialList;
-    std::vector<std::shared_ptr<Target>> targetList;
+    std::map<int, std::shared_ptr<Robot>> robotDict;
+    std::map<int, std::shared_ptr<Fiducial>> fiducialDict;
+    // std::vector<std::array<double, 2>> fiducialList;
+    std::map<int, std::shared_ptr<Target>> targetDict;
     RobotGrid (double myAngStep, double myCollisionBuffer, double myEpsilon, int seed);
     void addRobot(int robotID, double xPos, double yPos, bool hasApogee);
-    void addFiducial(double xPos, double yPos);
+    void addTarget(int targetID, double xPos, double yPos, double priority, int fiberID);
+    void addFiducial(int fiducialID, double xPos, double yPos);
     void initGrid();
-    // void decollide();
-    void decollide2();
+    void decollide();
     int getNCollisions();
     void pathGen();
     void simplifyPaths();
     void smoothPaths(int points);
     void verifySmoothed();
-    void optimizeTargets();
+    // void optimizeTargets();
     void setCollisionBuffer(double newBuffer);
-    void setTargetList(Eigen::MatrixXd myTargetList); //std::vector<std::array<double, 5>> myTargetList);
-    void addTargetList(Eigen::MatrixXd myTargetList);
-    std::shared_ptr<Robot> getRobot(int);
-    std::vector<std::shared_ptr<Robot>> targetlessRobots();
-    std::vector<std::shared_ptr<Target>> unreachableTargets();
-    std::vector<std::shared_ptr<Target>> assignedTargets();
-    void pairwiseSwap();
-    void swapTargets(int r1ind, int r2ind);
-    void greedyAssign();
-    void clearTargetList();
-    void assignRobot2Target(int robotInd, int targID);
-    bool isValidRobotTarget(int robotInd, int targID);
-    std::vector<std::shared_ptr<Robot>> unassignedRobots();
-    bool canSwapTarget(std::shared_ptr<Robot> r1, std::shared_ptr<Robot> r2);
-    bool isCollided(std::shared_ptr<Robot> r1);
+    // void setTargetList(Eigen::MatrixXd myTargetList); //std::vector<std::array<double, 5>> myTargetList);
+    // void addTargetList(Eigen::MatrixXd myTargetList);
+    std::shared_ptr<Robot> getRobot(int robotID);
+    std::vector<int> targetlessRobots(); // returns robotIDs
+    std::vector<int> unreachableTargets(); // returns targetIDs
+    std::vector<int> assignedTargets(); // returns targetIDs
+    // void pairwiseSwap();
+    // void swapTargets(int r1ind, int r2ind);
+    // void greedyAssign();
+    void clearTargetDict();
+    void assignRobot2Target(int robotID, int targID);
+    void unassignTarget(int targID);
+    void unassignRobot(int robotID);
+    bool isValidAssignment(int robotID, int targID);
+    std::vector<int> unassignedRobots();
+    // bool canSwapTarget(std::shared_ptr<Robot> r1, std::shared_ptr<Robot> r2);
+    bool isCollided(int robotID);
+    std::vector<int> robotColliders(int robotID);
+    std::vector<int> fiducialColliders(int robotID);
     // bool isFiducialCollided(std::shared_ptr<Robot> r1);
-    bool isCollidedInd(int robotInd);
-    void decollideRobot(std::shared_ptr<Robot> r1);
+    // bool isCollidedInd(int robotInd);
+    void decollideRobot(int robotID);
     void stepTowardFold(std::shared_ptr<Robot> r1, int stepNum);
     // void smoothPath(std::shared_ptr<Robot> robot, double epsilon);
 };

@@ -5,6 +5,7 @@
 #include <vector>
 #include <list>
 #include <array>
+#include <map>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include "target.h"
@@ -13,6 +14,10 @@ extern const double alphaLen;
 extern const double betaLen;
 extern const double maxReach;
 extern const double minReach;
+extern const double fiducialBuffer;
+extern const int BOSS_FIBER_ID;
+extern const int AP_FIBER_ID;
+extern const int MET_FIBER_ID;
 
 class Target; // defined elsewhere...
 
@@ -21,7 +26,7 @@ public:
     int id;
     int nDecollide = 0;
     int lastStepNum = 0;
-    int assignedTargetInd = -1;
+    int assignedTargetID = -1; // -1 indicates no assigned target
     bool hasApogee;
     bool hasBoss;
     double xPos, yPos, alpha, beta;
@@ -45,17 +50,17 @@ public:
     std::vector<Eigen::Vector2d> interpAlphaX, interpAlphaY, interpBetaX, interpBetaY; // smoothed
     std::vector<Eigen::Vector2d> roughAlphaX, roughAlphaY, roughBetaX, roughBetaY; // jiggly
     std::vector<Eigen::Vector2d> interpCollisions; // boolean points for collided or not
-    std::vector<int> neighborInds; // indices in RobotGrid.allRobots that are neighbors
-    std::vector<Eigen::Vector3d> fiducials;
-    std::vector<int> targetInds; // indicies in RobotGrid.targetList that I can reach
+    std::vector<int> robotNeighbors; // robot IDs in RobotGrid.robotDict may potentially collide
+    std::vector<int> fiducialNeighbors; // fiducial IDs in RobotGrid.fiducialDict may potentially collide
+    std::vector<int> validTargetIDs; // target IDs in RobotGrid.targetDict that I can reach
     Robot (int myid, double myxPos, double myyPos, double myAngStep, bool myHasApogee);
     void setAlphaBeta (double nextAlpha, double nextBeta);
     void setFiberXY (double xFiberGlobal, double yFiberGlobal, int fiberID); // xy in focal plane coord sys
-    void setAlphaBetaRand();
-    void addNeighbor(int);
-    void addFiducial(std::array<double, 2> fiducial);
+    // void setAlphaBetaRand();
+    void addRobotNeighbor(int robotID);
+    void addFiducialNeighbor(int fiducialID);
     // bool isCollided();
-    bool isFiducialCollided();
+    // bool isFiducialCollided();
     // void decollide();
     void setXYUniform();
     std::array<double, 2> randomXYUniform();
@@ -68,8 +73,9 @@ public:
     // fiberID 1 = apogee
     // fiberID 2 = boss
     std::array<double, 2> convFiberXY(double x, double y, int fromFiberID, int toFiberID);
-    bool isValidTarget(double x, double y, int fiberID);
-    void assignTarget(int targetInd, double x, double y, int fiberID);
+    // bool isValidTarget(double x, double y, int fiberID);
+    void assignTarget(int targetID);
+    void clearAssignment();
     bool isAssigned();
     // bool canSwapTarget(std::shared_ptr<Robot> robot);
 };

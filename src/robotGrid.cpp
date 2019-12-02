@@ -3,7 +3,6 @@
 #include <Eigen/Dense>
 #include "utils.h"
 #include "robotGrid.h"
-// #include "betaArm.h"
 
 // define constants
 // const double betaCollisionRadius = 1.5; // mm (3mm wide)
@@ -16,23 +15,23 @@ const double pitch = 22.4; // distance to next nearest neighbor
 // const double epsilon =  5 * angStep; // was 7*angStep for 0.1 step size
 
 // const double min_targ_sep = 8; // mm
-const double min_targ_sep = 0; // mm
+// const double min_targ_sep = 0; // mm
 
 // bool sortTargList(std::array<double, 5> targ1, std::array<double, 5> targ2){
 //     return targ1[3] > targ2[3];
 // }
 
-bool sortTargList(std::shared_ptr<Target> t1, std::shared_ptr<Target> t2){
-    return t1->priority > t2->priority;
-}
+// bool sortTargList(std::shared_ptr<Target> t1, std::shared_ptr<Target> t2){
+//     return t1->priority > t2->priority;
+// }
 
-bool reverseSortTargList(std::shared_ptr<Target> t1, std::shared_ptr<Target> t2){
-    return t1->priority < t2->priority;
-}
+// bool reverseSortTargList(std::shared_ptr<Target> t1, std::shared_ptr<Target> t2){
+//     return t1->priority < t2->priority;
+// }
 
-bool sortRobotID(std::shared_ptr<Robot> robot1, std::shared_ptr<Robot> robot2){
-    return robot1->id < robot2->id;
-}
+// bool sortrobotID(std::shared_ptr<Robot> robot1, std::shared_ptr<Robot> robot2){
+//     return robot1->id < robot2->id;
+// }
 
 // there is a better way to use the constructor to set attrs....look it up
 RobotGrid::RobotGrid(double myAngStep, double myCollisionBuffer, double myEpsilon, int seed){
@@ -46,41 +45,61 @@ RobotGrid::RobotGrid(double myAngStep, double myCollisionBuffer, double myEpsilo
 }
 
 void RobotGrid::addRobot(int robotID, double xPos, double yPos, bool hasApogee){
-        auto rptr = std::make_shared<Robot>(robotID, xPos, yPos, angStep, hasApogee);
-        rptr->setCollisionBuffer(collisionBuffer);
-        // Robot robot(ii, xyHexPos(ii, 0), xyHexPos(ii, 1), angStep, betaPair.first, betaPair.second);
-        // robot.setCollisionBuffer(collisionBuffer);
-        // hack set all alpha betas home
-        allRobots.push_back(std::move(rptr));
+    // ensure robot id doesn't already exist
+    if (robotDict.count(robotID) > 0){
+        throw std::runtime_error("Robot ID already exists");
+    }
+    robotDict[robotID] = std::make_shared<Robot>(robotID, xPos, yPos, angStep, hasApogee);
+    robotDict[robotID]->setCollisionBuffer(collisionBuffer);
 }
 
-void RobotGrid::addFiducial(double xPos, double yPos){
-        std::array<double, 2> fiducial = {xPos, yPos};
-        fiducialList.push_back(fiducial);
+void RobotGrid::addTarget(int targetID, double xPos, double yPos, double priority, int fiberID){
+    if (targetDict.count(targetID) > 0){
+        throw std::runtime_error("Target ID already exists");
+    }
+
+    targetDict[targetID] = std::make_shared<Target>(targetID, xPos, yPos, priority, fiberID);
+    // add target to robots and robots to target
+    for (auto rPair : robotDict){
+        auto r = rPair.second;
+        if (isValidAssignment(r->id, targetID)){
+            r->validTargetIDs.push_back(targetID);
+            targetDict[targetID]->validRobotIDs.push_back(r->id);
+        }
+    }
+}
+
+void RobotGrid::addFiducial(int fiducialID, double xPos, double yPos){
+    if (fiducialDict.count(fiducialID) > 0){
+        throw std::runtime_error("Fiducial ID already exists");
+    }
+    fiducialDict[fiducialID] = std::make_shared<Fiducial>(fiducialID, xPos, yPos);
 }
 
 void RobotGrid::initGrid(){
-    // sets robots to random points
+    // associate neighbors with fiducials and robots in grid
     double dx, dy, dist;
-    nRobots = allRobots.size();
+    nRobots = robotDict.size();
 
-    // first sort robots by robotID
-    // std::sort(allRobots.begin(), allRobots.end(), sortRobotID);
-
-    for (auto r1 : allRobots){
+    for (auto rPair1 : robotDict){
         // add fiducials (potential to collide with)
-        for (auto fiducial : fiducialList){
-            dx = r1->xPos - fiducial[0];
-            dy = r1->yPos - fiducial[1];
+        auto r1 = rPair1.second;
+        for (auto fPair : fiducialDict){
+            auto fiducial = fPair.second;
+            dx = r1->xPos - fiducial->x;
+            dy = r1->yPos - fiducial->y;
             dist = hypot(dx, dy);
             if (dist < pitch+1) { // +1 for numerical buffer
                 // std::cout << "add fiducial " << dist << std::endl;
-                r1->addFiducial(fiducial);
+                r1->addFiducialNeighbor(fiducial->id);
             }
         }
-        int r2Ind = -1;
-        for (auto r2 : allRobots){
-            r2Ind++;
+        // initialize all to alpha beta 0,0
+        r1->setAlphaBeta(0,0);
+        // int r2Ind = -1;
+        for (auto rPair2 : robotDict){
+            auto r2 = rPair2.second;
+            // r2Ind++;
             // add neighbors (potential to collide with)
             if (r1->id==r2->id){
                 continue;
@@ -90,107 +109,59 @@ void RobotGrid::initGrid(){
             dist = hypot(dx, dy);
             if (dist < (2*pitch+1)){ //+1 for numerical buffer
                 // these robots are neighbors
-                r1->addNeighbor(r2Ind);
+                r1->addRobotNeighbor(r2->id);
             }
         }
     }
-
-    // ignoring minimum separation for now
-    for (auto r : allRobots){
-        // r->setXYUniform();
-        r->setAlphaBeta(0, 0);
-    }
-
 }
 
-std::shared_ptr<Robot> RobotGrid::getRobot(int robotInd){
-    return allRobots[robotInd];
+std::shared_ptr<Robot> RobotGrid::getRobot(int robotID){
+    return robotDict[robotID];
 }
 
 void RobotGrid::setCollisionBuffer(double newBuffer){
     collisionBuffer = newBuffer;
-    for (auto r : allRobots){
+    for (auto rPair : robotDict){
+        auto r = rPair.second;
         r->setCollisionBuffer(newBuffer);
     }
 }
 
-void RobotGrid::decollide2(){
-        // iterate over robots and resolve collisions
-    // sort by target priority
-      // This segmentation faults if any robot doesn't have
-    // an assigned target
+void RobotGrid::decollide(){
 
-    // decollide robots, throwing out lowest priority targets first
-
-
-    // std::sort(allRobots.begin(), allRobots.end(), sortRobotPriority);
     for (int ii=0; ii<1000; ii++){
         // std::cout << "n collisions " << getNCollisions() << std::endl;
         if (!getNCollisions()){
             break;
         }
 
-        for (auto r : allRobots){
-            if (isCollided(r)){
-                decollideRobot(r);
+        for (auto rPair : robotDict){
+            auto robotID = rPair.first;
+            if (isCollided(robotID)){
+                decollideRobot(robotID);
             }
         }
     }
 
     if (getNCollisions()){
-        std::cout << "cannot decolide 2 grid" << std::endl;
+        std::cout << "cannot decolide grid" << std::endl;
         throw std::runtime_error("Unable do decollide robot!!!");
     }
 
 }
 
-// void RobotGrid::decollide(){
-//     // iterate over robots and resolve collisions
-//     // sort by target priority
-// 	  // This segmentation faults if any robot doesn't have
-//     // an assigned target
-
-//     // decollide robots, throwing out lowest priority targets first
-
-
-//     // std::sort(allRobots.begin(), allRobots.end(), sortRobotPriority);
-//     for (int ii=0; ii<1000; ii++){
-//         if (getNCollisions()){
-//             break;
-//         }
-//         // first try moving unassigned robots
-//         for (auto r : targetlessRobots()){
-//             if (isCollided(r)){
-//                 decollideRobot(r);
-//             }
-//         }
-
-//         // next start throwing out lowest priority targets
-//         auto targets = assignedTargets();
-//         std::sort(targets.begin(), targets.end(), reverseSortTargList);
-//         for (auto t : targets){
-//             auto r = allRobots[t->assignedRobotInd];
-//             if (isCollided(r)){
-//                 decollideRobot(r);
-//             }
-//         }
-//     }
-
-//     if (getNCollisions()){
-//         std::cout << "cannot decolide grid" << std::endl;
-//         throw std::runtime_error("Unable do decollide robot!!!");
-//     }
-// }
 
 void RobotGrid::smoothPaths(int points){
-    for (auto r : allRobots){
+    for (auto rPair : robotDict){
+        auto r = rPair.second;
         r->smoothVelocity(points);
     }
 }
 
 
 void RobotGrid::simplifyPaths(){
-    for (auto r : allRobots){
+    for (auto rPair : robotDict){
+        auto r = rPair.second;
         r->simplifyPath(epsilon);
     }
 }
@@ -198,7 +169,8 @@ void RobotGrid::simplifyPaths(){
 void RobotGrid::verifySmoothed(){
     smoothCollisions = 0;
     for (int ii = 0; ii < nSteps; ii++){
-        for (auto r : allRobots){
+        for (auto rPair : robotDict){
+            auto r = rPair.second;
             r->setAlphaBeta(r->interpSimplifiedAlphaPath[ii](1), r->interpSimplifiedBetaPath[ii](1));
             // std::cout << " robot id " << r.id << std::endl;
         }
@@ -212,8 +184,9 @@ void RobotGrid::verifySmoothed(){
 int RobotGrid::getNCollisions(){
     // return number of collisions found
     int nCollide = 0;
-    for (auto r : allRobots){
-        if (isCollided(r)) {
+    for (auto rPair : robotDict){
+        auto rId = rPair.first;
+        if (isCollided(rId)) {
             nCollide++;
         }
     }
@@ -226,7 +199,8 @@ void RobotGrid::pathGen(){
     // betas for getting locked, so try to move those first
     // int pathPad = 20 / (float)angStep;
     didFail = true;
-    for (auto r: allRobots){
+    for (auto rPair : robotDict){
+        auto r = rPair.second;
         // clear any existing path
         r->alphaPath.clear();
         r->betaPath.clear();
@@ -251,7 +225,8 @@ void RobotGrid::pathGen(){
     for (ii=0; ii<maxPathSteps; ii++){
         bool allFolded = true;
 
-        for (auto r: allRobots){
+        for (auto rPair : robotDict){
+            auto r = rPair.second;
             // std::cout << "path gen " << r.betaOrientation.size() << " " << r.betaModel.size() << std::endl;
             // std::cout << "alpha beta " << r.alpha << " " << r.beta << std::endl;
             stepTowardFold(r, ii);
@@ -259,253 +234,322 @@ void RobotGrid::pathGen(){
                 allFolded = false;
             }
         }
-        // std::cout << "------------------" << std::endl;
-        // std::cout << "------------------" << std::endl;
+
         if (allFolded){
             didFail = false;
             break;
         }
-        // exit of all robots
     }
 
-    // add additional points to end of path to aid
-    // smoothing algorithm, here because robotGrid knows nSteps
-
-    // for (auto r: allRobots){
-    //     auto lastAlpha = r->alphaPath.back();
-    //     auto lastBeta = r->betaPath.back();
-    //     for(int jj=0; jj < pathPad; jj++){
-    //         r->alphaPath.push_back(lastAlpha);
-    //         r->betaPath.push_back(lastBeta);
-    //     }
-    // }
     nSteps = ii;
 }
 
-void RobotGrid::clearTargetList(){
-    targetList.clear(); // does clear destroy the shared_ptrs?
+void RobotGrid::clearTargetDict(){
+    targetDict.clear(); // does clear destroy the shared_ptrs?
     // clear all robot target lists
-    for (auto r : allRobots){
-        r->targetInds.clear();
-        r->assignedTargetInd = -1;
+    for (auto rPair : robotDict){
+        auto r = rPair.second;
+        r->validTargetIDs.clear();
+        r->clearAssignment();
     }
 }
 
-void RobotGrid::addTargetList(Eigen::MatrixXd myTargetList){
-    int nRows = myTargetList.rows();
-    // sort by ascending priority 0 first
-    // std::sort(myTargetList.begin(), myTargetList.end(), sortTargList);
+// void RobotGrid::addTargetList(Eigen::MatrixXd myTargetList){
+//     int nRows = myTargetList.rows();
+//     // sort by ascending priority 0 first
+//     // std::sort(myTargetList.begin(), myTargetList.end(), sortTargList);
 
-    // add targets to robots and robots to targets
-    for (int ii = 0; ii < nRows; ii++){
-        auto targPtr = std::make_shared<Target>((int)myTargetList(ii, 0), myTargetList(ii, 1), myTargetList(ii, 2), (int)myTargetList(ii, 3), (int)myTargetList(ii, 4) );
-        targetList.push_back(std::move(targPtr));
-    }
-    // sort target list in order of priority
-    std::sort(targetList.begin(), targetList.end(), sortTargList);
+//     // add targets to robots and robots to targets
+//     for (int ii = 0; ii < nRows; ii++){
+//         auto targPtr = std::make_shared<Target>((int)myTargetList(ii, 0), myTargetList(ii, 1), myTargetList(ii, 2), (int)myTargetList(ii, 3), (int)myTargetList(ii, 4) );
+//         targetList.push_back(std::move(targPtr));
+//     }
+//     // sort target list in order of priority
+//     std::sort(targetList.begin(), targetList.end(), sortTargList);
 
-    // associate available targets to robots
-    int targInd = -1;
-    for (auto t : targetList){
-        targInd++;
-        int robotInd = -1;
-        for (auto r : allRobots){
-            robotInd++;
-            if (r->isValidTarget(t->x, t->y, t->fiberID)){
-                r->targetInds.push_back(targInd);  // should be sorted by priority
-                t->robotInds.push_back(robotInd);
-            }
-        }
-    }
-}
+//     // associate available targets to robots
+//     int targInd = -1;
+//     for (auto t : targetList){
+//         targInd++;
+//         int robotInd = -1;
+//         for (auto r : allRobots){
+//             robotInd++;
+//             if (r->isValidTarget(t->x, t->y, t->fiberID)){
+//                 r->targetInds.push_back(targInd);  // should be sorted by priority
+//                 t->robotInds.push_back(robotInd);
+//             }
+//         }
+//     }
+// }
 
-void RobotGrid::setTargetList(Eigen::MatrixXd myTargetList){ //std::vector<std::array<double, 5>> myTargetList){
-    // targetID, x, y, priority, fiberID (1=apogee 2=boss)
-    // std::array<double, 2> ab;
+// void RobotGrid::setTargetList(Eigen::MatrixXd myTargetList){ //std::vector<std::array<double, 5>> myTargetList){
+//     // targetID, x, y, priority, fiberID (1=apogee 2=boss)
+//     // std::array<double, 2> ab;
 
-	clearTargetList();
-	addTargetList(myTargetList);
-}
+// 	clearTargetList();
+// 	addTargetList(myTargetList);
+// }
 
-void RobotGrid::greedyAssign(){
-    // assign the highest priority targets to robots
-    // initialize each robot to its highest priority target
-    // only allow one target per robot
-    int robotInd = -1;
-    for (auto r : allRobots){
-        robotInd++;
-        for (auto targetInd : r->targetInds){
-            auto targ = targetList[targetInd];
-            if (targ->isAssigned()){
-                // target has been assigned to other robot
-                continue;
-            }
-            if (r->isValidTarget(targ->x, targ->y, targ->fiberID)){
-                targ->assignRobot(robotInd);
-                r->assignTarget(targetInd, targ->x, targ->y, targ->fiberID);
-                break; // break from target loop
-            }
-        }
-    }
-}
+// void RobotGrid::greedyAssign(){
+//     // assign the highest priority targets to robots
+//     // initialize each robot to its highest priority target
+//     // only allow one target per robot
+//     // int robotInd = -1;
+//     for (auto rPair : robotDict){
+//         // robotInd++;
+//         auto r = rPair.second;
+//         for (auto targetInd : r->targetInds){
+//             auto targ = targetList[targetInd];
+//             if (targ->isAssigned()){
+//                 // target has been assigned to other robot
+//                 continue;
+//             }
+//             if (r->isValidTarget(targ->x, targ->y, targ->fiberID)){
+//                 targ->assignRobot(r.id);
+//                 r->assignTarget(targetInd, targ->x, targ->y, targ->fiberID);
+//                 break; // break from target loop
+//             }
+//         }
+//     }
+// }
 
-void RobotGrid::pairwiseSwap(){
-    // look for pairwise swaps that reduce collisions
-    int r1ind = -1;
-    for (auto r1 : allRobots){
-        r1ind++;
-        if (isCollided(r1)){
-            // use getNCollisions because the swap may
-            // decolide the robot, but may introduce a new
-            // collision
-            double initialCollisions = getNCollisions();
-            for (auto r2ind : r1->neighborInds){
-                auto r2 = allRobots[r2ind];
-                if (canSwapTarget(r1, r2)){
-                    swapTargets(r1ind, r2ind);
-                    if (initialCollisions <= getNCollisions()){
-                        // swap targets back
-                        // collision still exists
-                        // or is worse!
-                        swapTargets(r1ind, r2ind);
-                    }
-                    else {
-                        // collision resolved
-                        break;
-                    }
-                }
-            }
-        }
-    }
-}
+// void RobotGrid::pairwiseSwap(){
+//     // look for pairwise swaps that reduce collisions
+//     int r1ind = -1;
+//     for (auto r1 : allRobots){
+//         r1ind++;
+//         if (isCollided(r1)){
+//             // use getNCollisions because the swap may
+//             // decolide the robot, but may introduce a new
+//             // collision
+//             double initialCollisions = getNCollisions();
+//             for (auto r2ind : r1->neighborInds){
+//                 auto r2 = allRobots[r2ind];
+//                 if (canSwapTarget(r1, r2)){
+//                     swapTargets(r1ind, r2ind);
+//                     if (initialCollisions <= getNCollisions()){
+//                         // swap targets back
+//                         // collision still exists
+//                         // or is worse!
+//                         swapTargets(r1ind, r2ind);
+//                     }
+//                     else {
+//                         // collision resolved
+//                         break;
+//                     }
+//                 }
+//             }
+//         }
+//     }
+// }
 
-bool RobotGrid::canSwapTarget(std::shared_ptr<Robot> r1, std::shared_ptr<Robot> r2){
-    // std::cout << "in canSwapTarget" << std::endl;
-    if (!r1->isAssigned() or !r2->isAssigned()){
-        // one positioner is without a target
-        return false;
-    }
-    auto r1targ = targetList[r1->assignedTargetInd];
-    auto r2targ = targetList[r2->assignedTargetInd];
-    bool r1canReach = r1->isValidTarget(r2targ->x, r2targ->y, r2targ->fiberID);
-    bool r2canReach = r2->isValidTarget(r1targ->x, r1targ->y, r1targ->fiberID);
-    return r1canReach and r2canReach;
-}
+// bool RobotGrid::canSwapTarget(std::shared_ptr<Robot> r1, std::shared_ptr<Robot> r2){
+//     // std::cout << "in canSwapTarget" << std::endl;
+//     if (!r1->isAssigned() or !r2->isAssigned()){
+//         // one positioner is without a target
+//         return false;
+//     }
+//     auto r1targ = targetList[r1->assignedTargetInd];
+//     auto r2targ = targetList[r2->assignedTargetInd];
+//     bool r1canReach = r1->isValidTarget(r2targ->x, r2targ->y, r2targ->fiberID);
+//     bool r2canReach = r2->isValidTarget(r1targ->x, r1targ->y, r1targ->fiberID);
+//     return r1canReach and r2canReach;
+// }
 
-void RobotGrid::swapTargets(int r1Ind, int r2Ind){
-    // std::shared_ptr<Target> savedTarget = r1->assignedTarget;
-    // r1->assignTarget(r2->assignedTarget);
-    // r2->assignTarget(savedTarget);
-    // // update target->robot assignments
-    // r1->assignedTarget->assignRobot(r1);
-    // r2->assignedTarget->assignRobot(r2);
-    auto r1 = allRobots[r1Ind];
-    auto r2 = allRobots[r2Ind];
+// void RobotGrid::swapTargets(int r1Ind, int r2Ind){
+//     // std::shared_ptr<Target> savedTarget = r1->assignedTarget;
+//     // r1->assignTarget(r2->assignedTarget);
+//     // r2->assignTarget(savedTarget);
+//     // // update target->robot assignments
+//     // r1->assignedTarget->assignRobot(r1);
+//     // r2->assignedTarget->assignRobot(r2);
+//     auto r1 = allRobots[r1Ind];
+//     auto r2 = allRobots[r2Ind];
 
-    auto r1targ = targetList[r1->assignedTargetInd];
-    auto r2targ = targetList[r2->assignedTargetInd];
-    auto r1targInd = r1->assignedTargetInd;
-    auto r2targInd = r2->assignedTargetInd;
+//     auto r1targ = targetList[r1->assignedTargetInd];
+//     auto r2targ = targetList[r2->assignedTargetInd];
+//     auto r1targInd = r1->assignedTargetInd;
+//     auto r2targInd = r2->assignedTargetInd;
 
-    r1->assignTarget(r2targInd, r2targ->x, r2targ->y, r2targ->fiberID);
-    r2->assignTarget(r1targInd, r1targ->x, r1targ->y, r1targ->fiberID);
+//     r1->assignTarget(r2targInd, r2targ->x, r2targ->y, r2targ->fiberID);
+//     r2->assignTarget(r1targInd, r1targ->x, r1targ->y, r1targ->fiberID);
 
-    r1targ->assignRobot(r2Ind);
-    r2targ->assignRobot(r1Ind);
+//     r1targ->assignRobot(r2Ind);
+//     r2targ->assignRobot(r1Ind);
 
-}
+// }
 
-std::vector<std::shared_ptr<Robot>> RobotGrid::unassignedRobots(){
-    std::vector<std::shared_ptr<Robot>> idleRobos;
-    for (auto robot : allRobots){
+std::vector<int> RobotGrid::unassignedRobots(){
+    // return the ids of unassigned robots
+    std::vector<int> idleRobotIDs;
+    for (auto rPair : robotDict){
+        auto robot = rPair.second;
         if (!robot->isAssigned()){
-            idleRobos.push_back(robot);
+            idleRobotIDs.push_back(robot->id);
         }
     }
-    return idleRobos;
+    return idleRobotIDs;
 }
 
-std::vector<std::shared_ptr<Robot>> RobotGrid::targetlessRobots(){
-
-    std::vector<std::shared_ptr<Robot>> idleRobos;
-    for (auto robot : allRobots){
-        if (robot->targetInds.size()==0){
-            idleRobos.push_back(robot);
+std::vector<int> RobotGrid::targetlessRobots(){
+    // return the ids of robots that can reach no targets in targetDict
+    std::vector<int> idleRobotIDs;
+    for (auto rPair : robotDict){
+        auto robot = rPair.second;
+        if (robot->validTargetIDs.size()==0){
+            idleRobotIDs.push_back(robot->id);
         }
     }
-    return idleRobos;
+    return idleRobotIDs;
 }
 
-std::vector<std::shared_ptr<Target>> RobotGrid::unreachableTargets(){
-    if (targetList.size()==0){
+std::vector<int> RobotGrid::unreachableTargets(){
+    // return list of targetIDs that are not reachable
+    // by any robot
+    if (targetDict.size()==0){
         throw std::runtime_error("unreachableTargets() failure, target list not yet set");
     }
-    std::vector<std::shared_ptr<Target>> badTargs;
-    for (auto targ : targetList){
-        if (targ->robotInds.size()==0){
-            badTargs.push_back(targ);
+    std::vector<int> badTargs;
+    for (auto tPair : targetDict){
+        auto targ = tPair.second;
+        if (targ->validRobotIDs.size()==0){
+            badTargs.push_back(targ->id);
         }
     }
     return badTargs;
 }
 
-std::vector<std::shared_ptr<Target>> RobotGrid::assignedTargets(){
-    std::vector<std::shared_ptr<Target>> assignedTargs;
+std::vector<int> RobotGrid::assignedTargets(){
+    // return list of targetIDs that have been assigned
+    // to robots
+    std::vector<int> assignedTargIDs;
 
-    for (auto t : targetList){
+    for (auto tPair : targetDict){
+        auto t = tPair.second;
         if (t->isAssigned()){
-            assignedTargs.push_back(t);
+            assignedTargIDs.push_back(t->id);
         }
     }
 
-    return assignedTargs;
+    return assignedTargIDs;
 }
 
-bool RobotGrid::isValidRobotTarget(int robotInd, int targetInd1){
-    auto robot = allRobots[robotInd];
-    for (auto targetInd2 : robot->targetInds){
-        auto target = targetList[targetInd2];
-        if (targetInd1 == targetInd2 and !target->isAssigned()){
-					return true;
-        }
+// bool RobotGrid::isValidRobotTarget(int robotID, int targetInd1){
+//     auto robot = robotDict[robotID];
+//     for (auto targetInd2 : robot->targetInds){
+//         auto target = targetList[targetInd2];
+//         if (targetInd1 == targetInd2 and !target->isAssigned()){
+// 					return true;
+//         }
+//     }
+//     return false;
+// }
+
+void RobotGrid::unassignTarget(int targID){
+    // clear the the target assignment, and the
+    // robot to which it's assigned
+    auto target = targetDict[targID];
+    if (!target->isAssigned()){
+        // do nothing, target isnt assigned
+        return;
+    }
+    auto robot = robotDict[target->assignedRobotID];
+    target->clearAssignment();
+    robot->clearAssignment();
+}
+
+void RobotGrid::unassignRobot(int robotID){
+    // clear the the target assignment, and the
+    // robot to which it's assigned
+    auto robot = robotDict[robotID];
+    if (!robot->isAssigned()){
+        // do nothing, target isnt assigned
+        return;
+    }
+    auto target = targetDict[robot->assignedTargetID];
+    target->clearAssignment();
+    robot->clearAssignment();
+}
+
+void RobotGrid::assignRobot2Target(int robotID, int targetID){
+    // releases robot's previous target if present
+    // releases target's previous robot if present
+    auto robot = robotDict[robotID];
+    auto target = targetDict[targetID];
+    if (std::count(robot->validTargetIDs.begin(), robot->validTargetIDs.end(), targetID)){
+        throw std::runtime_error("target not valid for robot");
+    }
+    unassignRobot(robotID);
+    unassignTarget(targetID);
+    target->assignRobot(robotID);
+    robot->assignTarget(targetID);
+    auto ab = robot->alphaBetaFromFiberXY(target->x, target->y, target->fiberID);
+    robot->setAlphaBeta(ab[0], ab[1]);
+}
+
+bool RobotGrid::isValidAssignment(int robotID, int targetID){
+    auto robot = robotDict[robotID];
+    auto target = targetDict[targetID];
+    // first a quick position cut
+    double targDist = hypot(target->x - robot->xPos, target->y - robot->yPos);
+    if (targDist > maxReach or targDist < minReach) {
+        return false;
+    }
+    if (target->fiberID == AP_FIBER_ID and !robot->hasApogee){
+        return false;
+    }
+    auto ab = robot->alphaBetaFromFiberXY(target->x, target->y, target->fiberID);
+    // check alpha beta valid
+    if (std::isnan(ab[0]) or std::isnan(ab[1])){
+        return false;
+    }
+    // check alpha beta in range
+    if (ab[0]<0 or ab[0]>=360){
+        return false;
+    }
+    if (ab[1]<0 or ab[1]>180){
+        return false;
+    }
+    // save current alpha beta
+    double savedAlpha = robot->alpha;
+    double savedBeta = robot->beta;
+    robot->setAlphaBeta(ab[0], ab[1]);
+    auto collidedFiducials = fiducialColliders(robotID);
+    if (collidedFiducials.size() != 0){
+        // this target interferes with a fiducial which is immobile
+        return false;
+    }
+    // reset alpha beta
+    robot->setAlphaBeta(savedAlpha, savedBeta);
+    return true;
+}
+
+// void RobotGrid::optimizeTargets(){
+//     // rewrite!!!
+// }
+
+bool RobotGrid::isCollided(int robotID){
+    auto robotsColliding = robotColliders(robotID);
+    if (robotsColliding.size() != 0){
+        return true;
+    }
+    auto fiducialsColliding = fiducialColliders(robotID);
+    if (fiducialsColliding.size() != 0){
+        return true;
     }
     return false;
 }
 
-void RobotGrid::assignRobot2Target(int robotInd, int targetInd1){
-    auto robot = allRobots[robotInd];
-    bool targetValid = false;
-    for (auto targetInd2 : robot->targetInds){
-        auto target = targetList[targetInd2];
-        if (targetInd1 == targetInd2 and !target->isAssigned()){
-            robot->assignTarget(targetInd1, target->x, target->y, target->fiberID);
-            target->assignRobot(robotInd);
-            targetValid = true;
-            break;
-        }
-    }
-    if (!targetValid){
-		for (auto targetInd : robot->targetInds){
-            auto target = targetList[targetInd];
-            if (targetInd1 == targetInd and target->isAssigned()){
-                throw std::runtime_error("assignRobot2Target() failure, targetID already assigned");
-            }
-		}
-        throw std::runtime_error("assignRobot2Target() failure, targetID not valid for robot");
-    }
-}
+std::vector<int> RobotGrid::robotColliders(int robotID){
 
-void RobotGrid::optimizeTargets(){
-    // rewrite!!!
-}
-
-bool RobotGrid::isCollided(std::shared_ptr<Robot> robot1){
+    std::vector<int> collidingNeighbors;
     // so scope really fucked me on this one?
     // lots of returns fixed it.
     double dist2, collideDist2;
     // check collisions with neighboring robots
-    for (auto robotInd : robot1->neighborInds){
-        auto robot2 = allRobots[robotInd];
+    auto robot1 = robotDict[robotID];
+    for (auto otherRobotID : robot1->robotNeighbors){
+        auto robot2 = robotDict[otherRobotID];
         // squared distance
         dist2 = dist3D_Segment_to_Segment(
                 robot2->betaCollisionSegment[0], robot2->betaCollisionSegment[1],
@@ -515,13 +559,36 @@ bool RobotGrid::isCollided(std::shared_ptr<Robot> robot1){
         collideDist2 = (2*collisionBuffer)*(2*collisionBuffer);
         if (dist2 < collideDist2){
             // std::cout << "dist " << dist2 - collide_dist_squared << std::endl;
-            return true;
+            collidingNeighbors.push_back(robot2->id);
         }
 
     }
-    // std::cout << "testing collision" << std::endl;
+    return collidingNeighbors;
+}
 
-    return robot1->isFiducialCollided();
+std::vector<int> RobotGrid::fiducialColliders(int robotID){
+
+    std::vector<int> collidingNeighbors;
+    auto robot = robotDict[robotID];
+    // std::cout << "isFiducialCollided" << std::endl;
+    double dist2, collideDist2;
+    // std::cout << "n fiducials " << fiducials.size() << std::endl;
+    for (auto fPair : fiducialDict){
+        auto fiducial = fPair.second;
+        // squared distance
+        // std::array<double, 2> xyCoord = {fiducial->x, fiducial->y};
+        Eigen::Vector3d xyzCoord = {fiducial->x, fiducial->y, 0};
+        dist2 = dist3D_Point_to_Segment(
+                xyzCoord, robot->betaCollisionSegment[0], robot->betaCollisionSegment[1]
+                );
+        collideDist2 = (robot->collisionBuffer+fiducialBuffer)*(robot->collisionBuffer+fiducialBuffer);
+
+        if (dist2 < collideDist2){
+            collidingNeighbors.push_back(fiducial->id);
+        }
+    }
+    return collidingNeighbors;
+
 }
 
 // bool RobotGrid::isFiducialCollided(std::shared_ptr<Robot> robot1){
@@ -544,14 +611,15 @@ bool RobotGrid::isCollided(std::shared_ptr<Robot> robot1){
 // }
 
 
-void RobotGrid::decollideRobot(std::shared_ptr<Robot> robot){
+void RobotGrid::decollideRobot(int robotID){
     // remove assigned target if present
     // std::cout << "decolliding robot " << robot->id << std::endl;
-    robot->assignedTargetInd = -1;
+    unassignRobot(robotID);
+    auto robot = robotDict[robotID];
     for (int ii=0; ii<1000; ii++){
         robot->setXYUniform();
         // nDecollide ++;
-        if (!isCollided(robot)){
+        if (!isCollided(robotID)){
             // std::cout << "decollide successful " << std::endl;
             break;
         }
@@ -614,7 +682,7 @@ void RobotGrid::stepTowardFold(std::shared_ptr<Robot> robot, int stepNum){
             continue;
         }
         robot->setAlphaBeta(nextAlpha, nextBeta);
-        if (!isCollided(robot)){
+        if (!isCollided(robot->id)){
             alphaPathPoint(1) = nextAlpha;
             betaPathPoint(1) = nextBeta;
             robot->alphaPath.push_back(alphaPathPoint);
@@ -662,10 +730,10 @@ void RobotGrid::stepTowardFold(std::shared_ptr<Robot> robot, int stepNum){
     robot->roughBetaY.push_back(temp);
 }
 
-bool RobotGrid::isCollidedInd(int robotInd){
-    auto robot = allRobots[robotInd];
-    return isCollided(robot);
-}
+// bool RobotGrid::isCollidedInd(int robotInd){
+//     auto robot = allRobots[robotInd];
+//     return isCollided(robot);
+// }
 
 // void RobotGrid::smoothPath(std::shared_ptr<Robot> robot1, double epsilon){
 //     // smooth a previously generated path

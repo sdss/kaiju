@@ -17,49 +17,49 @@ std::array<double, 2> sampleAnnulus(double rMin, double rMax){
     return outArr;
 }
 
-// https://internal.sdss.org/trac/as4/wiki/FPSLayout
-Eigen::MatrixXd getHexPositions(int nDia, double pitch){
-    // returns a 2d array populated with xy positions
-    // for a hex packed grid
-    // nDia must be odd (not caught)
-    int nHex = 0.25*(3*nDia*nDia + 1);
-    int nEdge = 0.5*(nDia + 1);
-    Eigen::MatrixXd A(nHex, 2);
-    double vertShift = sin(60*M_PI/180.0)*pitch;
-    double horizShift = cos(60*M_PI/180.0)*pitch;
-    int hexInd = 0;
-    // start a xStart such that the center of the
-    // hex grid is at 0,0
-    double xStart = -1*pitch*(nDia - 1.0)/2.0;
-    double nextX = xStart;
-    double nextY = 0;
+// // https://internal.sdss.org/trac/as4/wiki/FPSLayout
+// Eigen::MatrixXd getHexPositions(int nDia, double pitch){
+//     // returns a 2d array populated with xy positions
+//     // for a hex packed grid
+//     // nDia must be odd (not caught)
+//     int nHex = 0.25*(3*nDia*nDia + 1);
+//     int nEdge = 0.5*(nDia + 1);
+//     Eigen::MatrixXd A(nHex, 2);
+//     double vertShift = sin(60*M_PI/180.0)*pitch;
+//     double horizShift = cos(60*M_PI/180.0)*pitch;
+//     int hexInd = 0;
+//     // start a xStart such that the center of the
+//     // hex grid is at 0,0
+//     double xStart = -1*pitch*(nDia - 1.0)/2.0;
+//     double nextX = xStart;
+//     double nextY = 0;
 
-    // first fill in equator
-    // 0,0 is center
-    for (int ii = 0; ii < nDia; ii++){
-        A(hexInd,0) = nextX;
-        A(hexInd, 1) = nextY;
-        nextX += pitch;
-        hexInd++;
-    }
+//     // first fill in equator
+//     // 0,0 is center
+//     for (int ii = 0; ii < nDia; ii++){
+//         A(hexInd,0) = nextX;
+//         A(hexInd, 1) = nextY;
+//         nextX += pitch;
+//         hexInd++;
+//     }
 
-    // loop over top and bottom rows
-    for (int row = 1; row < nEdge; row++){
-        nextY = row * vertShift;
-        nextX = xStart + row * horizShift;
-        for (int jj = 0; jj < nDia - row; jj++){
-            A(hexInd, 0) = nextX;
-            A(hexInd, 1) = nextY;
-            hexInd++;
-            A(hexInd, 0) = nextX;
-            A(hexInd, 1) = -1*nextY;
-            hexInd++;
-            nextX += pitch;
-        }
-    }
+//     // loop over top and bottom rows
+//     for (int row = 1; row < nEdge; row++){
+//         nextY = row * vertShift;
+//         nextX = xStart + row * horizShift;
+//         for (int jj = 0; jj < nDia - row; jj++){
+//             A(hexInd, 0) = nextX;
+//             A(hexInd, 1) = nextY;
+//             hexInd++;
+//             A(hexInd, 0) = nextX;
+//             A(hexInd, 1) = -1*nextY;
+//             hexInd++;
+//             nextX += pitch;
+//         }
+//     }
 
-    return A;
-}
+//     return A;
+// }
 
 // create a linear interpolater
 double linearInterpolate(std::vector<Eigen::Vector2d> & sparseXYPoints, double xValue){

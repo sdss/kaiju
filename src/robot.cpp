@@ -141,29 +141,25 @@ void Robot::setCollisionBuffer(double newBuffer){
 // }
 
 void Robot::setFiberXY(double xFiberGlobal, double yFiberGlobal, int fiberID){
-    // Target testTarget(0, xFiberGlobal, yFiberGlobal, 1, fiberID);
-    bool canReach = isValidTarget(xFiberGlobal, yFiberGlobal, fiberID);
-    if (!canReach){
+    // warning doesn't check for collisions
+    auto newAlphaBeta = alphaBetaFromFiberXY(xFiberGlobal, yFiberGlobal, fiberID);
+    if (std::isnan(newAlphaBeta[0]) or std::isnan(newAlphaBeta[1])){
         throw std::runtime_error("cannot reach target xy");
     }
-    auto newAlphaBeta = alphaBetaFromFiberXY(xFiberGlobal, yFiberGlobal, fiberID);
     setAlphaBeta(newAlphaBeta[0], newAlphaBeta[1]);
-    // should I explicitly delete the targPtr? or does this happen automatically
 
 }
 
 
-void Robot::addNeighbor(int robotInd){
-    neighborInds.push_back(robotInd);
+void Robot::addRobotNeighbor(int robotID){
+    robotNeighbors.push_back(robotID);
 }
 
-void Robot::addFiducial(std::array<double, 2> fiducial){
-
-    fiducials.push_back(Eigen::Vector3d(fiducial[0], fiducial[1], focalZ));
+void Robot::addFiducialNeighbor(int fiducialID){
+    fiducialNeighbors.push_back(fiducialID);
 }
 
 void Robot::setAlphaBeta(double newAlpha, double newBeta){
-    // targetAssigned = true;
     alpha = newAlpha;
     beta = newBeta;
     double alphaRad = alpha * M_PI / 180.0;
@@ -209,12 +205,12 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
 
 }
 
-void Robot::setAlphaBetaRand(){
-    double a = randomSample() * 359.99999;
-    double b = randomSample() * 180.0;
-    setAlphaBeta(a, b);
-    // std::cout << "robot " << id << " set rand " << betaOrientation.size() << std::endl;
-}
+// void Robot::setAlphaBetaRand(){
+//     double a = randomSample() * 359.99999;
+//     double b = randomSample() * 180.0;
+//     setAlphaBeta(a, b);
+//     // std::cout << "robot " << id << " set rand " << betaOrientation.size() << std::endl;
+// }
 
 std::array<double, 2> Robot::randomXYUniform(){
 	  std::array<double, 2> xy = sampleAnnulus(minReach, maxReach);
@@ -228,7 +224,7 @@ void Robot::setXYUniform(){
     // std::cout.precision(20);
     auto ab = alphaBetaFromFiberXY(xy[0]+xPos, xy[1]+yPos, 1);
 
-    while (isnan(ab[0]) or isnan(ab[1])){
+    while (std::isnan(ab[0]) or std::isnan(ab[1])){
         xy = sampleAnnulus(minReach, maxReach);
         // use a science fiber ID (matches min/max reach)
         // std::cout.precision(20);
@@ -267,24 +263,24 @@ void Robot::setXYUniform(){
 //     return isFiducialCollided();
 // }
 
-bool Robot::isFiducialCollided(){
-    // std::cout << "isFiducialCollided" << std::endl;
-    double dist2, collideDist2;
-    // std::cout << "n fiducials " << fiducials.size() << std::endl;
-    for (auto fiducial : fiducials){
-        // squared distance
-        dist2 = dist3D_Point_to_Segment(
-                fiducial, betaCollisionSegment[0], betaCollisionSegment[1]
-                );
-        collideDist2 = (2*(collisionBuffer+fiducialBuffer))*(2*(collisionBuffer+fiducialBuffer));
+// bool Robot::isFiducialCollided(){
+//     // std::cout << "isFiducialCollided" << std::endl;
+//     double dist2, collideDist2;
+//     // std::cout << "n fiducials " << fiducials.size() << std::endl;
+//     for (auto fiducial : fiducials){
+//         // squared distance
+//         dist2 = dist3D_Point_to_Segment(
+//                 fiducial, betaCollisionSegment[0], betaCollisionSegment[1]
+//                 );
+//         collideDist2 = (2*(collisionBuffer+fiducialBuffer))*(2*(collisionBuffer+fiducialBuffer));
 
-        if (dist2 < collideDist2){
-            // std::cout << "we're collided! " << sqrt(dist2) << std::endl;
-            return true;
-        }
-    }
-    return false;
-}
+//         if (dist2 < collideDist2){
+//             // std::cout << "we're collided! " << sqrt(dist2) << std::endl;
+//             return true;
+//         }
+//     }
+//     return false;
+// }
 
 
 // void Robot::decollide(){
@@ -697,52 +693,56 @@ std::array<double, 2> Robot::alphaBetaFromFiberXY(double xFiberGlobal, double yF
     return outArr;
 }
 
-bool Robot::isValidTarget(double x, double y, int fiberID){
-    // first a quick position cut
-    double targDist = hypot(x - xPos, y - yPos);
-    if (targDist > maxReach or targDist < minReach) {
-        return false;
-    }
-    if (fiberID == AP_FIBER_ID and !hasApogee){
-        return false;
-    }
-    auto ab = alphaBetaFromFiberXY(x, y, fiberID);
-    // check alpha beta valid
-    if (isnan(ab[0]) or isnan(ab[1])){
-        return false;
-    }
-    // check alpha beta in range
-    if (ab[0]<0 or ab[0]>=360){
-        return false;
-    }
-    if (ab[1]<0 or ab[1]>180){
-        return false;
-    }
-    // save current alpha beta
-    double savedAlpha, savedBeta;
-    savedAlpha = alpha;
-    savedBeta = beta;
-    setAlphaBeta(ab[0], ab[1]);
-    bool isValid = true;
-    if (isFiducialCollided()){
-        isValid = false;
-    }
-    // reset alpha beta
-    setAlphaBeta(savedAlpha, savedBeta);
-    return isValid;
-}
+// bool Robot::isValidTarget(double x, double y, int fiberID){
+//     // first a quick position cut
+//     // doesn't check for fiducials...
+//     double targDist = hypot(x - xPos, y - yPos);
+//     if (targDist > maxReach or targDist < minReach) {
+//         return false;
+//     }
+//     if (fiberID == AP_FIBER_ID and !hasApogee){
+//         return false;
+//     }
+//     auto ab = alphaBetaFromFiberXY(x, y, fiberID);
+//     // check alpha beta valid
+//     if (std::isnan(ab[0]) or std::isnan(ab[1])){
+//         return false;
+//     }
+//     // check alpha beta in range
+//     if (ab[0]<0 or ab[0]>=360){
+//         return false;
+//     }
+//     if (ab[1]<0 or ab[1]>180){
+//         return false;
+//     }
+//     // save current alpha beta
+//     double savedAlpha, savedBeta;
+//     savedAlpha = alpha;
+//     savedBeta = beta;
+//     setAlphaBeta(ab[0], ab[1]);
+//     bool isValid = true;
+//     if (isFiducialCollided()){
+//         isValid = false;
+//     }
+//     // reset alpha beta
+//     setAlphaBeta(savedAlpha, savedBeta);
+//     return isValid;
+// }
 
-void Robot::assignTarget(int targetInd, double x, double y, int fiberID){
-    if (!isValidTarget(x, y, fiberID)){
-        throw std::runtime_error("assignTarget failure, target not valid");
+void Robot::assignTarget(int targetID){
+    // assigns the target and set alpha beta accordingly
+    if (std::count(validTargetIDs.begin(), validTargetIDs.end(), targetID)){
+        throw std::runtime_error("assignTarget failure, invalid target");
     }
-    assignedTargetInd = targetInd;
-    auto ab = alphaBetaFromFiberXY(x, y, fiberID);
-    setAlphaBeta(ab[0], ab[1]);
+    assignedTargetID = targetID;
 }
 
 bool Robot::isAssigned(){
-    return assignedTargetInd != -1;
+    return assignedTargetID != -1;
+}
+
+void Robot::clearAssignment(){
+    assignedTargetID = -1;
 }
 
 // bool Robot::canSwapTarget(std::shared_ptr<Robot> robot){
