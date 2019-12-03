@@ -13,6 +13,7 @@ PYBIND11_MODULE(cKaiju, m) {
     py::class_<Fiducial, std::shared_ptr<Fiducial>>(m, "Fiducial")
         .def_readwrite("x", &Fiducial::x)
         .def_readwrite("y", &Fiducial::y)
+        .def_readwrite("collisionBuffer", &Fiducial::collisionBuffer)
         .def_readwrite("id", &Fiducial::id);
 
     py::class_<Target, std::shared_ptr<Target>>(m, "Target")

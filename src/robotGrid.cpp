@@ -47,6 +47,9 @@ RobotGrid::RobotGrid(double angStep, double collisionBuffer, double epsilon, int
 
 void RobotGrid::addRobot(int robotID, double xPos, double yPos, bool hasApogee){
     // ensure robot id doesn't already exist
+    if (initialized){
+        std::throw runtime_error("RobotGrid is already initialized, no more robots allowed")
+    }
     if (robotDict.count(robotID) > 0){
         throw std::runtime_error("Robot ID already exists");
     }
@@ -55,6 +58,9 @@ void RobotGrid::addRobot(int robotID, double xPos, double yPos, bool hasApogee){
 }
 
 void RobotGrid::addTarget(int targetID, double xPos, double yPos, double priority, int fiberID){
+    if (!initialized){
+        std::throw runtime_error("Initialize RobotGrid before adding targets")
+    }
     if (targetDict.count(targetID) > 0){
         throw std::runtime_error("Target ID already exists");
     }
@@ -70,16 +76,23 @@ void RobotGrid::addTarget(int targetID, double xPos, double yPos, double priorit
     }
 }
 
-void RobotGrid::addFiducial(int fiducialID, double xPos, double yPos){
+void RobotGrid::addFiducial(int fiducialID, double xPos, double yPos, double collisionBuffer){
+    if (initialized){
+        std::throw runtime_error("RobotGrid is already initialized, no more fiducials allowed")
+    }
     if (fiducialDict.count(fiducialID) > 0){
         throw std::runtime_error("Fiducial ID already exists");
     }
-    fiducialDict[fiducialID] = std::make_shared<Fiducial>(fiducialID, xPos, yPos);
+    fiducialDict[fiducialID] = std::make_shared<Fiducial>(fiducialID, xPos, yPos, collisionBuffer);
 }
 
 void RobotGrid::initGrid(){
     // associate neighbors with fiducials and robots in grid
     double dx, dy, dist;
+    if (initialized){
+        std::throw runtime_error("RobotGrid is already initialized, don't do it twice!")
+    }
+    initialized = true;
     nRobots = robotDict.size();
 
     for (auto rPair1 : robotDict){
@@ -129,7 +142,9 @@ void RobotGrid::setCollisionBuffer(double newBuffer){
 }
 
 void RobotGrid::decollideGrid(){
-
+    if (!initialized){
+        std::throw runtime_error("Initialize RobotGrid before decollideGrid")
+    }
     for (int ii=0; ii<1000; ii++){
         // std::cout << "n collisions " << getNCollisions() << std::endl;
         if (!getNCollisions()){
@@ -199,6 +214,9 @@ void RobotGrid::pathGen(){
     // robots closest to alpha = 0 are at highest risk with extended
     // betas for getting locked, so try to move those first
     // int pathPad = 20 / (float)angStep;
+    if (!initialized){
+        std::throw runtime_error("Initialize RobotGrid before pathGen")
+    }
     didFail = true;
     for (auto rPair : robotDict){
         auto r = rPair.second;
@@ -574,17 +592,17 @@ std::vector<int> RobotGrid::fiducialColliders(int robotID){
     // std::cout << "isFiducialCollided" << std::endl;
     double dist2, collideDist2;
     // std::cout << "n fiducials " << fiducials.size() << std::endl;
-    for (auto fPair : fiducialDict){
-        auto fiducial = fPair.second;
+    for (auto fiducialID : robot->fiducialNeighbors){
+        auto fiducial = fiducialDict[fiducialID];
         // squared distance
         // std::array<double, 2> xyCoord = {fiducial->x, fiducial->y};
-        Eigen::Vector3d xyzCoord = {fiducial->x, fiducial->y, 0};
-        std::cout << "fiducial coord " << xyzCoord << std::endl;
-        std::cout << "fiducial buffer " << fiducialBuffer << std::endl;
+        Eigen::Vector3d xyzCoord = {fiducial->x, fiducial->y, focalZ};
         dist2 = dist3D_Point_to_Segment(
-                xyzCoord, robot->betaCollisionSegment[0], robot->betaCollisionSegment[1]
+                xyzCoord, robot->betaCollisionSegment[0],
+                robot->betaCollisionSegment[1]
                 );
-        collideDist2 = (robot->collisionBuffer+fiducialBuffer)*(robot->collisionBuffer+fiducialBuffer);
+        collideDist2 =  (robot->collisionBuffer+fiducial->collisionBuffer) *
+                        (robot->collisionBuffer+fiducial->collisionBuffer);
 
         if (dist2 < collideDist2){
             collidingNeighbors.push_back(fiducial->id);

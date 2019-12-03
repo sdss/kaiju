@@ -84,7 +84,7 @@ Eigen::Vector3d betaEnvPt2(betaEnvPt2Data);
 const std::array<Eigen::Vector3d, 2> neutralBetaCollisionSegment{ {betaEnvPt1, betaEnvPt2} };
 // radius containing beta arm for collision detection
 // const double betaCollisionRadius = 1.5; // mm (3mm wide)
-const double fiducialBuffer = 1.5; // 3mm wide fiducial
+// const double fiducialBuffer = 1.5; // 3mm wide fiducial
 
 // xyz pos of fiber in beta neutra position
 // const double fiberNeutral_data[] = {betaLen, 0, 0};

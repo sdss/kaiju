@@ -14,10 +14,11 @@ extern const double alphaLen;
 extern const double betaLen;
 extern const double maxReach;
 extern const double minReach;
-extern const double fiducialBuffer;
+// extern const double fiducialBuffer;
 extern const int BOSS_FIBER_ID;
 extern const int AP_FIBER_ID;
 extern const int MET_FIBER_ID;
+extern const double focalZ;
 
 class Target; // defined elsewhere...
 
