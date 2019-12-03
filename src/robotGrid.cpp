@@ -57,7 +57,7 @@ void RobotGrid::addRobot(int robotID, double xPos, double yPos, bool hasApogee){
     robotDict[robotID]->setCollisionBuffer(collisionBuffer);
 }
 
-void RobotGrid::addTarget(int targetID, double xPos, double yPos, double priority, int fiberID){
+void RobotGrid::addTarget(int targetID, double xPos, double yPos, int fiberID, double priority){
     if (!initialized){
         throw std::runtime_error("Initialize RobotGrid before adding targets");
     }

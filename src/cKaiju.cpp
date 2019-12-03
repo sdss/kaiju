@@ -7,6 +7,7 @@
 
 
 namespace py = pybind11;
+using namespace pybind11::literals;
 
 PYBIND11_MODULE(cKaiju, m) {
 
@@ -101,8 +102,12 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("fiducialDict", &RobotGrid::fiducialDict)
         .def_readwrite("targetDict", &RobotGrid::targetDict)
         .def("getNCollisions", &RobotGrid::getNCollisions)
-        .def("addRobot", &RobotGrid::addRobot)
-        .def("addFiducial", &RobotGrid::addFiducial)
+        .def("addRobot", &RobotGrid::addRobot,
+            "robotID"_a, "xPos"_a, "yPos"_a, "hasApogee"_a = true)
+        .def("addFiducial", &RobotGrid::addFiducial,
+            "fiducialID"_a, "x"_a, "y"_a, "collisionBuffer"_a = 1.5)
+        .def("addTarget", &RobotGrid::addTarget,
+            "targetID"_a, "xPos"_a, "yPos"_a, "fiberID"_a, "priority"_a = 0)
         .def("initGrid", &RobotGrid::initGrid)
         // .def("optimizeTargets", &RobotGrid::optimizeTargets)
         .def("decollideGrid", &RobotGrid::decollideGrid)
@@ -112,7 +117,6 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("verifySmoothed", &RobotGrid::verifySmoothed)
         .def("setCollisionBuffer", &RobotGrid::setCollisionBuffer)
         .def("pathGen", &RobotGrid::pathGen)
-        .def("addTarget", &RobotGrid::addTarget)
         // .def("setTargetList", &RobotGrid::setTargetList)
         // .def("addTargetList", &RobotGrid::addTargetList)
         .def("targetlessRobots", &RobotGrid::targetlessRobots)
