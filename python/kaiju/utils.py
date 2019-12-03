@@ -75,7 +75,7 @@ def plotPaths(robotGrid, nframes=None, filename=None):
     p = Pool(cpu_count())
     p.map(plotOne, steps)
 
-    fps = 10 # frames per second
+    fps = 20 # frames per second
     if filename is None:
         filename = "example.mp4"
     # clobber file if it already exists

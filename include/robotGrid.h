@@ -29,7 +29,7 @@ public:
     std::map<int, std::shared_ptr<Fiducial>> fiducialDict;
     // std::vector<std::array<double, 2>> fiducialList;
     std::map<int, std::shared_ptr<Target>> targetDict;
-    RobotGrid (double myAngStep, double myCollisionBuffer, double myEpsilon, int seed);
+    RobotGrid (double angStep = 1, double collisionBuffer = 2, double epsilon = 2, int seed = 0);
     void addRobot(int robotID, double xPos, double yPos, bool hasApogee);
     void addTarget(int targetID, double xPos, double yPos, double priority, int fiberID);
     void addFiducial(int fiducialID, double xPos, double yPos);

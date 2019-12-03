@@ -11,7 +11,7 @@ public:
     int priority,fiberID;
     double x,y;
     std::vector<int> validRobotIDs; // robots that can reach this target
-    Target(int myId, double myX, double myY, int myPriority, int myFiberID);
+    Target(int id, double x, double y, int fiberID, int priority=0);
     void assignRobot(int robotID);
     void clearAssignment();
     bool isAssigned();

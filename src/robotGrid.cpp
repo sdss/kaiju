@@ -33,13 +33,14 @@ const double pitch = 22.4; // distance to next nearest neighbor
 //     return robot1->id < robot2->id;
 // }
 
-// there is a better way to use the constructor to set attrs....look it up
-RobotGrid::RobotGrid(double myAngStep, double myCollisionBuffer, double myEpsilon, int seed){
+RobotGrid::RobotGrid(double angStep, double collisionBuffer, double epsilon, int seed)
+    : angStep(angStep), collisionBuffer(collisionBuffer), epsilon(epsilon)
+{
     // nDia is number of robots along equator of grid
     srand(seed);
-    epsilon = myEpsilon;
-    collisionBuffer = myCollisionBuffer;
-    angStep = myAngStep;
+    // epsilon = myEpsilon;
+    // collisionBuffer = myCollisionBuffer;
+    // angStep = myAngStep;
     smoothCollisions = 0;
     maxPathSteps = (int)(ceil(700.0/angStep));
 }
