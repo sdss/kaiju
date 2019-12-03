@@ -48,7 +48,7 @@ RobotGrid::RobotGrid(double angStep, double collisionBuffer, double epsilon, int
 void RobotGrid::addRobot(int robotID, double xPos, double yPos, bool hasApogee){
     // ensure robot id doesn't already exist
     if (initialized){
-        std::throw runtime_error("RobotGrid is already initialized, no more robots allowed")
+        throw std::runtime_error("RobotGrid is already initialized, no more robots allowed");
     }
     if (robotDict.count(robotID) > 0){
         throw std::runtime_error("Robot ID already exists");
@@ -59,7 +59,7 @@ void RobotGrid::addRobot(int robotID, double xPos, double yPos, bool hasApogee){
 
 void RobotGrid::addTarget(int targetID, double xPos, double yPos, double priority, int fiberID){
     if (!initialized){
-        std::throw runtime_error("Initialize RobotGrid before adding targets")
+        throw std::runtime_error("Initialize RobotGrid before adding targets");
     }
     if (targetDict.count(targetID) > 0){
         throw std::runtime_error("Target ID already exists");
@@ -78,7 +78,7 @@ void RobotGrid::addTarget(int targetID, double xPos, double yPos, double priorit
 
 void RobotGrid::addFiducial(int fiducialID, double xPos, double yPos, double collisionBuffer){
     if (initialized){
-        std::throw runtime_error("RobotGrid is already initialized, no more fiducials allowed")
+        throw std::runtime_error("RobotGrid is already initialized, no more fiducials allowed");
     }
     if (fiducialDict.count(fiducialID) > 0){
         throw std::runtime_error("Fiducial ID already exists");
@@ -90,7 +90,7 @@ void RobotGrid::initGrid(){
     // associate neighbors with fiducials and robots in grid
     double dx, dy, dist;
     if (initialized){
-        std::throw runtime_error("RobotGrid is already initialized, don't do it twice!")
+        throw std::runtime_error("RobotGrid is already initialized, don't do it twice!");
     }
     initialized = true;
     nRobots = robotDict.size();
@@ -143,7 +143,7 @@ void RobotGrid::setCollisionBuffer(double newBuffer){
 
 void RobotGrid::decollideGrid(){
     if (!initialized){
-        std::throw runtime_error("Initialize RobotGrid before decollideGrid")
+        throw std::runtime_error("Initialize RobotGrid before decollideGrid");
     }
     for (int ii=0; ii<1000; ii++){
         // std::cout << "n collisions " << getNCollisions() << std::endl;
@@ -215,7 +215,7 @@ void RobotGrid::pathGen(){
     // betas for getting locked, so try to move those first
     // int pathPad = 20 / (float)angStep;
     if (!initialized){
-        std::throw runtime_error("Initialize RobotGrid before pathGen")
+        throw std::runtime_error("Initialize RobotGrid before pathGen");
     }
     didFail = true;
     for (auto rPair : robotDict){
