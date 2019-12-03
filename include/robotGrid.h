@@ -34,7 +34,7 @@ public:
     void addTarget(int targetID, double xPos, double yPos, double priority, int fiberID);
     void addFiducial(int fiducialID, double xPos, double yPos);
     void initGrid();
-    void decollide();
+    void decollideGrid();
     int getNCollisions();
     void pathGen();
     void simplifyPaths();

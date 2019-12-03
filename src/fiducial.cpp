@@ -2,10 +2,6 @@
 #include "fiducial.h"
 
 
-Fiducial::Fiducial(int myID, double myX, double myY){
-    // std:: cout << "target created" << std::endl;
-    id = myID;
-    x = myX;
-    y = myY;
-}
+Fiducial::Fiducial(int id, double x, double y, double collisionBuffer)
+    : id(id), x(x), y(y), collisionBuffer(collisionBuffer) {}
 

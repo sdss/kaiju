@@ -9,7 +9,7 @@ public:
     int assignedRobotID = -1; // ID of robot assigned to this target
     int id;
     int priority,fiberID;
-    float x,y;
+    double x,y;
     std::vector<int> validRobotIDs; // robots that can reach this target
     Target(int myId, double myX, double myY, int myPriority, int myFiberID);
     void assignRobot(int robotID);

@@ -90,14 +90,16 @@ const double fiducialBuffer = 1.5; // 3mm wide fiducial
 // const double fiberNeutral_data[] = {betaLen, 0, 0};
 // Eigen::Vector3d fiberNeutral(fiberNeutral_data);
 
-Robot::Robot(int myid, double myxPos, double myyPos, double myAngStep, bool myHasApogee) {
+Robot::Robot(int id, double xPos, double yPos, double angStep, bool hasApogee)
+    : id(id), xPos(xPos), yPos(yPos), angStep(angStep), hasApogee(hasApogee)
+{
     // std::cout << "robot constructor called" << std::endl;
-    xPos = myxPos;
-    yPos = myyPos;
-    angStep = myAngStep;
-    transXY = Eigen::Vector3d(myxPos, myyPos, 0);
-    id = myid;
-    hasApogee = myHasApogee;
+    // xPos = myxPos;
+    // yPos = myyPos;
+    // angStep = myAngStep;
+    transXY = Eigen::Vector3d(xPos, yPos, 0);
+    // id = myid;
+    // hasApogee = myHasApogee;
     hasBoss = true; // break this out into a config/constructor
     betaCollisionSegment = neutralBetaCollisionSegment;
     // std::pair<betaGeometry, std::vector<double>> betaPair = getBetaGeom(8);

@@ -53,7 +53,7 @@ public:
     std::vector<int> robotNeighbors; // robot IDs in RobotGrid.robotDict may potentially collide
     std::vector<int> fiducialNeighbors; // fiducial IDs in RobotGrid.fiducialDict may potentially collide
     std::vector<int> validTargetIDs; // target IDs in RobotGrid.targetDict that I can reach
-    Robot (int myid, double myxPos, double myyPos, double myAngStep, bool myHasApogee);
+    Robot (int id, double xPos, double yPos, double angStep = 1, bool hasApogee = true);
     void setAlphaBeta (double nextAlpha, double nextBeta);
     void setFiberXY (double xFiberGlobal, double yFiberGlobal, int fiberID); // xy in focal plane coord sys
     // void setAlphaBetaRand();

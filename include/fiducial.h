@@ -3,6 +3,7 @@
 class Fiducial{
 public:
     int id;
-    float x,y;
-    Fiducial(int myId, double myX, double myY);
+    double x,y;
+    double collisionBuffer;
+    Fiducial(int id, double x, double y, double collisionBuffer = 1.5);
 };

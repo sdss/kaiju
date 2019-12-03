@@ -3,11 +3,17 @@
 #include <pybind11/stl.h>
 #include "robotGrid.h"
 #include "target.h"
+#include "fiducial.h"
 
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(cKaiju, m) {
+
+    py::class_<Fiducial, std::shared_ptr<Fiducial>>(m, "Fiducial")
+        .def_readwrite("x", &Fiducial::x)
+        .def_readwrite("y", &Fiducial::y)
+        .def_readwrite("id", &Fiducial::id);
 
     py::class_<Target, std::shared_ptr<Target>>(m, "Target")
         .def_readwrite("x", &Target::x)
@@ -98,7 +104,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("addFiducial", &RobotGrid::addFiducial)
         .def("initGrid", &RobotGrid::initGrid)
         // .def("optimizeTargets", &RobotGrid::optimizeTargets)
-        // .def("decollide", &RobotGrid::decollide)
+        .def("decollideGrid", &RobotGrid::decollideGrid)
         .def("decollideRobot", &RobotGrid::decollideRobot)
         .def("simplifyPaths", &RobotGrid::simplifyPaths)
         .def("smoothPaths", &RobotGrid::smoothPaths)
@@ -116,8 +122,10 @@ PYBIND11_MODULE(cKaiju, m) {
         // .def("isValidRobotTarget", &RobotGrid::isValidRobotTarget)x
         .def("assignRobot2Target", &RobotGrid::assignRobot2Target)
         // .def("pairwiseSwap", &RobotGrid::pairwiseSwap)
-        .def("unassignedRobots", &RobotGrid::unassignedRobots);
-        // .def("isCollidedInd", &RobotGrid::isCollidedInd)
+        .def("unassignedRobots", &RobotGrid::unassignedRobots)
+        .def("robotColliders", &RobotGrid::robotColliders)
+        .def("fiducialColliders", &RobotGrid::fiducialColliders)
+        .def("isCollided", &RobotGrid::isCollided);
         // .def("greedyAssign", &RobotGrid::greedyAssign);
 }
 

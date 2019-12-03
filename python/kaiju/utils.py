@@ -15,14 +15,14 @@ matplotlib.use('Agg')
 rg = None # need global because C++ obj can't be pickled for multiprocessing
 
 
-def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=False, internalBuffer=1.5):
+def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=False, xlim=None, ylim=None):
     global rg
 
     if robotGrid is not None:
         rg = robotGrid
     plt.figure(figsize=(10,10))
     ax = plt.gca()
-    for robotInd, robot in enumerate(rg.allRobots):
+    for robotID, robot in rg.robotDict.items():
         if isSequence:
             alphaX = robot.roughAlphaX[step][1]
             alphaY = robot.roughAlphaY[step][1]
@@ -40,26 +40,32 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
 
         topCollideLine = LineString(
             [(alphaX, alphaY), (betaX, betaY)]
-        ).buffer(internalBuffer, cap_style=1)
+        ).buffer(rg.collisionBuffer, cap_style=1)
         topcolor = 'blue'
         edgecolor = 'black'
-        if rg.isCollidedInd(robotInd):
-            topcolor = "red"
         if not robot.isAssigned():
             topcolor = "skyblue"
+        if rg.isCollided(robotID):
+            # collision trumps not assigned
+            topcolor = "red"
         patch = PolygonPatch(topCollideLine, fc=topcolor, ec=edgecolor, alpha=0.5, zorder=10)
         ax.add_patch(patch)
-    for fiducial in rg.fiducialList:
-        fPoint = Point(fiducial[0], fiducial[1]).buffer(internalBuffer, cap_style=1)
+    for fiducialID, fiducial in rg.fiducialDict.items():
+        fPoint = Point(fiducial.x, fiducial.y).buffer(rg.collisionBuffer, cap_style=1)
         patch = PolygonPatch(fPoint, fc="cyan", ec="black", alpha=0.8, zorder=10)
         ax.add_patch(patch)
+
+    if xlim is not None:
+        ax.set_xlim(xlim)
+    if ylim is not None:
+        ax.set_ylim(ylim)
 
     if figname is None:
         figname = "step_%04d.png"%(step)
     plt.savefig(figname, dpi=250)
     plt.close()
 
-def plotPaths(robotGrid, nframes=None):
+def plotPaths(robotGrid, nframes=None, filename=None):
     # figure out how to downsample paths
     global rg
     rg = robotGrid
@@ -70,8 +76,13 @@ def plotPaths(robotGrid, nframes=None):
     p.map(plotOne, steps)
 
     fps = 10 # frames per second
+    if filename is None:
+        filename = "example.mp4"
+    # clobber file if it already exists
+    if os.path.exists(filename):
+        os.remove(filename)
     args = ['ffmpeg', '-r', '%i'%fps, '-f', 'image2', '-i', 'step_%04d.png',
-            '-pix_fmt', 'yuv420p', 'example.mp4']
+            '-pix_fmt', 'yuv420p', filename]
 
     movie = Popen(args)
     movie.wait()
@@ -81,7 +92,7 @@ def plotPaths(robotGrid, nframes=None):
     for img in imgs:
         os.remove(img)
 
-def hexFromDia(nDia, pitch = 22.4):
+def hexFromDia(nDia, pitch=22.4):
     """
     inputs:
     nDia: is points along the equator of the hex, must be odd
@@ -148,17 +159,17 @@ def robotGridFromFilledHex(stepSize, collisionBuffer, seed=0):
     epsilon = stepSize * 2.2
 
     rg = RobotGrid(stepSize, collisionBuffer, epsilon, seed)
-    fiberID = 0
+    robotID = 0
     hasApogee = False
     for b in bossXY:
-        rg.addRobot(fiberID, b[0], b[1], hasApogee)
-        fiberID += 1
+        rg.addRobot(robotID, b[0], b[1], hasApogee)
+        robotID += 1
     hasApogee = True
     for ba in baXY:
-        rg.addRobot(fiberID, ba[0], ba[1], hasApogee)
-        fiberID += 1
-    for fiducial in fiducialXY:
-        rg.addFiducial(fiducial[0], fiducial[1])
+        rg.addRobot(robotID, ba[0], ba[1], hasApogee)
+        robotID += 1
+    for fiducialID, fiducial in enumerate(fiducialXY):
+        rg.addFiducial(fiducialID, fiducial[0], fiducial[1])
     rg.initGrid()
     return rg
 

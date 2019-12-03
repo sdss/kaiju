@@ -127,7 +127,7 @@ void RobotGrid::setCollisionBuffer(double newBuffer){
     }
 }
 
-void RobotGrid::decollide(){
+void RobotGrid::decollideGrid(){
 
     for (int ii=0; ii<1000; ii++){
         // std::cout << "n collisions " << getNCollisions() << std::endl;
@@ -578,6 +578,8 @@ std::vector<int> RobotGrid::fiducialColliders(int robotID){
         // squared distance
         // std::array<double, 2> xyCoord = {fiducial->x, fiducial->y};
         Eigen::Vector3d xyzCoord = {fiducial->x, fiducial->y, 0};
+        std::cout << "fiducial coord " << xyzCoord << std::endl;
+        std::cout << "fiducial buffer " << fiducialBuffer << std::endl;
         dist2 = dist3D_Point_to_Segment(
                 xyzCoord, robot->betaCollisionSegment[0], robot->betaCollisionSegment[1]
                 );
