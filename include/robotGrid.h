@@ -34,7 +34,7 @@ public:
     std::map<int, std::shared_ptr<Target>> targetDict;
     RobotGrid (double angStep = 1, double collisionBuffer = 2, double epsilon = 2, int seed = 0);
     void addRobot(int robotID, double xPos, double yPos, bool hasApogee = true);
-    void addTarget(int targetID, double xPos, double yPos, FiberType fiberID, double priority = 0);
+    void addTarget(int targetID, double xPos, double yPos, FiberType fiberType, double priority = 0);
     void addFiducial(int fiducialID, double xPos, double yPos, double collisionBuffer = 1.5);
     void initGrid();
     void decollideGrid();

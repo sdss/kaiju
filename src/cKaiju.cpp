@@ -10,6 +10,11 @@ namespace py = pybind11;
 using namespace pybind11::literals;
 
 PYBIND11_MODULE(cKaiju, m) {
+    py::enum_<FiberType>(m, "FiberType", py::arithmetic())
+        .value("MetrologyFiber", MetrologyFiber)
+        .value("ApogeeFiber", ApogeeFiber)
+        .value("BossFiber", BossFiber)
+        .export_values();
 
     py::class_<Fiducial, std::shared_ptr<Fiducial>>(m, "Fiducial")
         .def_readwrite("x", &Fiducial::x)
@@ -89,9 +94,8 @@ PYBIND11_MODULE(cKaiju, m) {
 
             A class for holding a grid of robots.
         )pbdoc")
-        .def(py::init<double, double, double, int>())
-        // warning!!! iterating over this gives you copies!!!! use getRobot if you want a reference
-        // .def_readwrite("allRobots", &RobotGrid::allRobots)
+        .def(py::init<double, double, double, int>(),
+            "angStep"_a=1, "collisionBuffer"_a = 2, "epsilon"_a = 2, "seed"_a = 0)
         .def_readwrite("robotDict", &RobotGrid::robotDict)
         .def_readwrite("angStep", &RobotGrid::angStep)
         .def_readwrite("collisionBuffer", &RobotGrid::collisionBuffer)
@@ -107,7 +111,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("addFiducial", &RobotGrid::addFiducial,
             "fiducialID"_a, "x"_a, "y"_a, "collisionBuffer"_a = 1.5)
         .def("addTarget", &RobotGrid::addTarget,
-            "targetID"_a, "xPos"_a, "yPos"_a, "fiberType"_a, "priority"_a = 0)
+            "targetID"_a, "x"_a, "y"_a, "fiberType"_a, "priority"_a = 0)
         .def("initGrid", &RobotGrid::initGrid)
         // .def("optimizeTargets", &RobotGrid::optimizeTargets)
         .def("decollideGrid", &RobotGrid::decollideGrid)
