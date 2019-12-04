@@ -8,19 +8,19 @@
 #include <map>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include "target.h"
+#include "target.h" // has FiberType
 
 extern const double alphaLen;
 extern const double betaLen;
 extern const double maxReach;
 extern const double minReach;
 // extern const double fiducialBuffer;
-extern const int BOSS_FIBER_ID;
-extern const int AP_FIBER_ID;
-extern const int MET_FIBER_ID;
+// extern const int BOSS_FIBER_ID;
+// extern const int AP_FIBER_ID;
+// extern const int MET_FIBER_ID;
 extern const double focalZ;
 
-class Target; // defined elsewhere...
+// class Target; // defined elsewhere...
 
 class Robot{
 public:
@@ -56,7 +56,7 @@ public:
     std::vector<int> validTargetIDs; // target IDs in RobotGrid.targetDict that I can reach
     Robot (int id, double xPos, double yPos, double angStep = 1, bool hasApogee = true);
     void setAlphaBeta (double nextAlpha, double nextBeta);
-    void setFiberXY (double xFiberGlobal, double yFiberGlobal, int fiberID); // xy in focal plane coord sys
+    void setFiberXY (double xFiberGlobal, double yFiberGlobal, FiberType fiberType); // xy in focal plane coord sys
     // void setAlphaBetaRand();
     void addRobotNeighbor(int robotID);
     void addFiducialNeighbor(int fiducialID);
@@ -69,11 +69,11 @@ public:
     void simplifyPath(double epsilon);
     void smoothVelocity(int points);
     void setCollisionBuffer(double newBuffer);
-    std::array<double, 2> alphaBetaFromFiberXY(double x, double y, int fiberID);
+    std::array<double, 2> alphaBetaFromFiberXY(double x, double y, FiberType fiberType);
     // fiberID 0 = metrology
     // fiberID 1 = apogee
     // fiberID 2 = boss
-    std::array<double, 2> convFiberXY(double x, double y, int fromFiberID, int toFiberID);
+    std::array<double, 2> convFiberXY(double x, double y, FiberType fromFiberType, FiberType toFiberType);
     // bool isValidTarget(double x, double y, int fiberID);
     void assignTarget(int targetID);
     void clearAssignment();

@@ -142,7 +142,7 @@ void Robot::setCollisionBuffer(double newBuffer){
 
 // }
 
-void Robot::setFiberXY(double xFiberGlobal, double yFiberGlobal, int fiberID){
+void Robot::setFiberXY(double xFiberGlobal, double yFiberGlobal, FiberType fiberID){
     // warning doesn't check for collisions
     auto newAlphaBeta = alphaBetaFromFiberXY(xFiberGlobal, yFiberGlobal, fiberID);
     if (std::isnan(newAlphaBeta[0]) or std::isnan(newAlphaBeta[1])){
@@ -224,13 +224,13 @@ void Robot::setXYUniform(){
     auto xy = sampleAnnulus(minReach, maxReach);
     // use a science fiber ID (matches min/max reach)
     // std::cout.precision(20);
-    auto ab = alphaBetaFromFiberXY(xy[0]+xPos, xy[1]+yPos, 1);
+    auto ab = alphaBetaFromFiberXY(xy[0]+xPos, xy[1]+yPos, FiberType::MetrologyFiber);
 
     while (std::isnan(ab[0]) or std::isnan(ab[1])){
         xy = sampleAnnulus(minReach, maxReach);
         // use a science fiber ID (matches min/max reach)
         // std::cout.precision(20);
-        ab = alphaBetaFromFiberXY(xy[0]+xPos, xy[1]+yPos, 1);
+        ab = alphaBetaFromFiberXY(xy[0]+xPos, xy[1]+yPos, FiberType::MetrologyFiber);
     }
     // if (ab[1] > 180.0){
     //     std::cout << "x " << xy[0] << " y " << xy[1] << " a " << ab[0]
@@ -643,28 +643,35 @@ void Robot::simplifyPath(double epsilon){
 // }
 
 
-std::array<double, 2> Robot::alphaBetaFromFiberXY(double xFiberGlobal, double yFiberGlobal, int fiberID){
+std::array<double, 2> Robot::alphaBetaFromFiberXY(double xFiberGlobal, double yFiberGlobal, FiberType fiberType){
     // origin is at alpha axis
     // +x is aligned with alpha angle = 0
-    // fiberID = 0 metrology
-    // fiberID = 1 apogee
-    // fiberID = 2 boss
+
     // law of cosines at work here...
     double x = xFiberGlobal - xPos;
     double y = yFiberGlobal - yPos;
     double xyMag = hypot(x, y);
+    double beta2Fiber;
+    double fao;
     // beta2Fiber is length from beta axis to fiber
     // default to metrology to avoid numerical issues
     // with trig and 0's etc
-    double beta2Fiber = neutralFiberList[fiberID](0);
-    double fao = 0;  // fiber angle offset
-    if (fiberID > 0){
+
+
+    beta2Fiber = neutralFiberList[fiberType](0);
+    fao = 0;  // fiber angle offset
+    // should turn this into a dictionary keyed by fiberType?
+    // fiberID = 0 metrology
+    // fiberID = 1 apogee
+    // fiberID = 2 boss
+    if (fiberType != MetrologyFiber){
         // note beta2Fiber should be 15? should it just be hard coded?
         // these are science fibers...
-        beta2Fiber = hypot(neutralFiberList[fiberID](0), neutralFiberList[fiberID](1));
+        beta2Fiber = hypot(neutralFiberList[fiberType](0), neutralFiberList[fiberType](1));
         // note atan2 is signed
-        fao = atan2(neutralFiberList[fiberID](1), neutralFiberList[fiberID](0));
+        fao = atan2(neutralFiberList[fiberType](1), neutralFiberList[1](0));
     }
+
     // gamma angle is angle between alpha arm at beta axis and
     // vector from beta axis to (x,y)
     double gammaAngRad = acos(

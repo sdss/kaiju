@@ -22,7 +22,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("y", &Target::y)
         .def_readwrite("id", &Target::id)
         .def_readwrite("priority", &Target::priority)
-        .def_readwrite("fiberID", &Target::fiberID)
+        .def_readwrite("fiberType", &Target::fiberType)
         .def_readwrite("validRobotIDs", &Target::validRobotIDs)
         .def("isAssigned", &Target::isAssigned);
 
@@ -107,7 +107,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("addFiducial", &RobotGrid::addFiducial,
             "fiducialID"_a, "x"_a, "y"_a, "collisionBuffer"_a = 1.5)
         .def("addTarget", &RobotGrid::addTarget,
-            "targetID"_a, "xPos"_a, "yPos"_a, "fiberID"_a, "priority"_a = 0)
+            "targetID"_a, "xPos"_a, "yPos"_a, "fiberType"_a, "priority"_a = 0)
         .def("initGrid", &RobotGrid::initGrid)
         // .def("optimizeTargets", &RobotGrid::optimizeTargets)
         .def("decollideGrid", &RobotGrid::decollideGrid)

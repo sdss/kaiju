@@ -57,7 +57,7 @@ void RobotGrid::addRobot(int robotID, double xPos, double yPos, bool hasApogee){
     robotDict[robotID]->setCollisionBuffer(collisionBuffer);
 }
 
-void RobotGrid::addTarget(int targetID, double xPos, double yPos, int fiberID, double priority){
+void RobotGrid::addTarget(int targetID, double xPos, double yPos, FiberType fiberType, double priority){
     if (!initialized){
         throw std::runtime_error("Initialize RobotGrid before adding targets");
     }
@@ -65,7 +65,7 @@ void RobotGrid::addTarget(int targetID, double xPos, double yPos, int fiberID, d
         throw std::runtime_error("Target ID already exists");
     }
 
-    targetDict[targetID] = std::make_shared<Target>(targetID, xPos, yPos, priority, fiberID);
+    targetDict[targetID] = std::make_shared<Target>(targetID, xPos, yPos, fiberType, priority);
     // add target to robots and robots to target
     for (auto rPair : robotDict){
         auto r = rPair.second;
@@ -502,7 +502,7 @@ void RobotGrid::assignRobot2Target(int robotID, int targetID){
     unassignTarget(targetID);
     target->assignRobot(robotID);
     robot->assignTarget(targetID);
-    auto ab = robot->alphaBetaFromFiberXY(target->x, target->y, target->fiberID);
+    auto ab = robot->alphaBetaFromFiberXY(target->x, target->y, target->fiberType);
     robot->setAlphaBeta(ab[0], ab[1]);
 }
 
@@ -514,10 +514,10 @@ bool RobotGrid::isValidAssignment(int robotID, int targetID){
     if (targDist > maxReach or targDist < minReach) {
         return false;
     }
-    if (target->fiberID == AP_FIBER_ID and !robot->hasApogee){
+    if (target->fiberType == ApogeeFiber and !robot->hasApogee){
         return false;
     }
-    auto ab = robot->alphaBetaFromFiberXY(target->x, target->y, target->fiberID);
+    auto ab = robot->alphaBetaFromFiberXY(target->x, target->y, target->fiberType);
     // check alpha beta valid
     if (std::isnan(ab[0]) or std::isnan(ab[1])){
         return false;

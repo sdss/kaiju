@@ -2,8 +2,8 @@
 #include "target.h"
 
 
-Target::Target(int id, double x, double y, int fiberID, int priority)
-    : id(id), x(x), y(y), priority(priority), fiberID(fiberID)
+Target::Target(int id, double x, double y, FiberType fiberType, int priority)
+    : id(id), x(x), y(y), priority(priority), fiberType(fiberType)
 {}
 
 void Target::clearAssignment(){
