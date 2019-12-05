@@ -12,7 +12,8 @@ void Target::clearAssignment(){
 
 void Target::assignRobot(int robotID){
     // make sure robotID is in validRobotID list
-    if (std::count(validRobotIDs.begin(), validRobotIDs.end(), robotID)){
+    int ii = std::count(validRobotIDs.begin(), validRobotIDs.end(), robotID);
+    if (ii == 0){
         throw std::runtime_error("robotID is not valid for this target.");
     }
     assignedRobotID = robotID;

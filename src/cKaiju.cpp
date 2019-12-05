@@ -128,8 +128,13 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("assignedTargets", &RobotGrid::assignedTargets)
         .def("getRobot", &RobotGrid::getRobot)
         .def("clearTargetDict", &RobotGrid::clearTargetDict)
-        // .def("isValidRobotTarget", &RobotGrid::isValidRobotTarget)x
-        .def("assignRobot2Target", &RobotGrid::assignRobot2Target)
+        // .def("isValidRobotTarget", &RobotGrid::isValidRobotTarget)
+        .def("unassignTarget", &RobotGrid::unassignTarget)
+        .def("unassignRobot", &RobotGrid::unassignRobot)
+        .def("isValidAssignment", &RobotGrid::isValidAssignment,
+            "robotID"_a, "targID"_a)
+        .def("assignRobot2Target", &RobotGrid::assignRobot2Target,
+            "robotID"_a, "targID"_a)
         // .def("pairwiseSwap", &RobotGrid::pairwiseSwap)
         .def("unassignedRobots", &RobotGrid::unassignedRobots)
         .def("robotColliders", &RobotGrid::robotColliders)

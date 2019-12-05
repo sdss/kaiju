@@ -15,7 +15,7 @@ matplotlib.use('Agg')
 rg = None # need global because C++ obj can't be pickled for multiprocessing
 
 
-def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=False, xlim=None, ylim=None):
+def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=False, xlim=None, ylim=None, highlightRobot=None):
     global rg
 
     if robotGrid is not None:
@@ -48,6 +48,8 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
         if rg.isCollided(robotID):
             # collision trumps not assigned
             topcolor = "red"
+        if highlightRobot == robotID:
+            topcolor = "orange"
         patch = PolygonPatch(topCollideLine, fc=topcolor, ec=edgecolor, alpha=0.5, zorder=10)
         ax.add_patch(patch)
     for fiducialID, fiducial in rg.fiducialDict.items():
@@ -130,7 +132,7 @@ def hexFromDia(nDia, pitch=22.4):
     ind = numpy.lexsort((xAll, yAll))
     return xAll[ind], yAll[ind]
 
-def robotGridFromFilledHex(stepSize, collisionBuffer, seed=0):
+def robotGridFromFilledHex(stepSize=1, collisionBuffer=2, seed=0):
     gridFile = os.path.join(os.environ["KAIJU_DIR"], "etc", "fps_filledHex.txt")
     # Row   Col     X (mm)  Y (mm)          Assignment
     #

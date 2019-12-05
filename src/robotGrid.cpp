@@ -495,7 +495,9 @@ void RobotGrid::assignRobot2Target(int robotID, int targetID){
     // releases target's previous robot if present
     auto robot = robotDict[robotID];
     auto target = targetDict[targetID];
-    if (std::count(robot->validTargetIDs.begin(), robot->validTargetIDs.end(), targetID)){
+
+    int ii = std::count(robot->validTargetIDs.begin(), robot->validTargetIDs.end(), targetID);
+    if (ii == 0){
         throw std::runtime_error("target not valid for robot");
     }
     unassignRobot(robotID);
@@ -510,10 +512,11 @@ bool RobotGrid::isValidAssignment(int robotID, int targetID){
     auto robot = robotDict[robotID];
     auto target = targetDict[targetID];
     // first a quick position cut
-    double targDist = hypot(target->x - robot->xPos, target->y - robot->yPos);
-    if (targDist > maxReach or targDist < minReach) {
-        return false;
-    }
+    // quick position cut fails near edges, get rid of it
+    // double targDist = hypot(target->x - robot->xPos, target->y - robot->yPos);
+    // if (targDist > maxReach or targDist < minReach) {
+    //     return false;
+    // }
     if (target->fiberType == ApogeeFiber and !robot->hasApogee){
         return false;
     }

@@ -740,7 +740,8 @@ std::array<double, 2> Robot::alphaBetaFromFiberXY(double xFiberGlobal, double yF
 
 void Robot::assignTarget(int targetID){
     // assigns the target and set alpha beta accordingly
-    if (std::count(validTargetIDs.begin(), validTargetIDs.end(), targetID)){
+    int ii = std::count(validTargetIDs.begin(), validTargetIDs.end(), targetID);
+    if (ii == 0){
         throw std::runtime_error("assignTarget failure, invalid target");
     }
     assignedTargetID = targetID;
