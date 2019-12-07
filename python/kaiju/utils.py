@@ -94,7 +94,7 @@ def plotPaths(robotGrid, nframes=None, filename=None):
     for img in imgs:
         os.remove(img)
 
-def hexFromDia(nDia, pitch=22.4):
+def hexFromDia(nDia, pitch=22.4, rotAngle=0):
     """
     inputs:
     nDia: is points along the equator of the hex, must be odd
@@ -127,12 +127,25 @@ def hexFromDia(nDia, pitch=22.4):
 
     xAll = numpy.hstack((xLowerHalf, xPosDia, xUpperHalf)).flatten()
     yAll = numpy.hstack((yLowerHalf, yPosDia, yUpperHalf)).flatten()
+
+    # rotate grid?
+    if rotAngle:
+        cos = numpy.cos(numpy.radians(rotAngle))
+        sin = numpy.sin(numpy.radians(rotAngle))
+        rotMat = numpy.array([
+            [cos, sin],
+            [-sin, cos]
+        ])
+        xyAll = numpy.array([xAll, yAll]).T
+        xyRot = numpy.dot(xyAll, rotMat)
+        xAll = xyRot[:,0]
+        yAll = xyRot[:,1]
     # return arrays in a sorted order, rasterized. 1st position is lower left
     # last positon is top right
     ind = numpy.lexsort((xAll, yAll))
     return xAll[ind], yAll[ind]
 
-def robotGridFromFilledHex(stepSize=1, collisionBuffer=2, seed=0):
+def robotGridFromFilledHex(stepSize=1, collisionBuffer=2, seed=0, rotAngle=0):
     gridFile = os.path.join(os.environ["KAIJU_DIR"], "etc", "fps_filledHex.txt")
     # Row   Col     X (mm)  Y (mm)          Assignment
     #
@@ -141,6 +154,12 @@ def robotGridFromFilledHex(stepSize=1, collisionBuffer=2, seed=0):
     bossXY = []
     baXY = []
     fiducialXY = []
+    cos = numpy.cos(numpy.radians(rotAngle))
+    sin = numpy.sin(numpy.radians(rotAngle))
+    rotMat = numpy.array([
+        [cos, sin],
+        [-sin, cos]
+    ])
     with open(gridFile, "r") as f:
         lines = f.readlines()
     for line in lines:
@@ -149,6 +168,10 @@ def robotGridFromFilledHex(stepSize=1, collisionBuffer=2, seed=0):
         if not line:
             continue
         row, col, x, y, fType = line.split()
+        x = float(x)
+        y = float(y)
+        if rotAngle:
+            x, y = numpy.dot([x,y], rotMat)
         coords = [float(x), float(y)]
         if fType == "BA":
             baXY.append(coords)
