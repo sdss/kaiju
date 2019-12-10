@@ -44,8 +44,8 @@ module-whatis "Sets up $product/$version in your environment."
 # command.  An optional dependency is not followed by a prereq statement.
 #
 
-prereq eigen
 module load eigen
+prereq eigen
 
 #
 # ENVIRONMENT SECTION
