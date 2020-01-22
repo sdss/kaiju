@@ -61,10 +61,13 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
         ax.set_xlim(xlim)
     if ylim is not None:
         ax.set_ylim(ylim)
+    ax.set_xlim([-325, 325])
+    ax.set_ylim([-325, 325])
+    # ax.set_aspect("equal")
 
     if figname is None:
         figname = "step_%04d.png"%(step)
-    plt.savefig(figname, dpi=250)
+    plt.savefig(figname, dpi=100)
     plt.close()
 
 def plotPaths(robotGrid, nframes=None, filename=None):
@@ -77,7 +80,7 @@ def plotPaths(robotGrid, nframes=None, filename=None):
     p = Pool(cpu_count())
     p.map(plotOne, steps)
 
-    fps = 20 # frames per second
+    fps = 30 # frames per second
     if filename is None:
         filename = "example.mp4"
     # clobber file if it already exists
@@ -93,6 +96,7 @@ def plotPaths(robotGrid, nframes=None, filename=None):
     imgs = glob.glob("step*.png")
     for img in imgs:
         os.remove(img)
+
 
 def hexFromDia(nDia, pitch=22.4, rotAngle=0):
     """
@@ -172,7 +176,7 @@ def robotGridFromFilledHex(stepSize=1, collisionBuffer=2, seed=0, rotAngle=0):
         y = float(y)
         if rotAngle:
             x, y = numpy.dot([x,y], rotMat)
-        coords = [float(x), float(y)]
+        coords = [x, y]
         if fType == "BA":
             baXY.append(coords)
         elif fType == "BOSS":
