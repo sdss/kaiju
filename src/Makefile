@@ -1,7 +1,7 @@
 CFLAGS = -O3 -Wall --std=c++11 -g
 CC = clang++
 # INC = -I/Users/csayres/miniconda2/include/python2.7 -I/Users/csayres/.local/include/python2.7 -I/Users/csayres/code/kaiju/include
-INC = -I/Users/csayres/code/kaiju/include
+INC = -I$KAIJU_DIR/include
 # INCMOX = -I/usr/lusers/csayres/miniconda2/include/python2.7 -I/usr/lusers/csayres/.local/include/python2.7
 
 kaiju: robot.o utils.o robotGrid.o target.o main.cpp
