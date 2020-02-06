@@ -15,6 +15,7 @@ def test_hexDeadlockedPath(plot=False):
     rg = RobotGrid(angStep, collisionBuffer, epsilon, seed)
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
         rg.addRobot(robotID, x, y, hasApogee)
+        rg.robotDict[robotID].setTargetAlphaBeta(0, 180)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
@@ -38,6 +39,7 @@ def test_pathGen(plot=False):
     rg = RobotGrid(angStep, collisionBuffer, epsilon, seed)
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
         rg.addRobot(robotID, x, y, hasApogee)
+        rg.robotDict[robotID].setTargetAlphaBeta(0, 180)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
@@ -68,6 +70,7 @@ def test_filledHexDeadlockedPath(plot=False):
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
         robot.setXYUniform()
+        robot.setTargetAlphaBeta(0, 180)
     assert rg.getNCollisions() > 20
     if plot:
         utils.plotOne(0, rg, figname="filledHexDeadlockedInitial.png", isSequence=False)
@@ -86,6 +89,7 @@ def test_filledHexPath(plot=False):
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
         robot.setXYUniform()
+        robot.setTargetAlphaBeta(0, 180)
     assert rg.getNCollisions() > 20
     if plot:
         utils.plotOne(0, rg, figname="filledHexInitial.png", isSequence=False)
@@ -107,6 +111,7 @@ def test_withDefulatArgs(plot=False):
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
         robot.setXYUniform()
+        robot.setTargetAlphaBeta(0, 180)
     assert rg.getNCollisions() > 10
     rg.decollideGrid()
     assert rg.getNCollisions() == 0

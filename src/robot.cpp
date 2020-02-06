@@ -161,6 +161,12 @@ void Robot::addFiducialNeighbor(int fiducialID){
     fiducialNeighbors.push_back(fiducialID);
 }
 
+void Robot::setTargetAlphaBeta(double alpha, double beta){
+    targetAlpha = alpha;
+    targetBeta = beta;
+    hasTargetAlphaBeta = true;
+}
+
 void Robot::setAlphaBeta(double newAlpha, double newBeta){
     alpha = newAlpha;
     beta = newBeta;

@@ -28,9 +28,10 @@ public:
     int nDecollide = 0;
     int lastStepNum = 0;
     int assignedTargetID = -1; // -1 indicates no assigned target
+    bool hasTargetAlphaBeta = false;
     bool hasApogee;
     bool hasBoss;
-    double xPos, yPos, alpha, beta;
+    double xPos, yPos, alpha, beta, targetAlpha, targetBeta;
     double angStep;
     double collisionBuffer = 0;
     std::vector<double> alphaVel;
@@ -55,7 +56,8 @@ public:
     std::vector<int> fiducialNeighbors; // fiducial IDs in RobotGrid.fiducialDict may potentially collide
     std::vector<int> validTargetIDs; // target IDs in RobotGrid.targetDict that I can reach
     Robot (int id, double xPos, double yPos, double angStep = 1, bool hasApogee = true);
-    void setAlphaBeta (double nextAlpha, double nextBeta);
+    void setAlphaBeta (double alpha, double beta);
+    void setTargetAlphaBeta(double alpha, double beta);
     void setFiberXY (double xFiberGlobal, double yFiberGlobal, FiberType fiberType); // xy in focal plane coord sys
     // void setAlphaBetaRand();
     void addRobotNeighbor(int robotID);
@@ -70,9 +72,6 @@ public:
     void smoothVelocity(int points);
     void setCollisionBuffer(double newBuffer);
     std::array<double, 2> alphaBetaFromFiberXY(double x, double y, FiberType fiberType);
-    // fiberID 0 = metrology
-    // fiberID 1 = apogee
-    // fiberID 2 = boss
     std::array<double, 2> convFiberXY(double x, double y, FiberType fromFiberType, FiberType toFiberType);
     // bool isValidTarget(double x, double y, int fiberID);
     void assignTarget(int targetID);

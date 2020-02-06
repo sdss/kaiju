@@ -220,6 +220,10 @@ void RobotGrid::pathGen(){
     didFail = true;
     for (auto rPair : robotDict){
         auto r = rPair.second;
+        // verify that a target alpha beta has been set
+        if (!r->hasTargetAlphaBeta){
+            throw std::runtime_error("One or more robots have not received target alpha/beta");
+        }
         // clear any existing path
         r->alphaPath.clear();
         r->betaPath.clear();

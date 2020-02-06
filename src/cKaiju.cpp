@@ -80,6 +80,7 @@ PYBIND11_MODULE(cKaiju, m) {
 
             And some other bs.
         )pbdoc")
+        .def("setTargetAlphaBeta", &Robot::setTargetAlphaBeta)
         .def("setXYUniform", &Robot::setXYUniform)
         .def("randomXYUniform", &Robot::randomXYUniform)
         .def("alphaBetaFromFiberXY", &Robot::alphaBetaFromFiberXY)

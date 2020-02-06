@@ -18,6 +18,7 @@ def test_memory():
         rg = RobotGrid(angStep, collisionBuffer, epsilon, seed)
         for robotID, (x, y) in enumerate(zip(xPos, yPos)):
             rg.addRobot(robotID, x, y, hasApogee)
+            rg.robotDict[robotID].setTargetAlphaBeta(0, 180)
         rg.initGrid()
         rg.pathGen()
     process = psutil.Process(os.getpid())
