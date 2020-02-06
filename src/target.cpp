@@ -1,3 +1,5 @@
+#include <stdexcept>
+#include <algorithm>
 #include <iostream>
 #include "target.h"
 
