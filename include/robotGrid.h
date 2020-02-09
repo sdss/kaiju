@@ -39,7 +39,9 @@ public:
     void initGrid();
     void decollideGrid();
     int getNCollisions();
+    void clearPaths();
     void pathGen();
+    void pathGen2();
     void simplifyPaths();
     void smoothPaths(int points);
     void verifySmoothed();
@@ -68,5 +70,6 @@ public:
     // bool isCollidedInd(int robotInd);
     void decollideRobot(int robotID);
     void stepTowardFold(std::shared_ptr<Robot> r1, int stepNum);
+    void stepTowardMetTarg(std::shared_ptr<Robot> r1, int stepNum);
     // void smoothPath(std::shared_ptr<Robot> robot, double epsilon);
 };

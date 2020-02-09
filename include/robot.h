@@ -28,10 +28,11 @@ public:
     int nDecollide = 0;
     int lastStepNum = 0;
     int assignedTargetID = -1; // -1 indicates no assigned target
+    bool atTarget = false;
     bool hasTargetAlphaBeta = false;
     bool hasApogee;
     bool hasBoss;
-    double xPos, yPos, alpha, beta, targetAlpha, targetBeta;
+    double xPos, yPos, alpha, beta, targetAlpha, targetBeta, targetX, targetY;
     double angStep;
     double collisionBuffer = 0;
     std::vector<double> alphaVel;
@@ -41,11 +42,13 @@ public:
     Eigen::Array<double, 8, 2> alphaBetaArr;
     Eigen::Affine3d betaRot, alphaRot;
     Eigen::Vector3d metFiberPos;
+    Eigen::Vector3d targMetFiberPos;
     Eigen::Vector3d bossFiberPos;
     Eigen::Vector3d apFiberPos;
     Eigen::Vector3d transXY;
     std::array<Eigen::Vector3d, 2> betaCollisionSegment;
     std::vector<Eigen::Vector2d> alphaPath, betaPath;
+    std::vector<bool> onTargetVec;
     std::vector<Eigen::Vector2d> smoothedAlphaPath, smoothedBetaPath;
     std::vector<Eigen::Vector2d> simplifiedAlphaPath, simplifiedBetaPath; // sparse
     std::vector<Eigen::Vector2d> interpSimplifiedAlphaPath, interpSimplifiedBetaPath; // dense

@@ -161,10 +161,16 @@ void Robot::addFiducialNeighbor(int fiducialID){
     fiducialNeighbors.push_back(fiducialID);
 }
 
-void Robot::setTargetAlphaBeta(double alpha, double beta){
-    targetAlpha = alpha;
-    targetBeta = beta;
+void Robot::setTargetAlphaBeta(double talpha, double tbeta){
+    // enforce limits here?
+    double currAlpha = alpha;
+    double currBeta = beta;
+    targetAlpha = talpha;
+    targetBeta = tbeta;
+    setAlphaBeta(talpha, tbeta); // to set metFiberPos
+    targMetFiberPos = metFiberPos;
     hasTargetAlphaBeta = true;
+    setAlphaBeta(currAlpha, currBeta);
 }
 
 void Robot::setAlphaBeta(double newAlpha, double newBeta){

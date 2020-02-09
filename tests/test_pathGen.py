@@ -1,6 +1,7 @@
 import pytest
 
-from kaiju import RobotGrid, utils
+from kaiju.cKaiju import RobotGrid
+from kaiju import utils
 
 nDia = 15
 angStep = 1
@@ -126,6 +127,6 @@ if __name__ == "__main__":
     # test_pathGen(plot=True)
     # test_filledHexDeadlockedPath(plot=True)
     # test_filledHexPath(plot=True)
-    test_withDefulatArgs(plot=True)
+    test_pathGen(plot=True)
 
 

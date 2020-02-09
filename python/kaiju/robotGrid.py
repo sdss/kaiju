@@ -13,27 +13,27 @@ import matplotlib.pyplot as plt
 import kaiju
 import kaiju.cKaiju
 from descartes import PolygonPatch
+from shapely.geometry import LineString, Point
 
 
-__all__ = ['RobotGridFilledHex']
+__all__ = ['RobotGrid', 'RobotGridFilledHex']
 
 
 # Create look-up dictionary for types to strings conversion
-str2FiberType = {'ApogeeFiber': kaiju.ApogeeFiber,
-                 'BossFiber': kaiju.BossFiber}
+str2FiberType = {'ApogeeFiber': kaiju.cKaiju.ApogeeFiber,
+                 'BossFiber': kaiju.cKaiju.BossFiber}
 fiberType2Str = dict()
 for k in str2FiberType.keys():
     fiberType2Str[str2FiberType[k]] = k
 
-
-class RobotGridFilledHex(kaiju.cKaiju.RobotGrid):
-    """Filled hexagon grid class for robots in FPS
+class RobotGrid(kaiju.cKaiju.RobotGrid):
+    """Basic python subclass of cKaiju.RobotGrid
 
     Parameters:
     ----------
 
     stepSize : float, np.float32
-        step size for paths (mm), default 1.
+        step size for paths (degrees), default 1.
 
     collisionBuffer : float, np.float32
         half-width of beta arm, including buffer (mm), default 2.0
@@ -42,13 +42,15 @@ class RobotGridFilledHex(kaiju.cKaiju.RobotGrid):
     ----------
 
     stepSize : float, np.float32
-        step size for paths (mm)
+        step size for paths (degrees). A maximum perturbation allowed for either
+        alpha or beta axes
 
     collisionBuffer : float, np.float32
         half-width of beta arm, including buffer (mm)
 
     epsilon : float
-        unknown (a setting for path planning)
+        smoothing parameter used in the RDP path simplification.  Smaller values
+        mean smaller deviations from the rough path are allowed.
 
     seed : int
         seed for random number generator when used
@@ -66,22 +68,154 @@ class RobotGridFilledHex(kaiju.cKaiju.RobotGrid):
         targets in field, with ID as keys
 
     smoothCollisions : int
-        unknown
+        number of collisions detected after attempted path smoothing, should
+        be zero when things work out
 
     didFail : bool
-        unknown
+        path generation failed, not all robots reached target
 
     nSteps : int
-        unknown
+        steps taken to
+
+    """
+    def __init__(self, stepSize=1., collisionBuffer=2.0, epsilon=None, seed=0):
+        self.stepSize = stepSize
+        self.collisionBuffer = collisionBuffer
+        if epsilon is None:
+            self.epsilon = stepSize * 2.2
+        else:
+            self.epsilon = epsilon
+        self.seed = seed
+        super().__init__(self.stepSize, self.collisionBuffer,
+                         self.epsilon, self.seed)
+        # self._load_grid()
+        return
+
+    def plotRobotCore(self, ax=None, robotID=None, isCollided=False):
+        """Basic plotting for a single robot
+
+        Parameters:
+        ----------
+
+        ax : matplotlib axis object
+            axis object to add robot to
+
+        robotID : int, np.int32
+            robotID of robot to plot
+
+        isCollided : bool
+            is this robot collided?
+
+        Comments:
+        --------
+
+        Dark blue are assigned robots.
+        Red are collided robots
+        Light blue are unassigned robots
+        """
+        internalBuffer = 1.5
+
+        robot = self.robotDict[robotID]
+        alphaPoint = robot.betaCollisionSegment[0]
+        betaPoint = robot.betaCollisionSegment[1]
+        alphaX = alphaPoint[0]
+        alphaY = alphaPoint[1]
+        betaX = betaPoint[0]
+        betaY = betaPoint[1]
+        plt.plot([robot.xPos, alphaX], [robot.yPos, alphaY],
+                 color='black', linewidth=2, alpha=0.5)
+
+        topCollideLine = LineString([(alphaX, alphaY), (betaX, betaY)]
+                                    ).buffer(internalBuffer, cap_style=1)
+        topcolor = 'blue'
+        edgecolor = 'black'
+        if isCollided:
+            topcolor = "red"
+        if not robot.isAssigned():
+            topcolor = "skyblue"
+        patch = PolygonPatch(topCollideLine, fc=topcolor, ec=edgecolor,
+                             alpha=0.5, zorder=10)
+        ax.add_patch(patch)
+
+        return
+
+    def plotAllRobots(self):
+        """Plots all the robots
+
+        Comments:
+        --------
+
+        Dark blue are assigned robots.
+        Red are collided robots
+        Light blue are unassigned robots
+"""
+        plt.figure(figsize=(10, 10))
+        ax = plt.gca()
+
+        for robotID in self.robotDict.keys():
+            isCollided = self.isCollided(robotID)
+            self.plotRobotCore(ax=ax, robotID=robotID, isCollided=isCollided)
+
+        rr = 340.
+        plt.xlim(np.array([-1., 1.]) * rr)
+        plt.ylim(np.array([-1., 1.]) * rr)
+        return
+
+
+class RobotGridFilledHex(RobotGrid):
+    """Filled hexagon grid class for robots in FPS
+
+    Parameters:
+    ----------
+
+    stepSize : float, np.float32
+        step size for paths (degrees), default 1.
+
+    collisionBuffer : float, np.float32
+        half-width of beta arm, including buffer (mm), default 2.0
+
+    Attributes:
+    ----------
+
+    stepSize : float, np.float32
+        step size for paths (degrees). A maximum perturbation allowed for either
+        alpha or beta axes
+
+    collisionBuffer : float, np.float32
+        half-width of beta arm, including buffer (mm)
+
+    epsilon : float
+        smoothing parameter used in the RDP path simplification.  Smaller values
+        mean smaller deviations from the rough path are allowed.
+
+    seed : int
+        seed for random number generator when used
+
+    robotDict : dictionary of Robot class objects
+        all robots
+
+    nRobots : int
+        number of robots
+
+    fiducialDict : dictionary of Fiducial objects
+        positions of fiducials
+
+    targetDict : dictionary of Target class objects
+        targets in field, with ID as keys
+
+    smoothCollisions : int
+        number of collisions detected after attempted path smoothing, should
+        be zero when things work out
+
+    didFail : bool
+        path generation failed, not all robots reached target
+
+    nSteps : int
+        steps taken to
 
 """
     def __init__(self, stepSize=1., collisionBuffer=2.0):
-        self.stepSize = stepSize
-        self.collisionBuffer = collisionBuffer
-        self.epsilon = stepSize * 2.2
-        self.seed = 0
-        super().__init__(self.stepSize, self.collisionBuffer,
-                         self.epsilon, self.seed)
+        super().__init__(seed=0, stepSize=stepSize, collisionBuffer=collisionBuffer)
         self._load_grid()
         return
 
@@ -366,74 +500,4 @@ class RobotGridFilledHex(kaiju.cKaiju.RobotGrid):
                 ibad = np.where(r[n] != robot_array[n])[0]
                 if(len(ibad) > 0):
                     raise RuntimeError("Inconsistency in robot file in column {n}".format(n=n))
-        return
-
-    def plotRobotCore(self, ax=None, robotID=None, isCollided=False):
-        """Basic plotting for a single robot 
-
-        Parameters:
-        ----------
-
-        ax : matplotlib axis object
-            axis object to add robot to
-
-        robotID : int, np.int32
-            robotID of robot to plot
-
-        isCollided : bool
-            is this robot collided?
-
-        Comments:
-        --------
-
-        Dark blue are assigned robots.
-        Red are collided robots
-        Light blue are unassigned robots
-"""
-        internalBuffer = 1.5
-
-        robot = self.robotDict[robotID]
-        alphaPoint = robot.betaCollisionSegment[0]
-        betaPoint = robot.betaCollisionSegment[1]
-        alphaX = alphaPoint[0]
-        alphaY = alphaPoint[1]
-        betaX = betaPoint[0]
-        betaY = betaPoint[1]
-        plt.plot([robot.xPos, alphaX], [robot.yPos, alphaY],
-                 color='black', linewidth=2, alpha=0.5)
-
-        topCollideLine = LineString([(alphaX, alphaY), (betaX, betaY)]
-                                    ).buffer(internalBuffer, cap_style=1)
-        topcolor = 'blue'
-        edgecolor = 'black'
-        if isCollided:
-            topcolor = "red"
-        if not robot.isAssigned():
-            topcolor = "skyblue"
-        patch = PolygonPatch(topCollideLine, fc=topcolor, ec=edgecolor,
-                             alpha=0.5, zorder=10)
-        ax.add_patch(patch)
-
-        return
-
-    def plotAllRobots(self):
-        """Plots all the robots
-
-        Comments:
-        --------
-
-        Dark blue are assigned robots.
-        Red are collided robots
-        Light blue are unassigned robots
-"""
-        plt.figure(figsize=(10, 10))
-        ax = plt.gca()
-
-        for robotID in self.robotDict.keys():
-            isCollided = self.isCollided(robotID)
-            self.plotRobotCore(ax=ax, robotID=robotID, isCollided=isCollided)
-
-        rr = 340.
-        plt.xlim(np.array([-1., 1.]) * rr)
-        plt.ylim(np.array([-1., 1.]) * rr)
         return

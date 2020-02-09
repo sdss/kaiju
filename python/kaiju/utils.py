@@ -22,12 +22,19 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
         rg = robotGrid
     plt.figure(figsize=(10,10))
     ax = plt.gca()
+    maxX = 0
+    maxY = 0
     for robotID, robot in rg.robotDict.items():
+        if robot.xPos > maxX:
+            maxX = robot.xPos
+        if robot.yPos > maxY:
+            maxY = robot.yPos
         if isSequence:
             alphaX = robot.roughAlphaX[step][1]
             alphaY = robot.roughAlphaY[step][1]
             betaX = robot.roughBetaX[step][1]
             betaY = robot.roughBetaY[step][1]
+            onTarget = robot.onTargetVec[step]
         else:
             # step input is ignored!!
             alphaPoint = robot.betaCollisionSegment[0]
@@ -36,6 +43,7 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
             alphaY = alphaPoint[1]
             betaX = betaPoint[0]
             betaY = betaPoint[1]
+            onTarget = False
         plt.plot([robot.xPos, alphaX], [robot.yPos, alphaY], color='black', linewidth=2, alpha=0.5)
 
         topCollideLine = LineString(
@@ -45,6 +53,8 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
         edgecolor = 'black'
         if not robot.isAssigned():
             topcolor = "skyblue"
+        if onTarget:
+            topcolor = "gold"
         if rg.isCollided(robotID):
             # collision trumps not assigned
             topcolor = "red"
@@ -61,8 +71,8 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
         ax.set_xlim(xlim)
     if ylim is not None:
         ax.set_ylim(ylim)
-    ax.set_xlim([-325, 325])
-    ax.set_ylim([-325, 325])
+    ax.set_xlim([-maxX-30, maxX+30])
+    ax.set_ylim([-maxY-30, maxY+30])
     # ax.set_aspect("equal")
 
     if figname is None:
@@ -75,6 +85,7 @@ def plotPaths(robotGrid, nframes=None, filename=None):
     global rg
     rg = robotGrid
     steps = range(robotGrid.nSteps)
+    print("plotting steps", steps)
     # down sample if nframes specified
 
     p = Pool(cpu_count())

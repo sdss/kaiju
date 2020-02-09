@@ -21,18 +21,18 @@ def test_add_targets():
     # should add targets OK
     rg = kaiju.robotGrid.RobotGridFilledHex()
     rg.addTarget(targetID=1, x=10., y=10., priority=1.,
-                 fiberType=kaiju.ApogeeFiber)
+                 fiberType=kaiju.cKaiju.ApogeeFiber)
     rg.addTarget(targetID=2, x=30., y=30., priority=1.,
-                 fiberType=kaiju.BossFiber)
+                 fiberType=kaiju.cKaiju.BossFiber)
 
 
 def test_target_array():
     # should add targets OK
     rg = kaiju.robotGrid.RobotGridFilledHex()
     rg.addTarget(targetID=1, x=10., y=10., priority=1.,
-                 fiberType=kaiju.ApogeeFiber)
+                 fiberType=kaiju.cKaiju.ApogeeFiber)
     rg.addTarget(targetID=2, x=30., y=30., priority=1.,
-                 fiberType=kaiju.BossFiber)
+                 fiberType=kaiju.cKaiju.BossFiber)
     ts = rg.target_array()
     rg2 = kaiju.robotGrid.RobotGridFilledHex()
     rg2.target_fromarray(ts)
