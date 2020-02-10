@@ -562,6 +562,22 @@ bool RobotGrid::isCollided(int robotID){
     return false;
 }
 
+bool RobotGrid::isCollidedWithAssigned(int robotID){
+    auto robotsColliding = robotColliders(robotID);
+    if (robotsColliding.size() != 0){
+			for (auto robotColliding : robotsColliding) {
+				if(robotDict[robotColliding]->isAssigned()) {
+					return true;
+				}
+			}
+    }
+    auto fiducialsColliding = fiducialColliders(robotID);
+    if (fiducialsColliding.size() != 0){
+        return true;
+    }
+    return false;
+}
+
 std::vector<int> RobotGrid::robotColliders(int robotID){
 
     std::vector<int> collidingNeighbors;
