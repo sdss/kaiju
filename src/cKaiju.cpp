@@ -139,6 +139,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("unassignedRobots", &RobotGrid::unassignedRobots)
         .def("robotColliders", &RobotGrid::robotColliders)
         .def("fiducialColliders", &RobotGrid::fiducialColliders)
+        .def("isCollidedWithAssigned", &RobotGrid::isCollidedWithAssigned)
         .def("isCollided", &RobotGrid::isCollided);
         // .def("greedyAssign", &RobotGrid::greedyAssign);
 }
