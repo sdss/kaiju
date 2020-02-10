@@ -62,6 +62,7 @@ public:
     std::vector<int> unassignedRobots();
     // bool canSwapTarget(std::shared_ptr<Robot> r1, std::shared_ptr<Robot> r2);
     bool isCollided(int robotID);
+    bool isCollidedWithAssigned(int robotID);
     std::vector<int> robotColliders(int robotID);
     std::vector<int> fiducialColliders(int robotID);
     // bool isFiducialCollided(std::shared_ptr<Robot> r1);
