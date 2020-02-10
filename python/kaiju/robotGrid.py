@@ -209,7 +209,7 @@ class RobotGridFilledHex(kaiju.cKaiju.RobotGrid):
         target_dict['id'] = [int(self.targetDict[k].id) for k in ks]
         target_dict['x'] = [float(self.targetDict[k].x) for k in ks]
         target_dict['y'] = [float(self.targetDict[k].y) for k in ks]
-        target_dict['fiberType'] = [fiberTypeStr(self.targetDict[k].fiberType)
+        target_dict['fiberType'] = [fiberType2Str[self.targetDict[k].fiberType]
                                     for k in ks]
         return(target_dict)
 
@@ -226,29 +226,36 @@ class RobotGridFilledHex(kaiju.cKaiju.RobotGrid):
 """
         robot_dict = self.robot_dict()
         target_dict = self.target_dict()
-        json_str = "robot_obj = " + json.dumps(robot_dict) + ";\n"
-        json_str = json_str + "target_obj = " + json.dumps(target_dict) + ";\n"
+        json_str = '{'
+        json_str = json_str + '"robot_obj" : ' + json.dumps(robot_dict) + ";\n"
+        json_str = json_str + '"target_obj" : ' + json.dumps(target_dict) + ";\n"
+        json_str = json_str + '}'
         return(json_str)
 
-    def html(self, filename):
+    def html(self, filebase):
         """Write HTML format file for visualizing the current robot state
 
         Parameters:
         ----------
 
-        filename : str
-            name of file to write to
+        filebase : str
+            base of html and json to write to
 """
-        html_str = '<script type="text/javascript">\n'
-        html_str = html_str + 'robot_obj = ' + json.dumps(self.robot_dict()) + ";\n"
-        html_str = html_str + 'target_obj = ' + json.dumps(self.target_dict()) + ";\n"
-        html_str = html_str + '</script>\n'
+        fieldfile = filebase + '.json'
+        print(fieldfile)
+        fp = open(fieldfile, "w")
+        fp.write(self.json())
+        fp.close()
+
         fp = open(os.path.join(os.getenv('KAIJU_DIR'), 'etc',
                                'robotGrid.html'), "r")
+        html_str = ''
         for l in fp.readlines():
+            l.replace("fieldfile", fieldfile)
             html_str = html_str + l
         fp.close()
-        fp = open(filename, "w")
+
+        fp = open(filebase + '.html', "w")
         fp.write(html_str)
         fp.close()
         return
