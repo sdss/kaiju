@@ -181,19 +181,34 @@ class RobotGridFilledHex(kaiju.cKaiju.RobotGrid):
         robot_dict = dict()
         rd = self.robotDict
         ks = rd.keys()
-        robot_dict['id'] = [int(rd[k].id) for k in ks]
-        robot_dict['xPos'] = [float(rd[k].xPos) for k in ks]
-        robot_dict['yPos'] = [float(rd[k].yPos) for k in ks]
-        robot_dict['alpha'] = [float(rd[k].alpha) for k in ks]
-        robot_dict['beta'] = [float(rd[k].beta) for k in ks]
-        robot_dict['validTargetIDs'] = [[y for y in rd[k].validTargetIDs]
-                                        for k in ks]
-        robot_dict['assignedTargetID'] = [int(rd[k].assignedTargetID)
-                                          for k in ks]
-        robot_dict['hasApogee'] = [int(rd[k].hasApogee) for k in ks]
-        robot_dict['hasBoss'] = [int(rd[k].hasBoss) for k in ks]
-        robot_dict['isAssigned'] = [int(rd[k].isAssigned()) for k in ks]
-        robot_dict['isCollided'] = [int(self.isCollided(k)) for k in ks]
+        nks = len(ks)
+        robot_dict['id'] = [int(0)] * nks
+        robot_dict['xPos'] = [float(0)] * nks
+        robot_dict['yPos'] = [float(0)] * nks
+        robot_dict['alpha'] = [float(0)] * nks
+        robot_dict['beta'] = [float(0)] * nks
+        robot_dict['validTargetIDs'] = [[]] * nks
+        robot_dict['assignedTargetID'] = [int(0)] * nks
+        robot_dict['hasApogee'] = [int(0)] * nks
+        robot_dict['hasBoss'] = [int(0)] * nks
+        robot_dict['isAssigned'] = [int(0)] * nks
+        robot_dict['assignedFiberType'] = ['none'] * nks
+        robot_dict['isCollided'] = [int(0)] * nks
+        for i, k in enumerate(ks):
+            crd = rd[k]
+            robot_dict['id'][i] = int(crd.id)
+            robot_dict['xPos'][i] = float(crd.xPos)
+            robot_dict['yPos'][i] = float(crd.yPos)
+            robot_dict['alpha'][i] = float(crd.alpha)
+            robot_dict['beta'][i] = float(crd.beta)
+            robot_dict['validTargetIDs'][i] = [int(y) for y in crd.validTargetIDs]
+            robot_dict['assignedTargetID'][i] = int(crd.assignedTargetID)
+            robot_dict['hasApogee'][i] = int(crd.hasApogee)
+            robot_dict['hasBoss'][i] = int(crd.hasBoss)
+            robot_dict['isAssigned'][i] = int(crd.isAssigned())
+            if(crd.assignedTargetID >= 0):
+                robot_dict['assignedFiberType'][i] = fiberType2Str[self.targetDict[crd.assignedTargetID].fiberType]
+            robot_dict['isCollided'][i] = int(self.isCollided(k))
         return(robot_dict)
 
     def target_dict(self):
@@ -205,12 +220,18 @@ class RobotGridFilledHex(kaiju.cKaiju.RobotGrid):
         Each value in dictionary contains a list with an element per target.
 """
         ks = list(self.targetDict.keys())
+        nks = len(ks)
         target_dict = dict()
-        target_dict['id'] = [int(self.targetDict[k].id) for k in ks]
-        target_dict['x'] = [float(self.targetDict[k].x) for k in ks]
-        target_dict['y'] = [float(self.targetDict[k].y) for k in ks]
-        target_dict['fiberType'] = [fiberType2Str[self.targetDict[k].fiberType]
-                                    for k in ks]
+        target_dict['id'] = [int(0)] * nks
+        target_dict['x'] = [float(0)] * nks
+        target_dict['y'] = [float(0)] * nks
+        target_dict['fiberType'] = ['none'] * nks
+        for i, k in enumerate(ks):
+            ctd = self.targetDict[k]
+            target_dict['id'][i] = int(ctd.id)
+            target_dict['x'][i] = float(ctd.x)
+            target_dict['y'][i] = float(ctd.y)
+            target_dict['fiberType'][i] = fiberType2Str[ctd.fiberType]
         return(target_dict)
 
     def json(self):
@@ -227,8 +248,8 @@ class RobotGridFilledHex(kaiju.cKaiju.RobotGrid):
         robot_dict = self.robot_dict()
         target_dict = self.target_dict()
         json_str = '{'
-        json_str = json_str + '"robot_obj" : ' + json.dumps(robot_dict) + ";\n"
-        json_str = json_str + '"target_obj" : ' + json.dumps(target_dict) + ";\n"
+        json_str = json_str + '"robot_obj" : ' + json.dumps(robot_dict) + ",\n"
+        json_str = json_str + '"target_obj" : ' + json.dumps(target_dict) + "\n"
         json_str = json_str + '}'
         return(json_str)
 
@@ -242,7 +263,6 @@ class RobotGridFilledHex(kaiju.cKaiju.RobotGrid):
             base of html and json to write to
 """
         fieldfile = filebase + '.json'
-        print(fieldfile)
         fp = open(fieldfile, "w")
         fp.write(self.json())
         fp.close()
@@ -251,12 +271,23 @@ class RobotGridFilledHex(kaiju.cKaiju.RobotGrid):
                                'robotGrid.html'), "r")
         html_str = ''
         for l in fp.readlines():
-            l.replace("fieldfile", fieldfile)
+            l = l.replace("fieldfile", "'" + fieldfile + "'")
             html_str = html_str + l
         fp.close()
 
         fp = open(filebase + '.html', "w")
         fp.write(html_str)
+        fp.close()
+
+        fp = open(os.path.join(os.getenv('KAIJU_DIR'), 'etc',
+                               'robotGrid.js'), "r")
+        js_str = ''
+        for l in fp.readlines():
+            js_str = js_str + l
+        fp.close()
+
+        fp = open('robotGrid.js', "w")
+        fp.write(js_str)
         fp.close()
         return
 
@@ -275,28 +306,18 @@ class RobotGridFilledHex(kaiju.cKaiju.RobotGrid):
 
         robot_array = np.zeros(self.nRobots, dtype=robot_dtype)
         ks = self.robotDict.keys()
-        robot_array['robotID'] = np.array([self.robotDict[k].id for k in ks],
-                                          dtype=np.int32)
-        robot_array['xPos'] = np.array([self.robotDict[k].xPos for k in ks],
-                                       dtype=np.float32)
-        robot_array['yPos'] = np.array([self.robotDict[k].yPos for k in ks],
-                                       dtype=np.float32)
-        robot_array['hasApogee'] = np.array([self.robotDict[k].hasApogee
-                                             for k in ks],
-                                            dtype=np.bool)
-        robot_array['hasBoss'] = np.array([self.robotDict[k].hasBoss
-                                           for k in ks],
-                                          dtype=np.bool)
-        robot_array['assignedTargetID'] = np.array([self.robotDict[k].assignedTargetID
-                                                    for k in ks],
-                                                   dtype=np.int32)
-        robot_array['isAssigned'] = [int(self.robotDict[k].isAssigned())
-                                     for k in ks]
-        robot_array['isCollided'] = [int(self.isCollided(k)) for k in ks]
-        robot_array['alpha'] = np.array([self.robotDict[k].alpha
-                                         for k in ks], dtype=np.float32)
-        robot_array['beta'] = np.array([self.robotDict[k].beta
-                                        for k in ks], dtype=np.float32)
+        for i, k in enumerate(ks):
+            crd = self.robotDict[k]
+            robot_array['robotID'] = crd.id
+            robot_array['xPos'] = crd.xPos
+            robot_array['yPos'] = crd.yPos
+            robot_array['hasApogee'] = crd.hasApogee
+            robot_array['hasBoss'] = crd.hasBoss
+            robot_array['assignedTargetID'] = crd.assignedTargetID
+            robot_array['isAssigned'] = crd.isAssigned()
+            robot_array['isCollided'] = self.isCollided(crd.id)
+            robot_array['alpha'] = crd.alpha
+            robot_array['beta'] = crd.beta
         return(robot_array)
 
     def target_array(self):
@@ -308,13 +329,14 @@ class RobotGridFilledHex(kaiju.cKaiju.RobotGrid):
                                  ('fiberType', np.string_, 30)])
 
         target_array = np.zeros(len(self.targetDict), dtype=target_dtype)
-        ks = list(self.targetDict.keys())
+        ks = np.array(list(self.targetDict.keys()))
         for i, k in enumerate(ks):
-            target_array['targetID'][i] = self.targetDict[k].id
-            target_array['x'][i] = self.targetDict[k].x
-            target_array['y'][i] = self.targetDict[k].y
-            target_array['priority'][i] = self.targetDict[k].priority
-            ft = fiberType2Str[self.targetDict[k].fiberType]
+            td = self.targetDict[k]
+            target_array['targetID'][i] = td.id
+            target_array['x'][i] = td.x
+            target_array['y'][i] = td.y
+            target_array['priority'][i] = td.priority
+            ft = fiberType2Str[td.fiberType]
             target_array['fiberType'][i] = ft
         return(target_array)
 
