@@ -124,6 +124,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("setCollisionBuffer", &RobotGrid::setCollisionBuffer)
         .def("pathGen", &RobotGrid::pathGen)
         .def("pathGen2", &RobotGrid::pathGen2)
+        .def("pathGen3", &RobotGrid::pathGen3)
         // .def("setTargetList", &RobotGrid::setTargetList)
         // .def("addTargetList", &RobotGrid::addTargetList)
         .def("targetlessRobots", &RobotGrid::targetlessRobots)

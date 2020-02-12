@@ -63,6 +63,7 @@ public:
     void setTargetAlphaBeta(double alpha, double beta);
     void setFiberXY (double xFiberGlobal, double yFiberGlobal, FiberType fiberType); // xy in focal plane coord sys
     // void setAlphaBetaRand();
+    double score(); // metric for how close to target I am
     void addRobotNeighbor(int robotID);
     void addFiducialNeighbor(int fiducialID);
     // bool isCollided();

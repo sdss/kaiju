@@ -152,6 +152,11 @@ void Robot::setFiberXY(double xFiberGlobal, double yFiberGlobal, FiberType fiber
 
 }
 
+double Robot::score(){
+    double alphaDist = alpha - targetAlpha;
+    double betaDist = beta - targetBeta;
+    return alphaDist*alphaDist + betaDist*betaDist;
+}
 
 void Robot::addRobotNeighbor(int robotID){
     robotNeighbors.push_back(robotID);
