@@ -152,7 +152,7 @@ function drawRobot(robot_obj, target_obj, i) {
 	  betaArm.translate(alphaEndX, alphaEndY);
 	  betaArm.rotate(- (beta + alpha), alphaEndX, alphaEndY);
 		if(robot_obj.isAssigned[i]) {
-        if(target_obj.fiberType == 'BossFiber') {
+        if(robot_obj.assignedFiberType[i] == 'BossFiber') {
 						var betaColor = 'blue';
         } else {
 						var betaColor = 'red';
@@ -231,7 +231,7 @@ function setAllRobots() {
 				robots[i][3] = alpha
 				robots[i][4] = beta
 				if(robot_obj.isAssigned[i]) {
-						if(robot_obj.assignedFiberType == 'BossFiber') {
+						if(robot_obj.assignedFiberType[i] == 'BossFiber') {
 								var betaColor = 'blue';
 						} else {
 								var betaColor = 'red';

@@ -271,7 +271,7 @@ class RobotGridFilledHex(kaiju.cKaiju.RobotGrid):
                                'robotGrid.html'), "r")
         html_str = ''
         for l in fp.readlines():
-            l = l.replace("fieldfile", "'" + fieldfile + "'")
+            l = l.replace("fieldfile", "'" + os.path.basename(fieldfile) + "'")
             html_str = html_str + l
         fp.close()
 
@@ -286,7 +286,7 @@ class RobotGridFilledHex(kaiju.cKaiju.RobotGrid):
             js_str = js_str + l
         fp.close()
 
-        fp = open('robotGrid.js', "w")
+        fp = open(os.path.join(os.path.dirname(filebase), 'robotGrid.js'), "w")
         fp.write(js_str)
         fp.close()
         return
