@@ -39,6 +39,7 @@ public:
     void initGrid();
     void decollideGrid();
     int getNCollisions();
+    std::vector<int> deadlockedRobots(); // robots not on target
     void clearPaths();
     void pathGen(); // step towards fold
     void pathGen2(); // stepEuclidean
@@ -73,5 +74,6 @@ public:
     void stepTowardFold(std::shared_ptr<Robot> r1, int stepNum);
     void stepEuclidean(std::shared_ptr<Robot> r1, int stepNum);
     void stepRotational(std::shared_ptr<Robot> r1, int stepNum);
+    double closestApproach2(int robotID); // squared distance to closest neighbor
     // void smoothPath(std::shared_ptr<Robot> robot, double epsilon);
 };

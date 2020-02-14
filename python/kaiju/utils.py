@@ -84,7 +84,7 @@ def plotPaths(robotGrid, nframes=None, filename=None):
     # figure out how to downsample paths
     global rg
     rg = robotGrid
-    steps = range(robotGrid.nSteps)
+    steps = range(len(robotGrid.robotDict[1].alphaPath)) # not sure why rg.nSteps is broken
     print("plotting steps", steps)
     # down sample if nframes specified
 

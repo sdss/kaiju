@@ -259,6 +259,7 @@ void RobotGrid::pathGen3(){
 
             if (r->beta!=r->targetBeta or r->alpha!=r->targetAlpha) {
                 // could just check the last elemet in onTargetVec? same thing.
+                // or use robot->score
                 allAtTarget = false;
             }
         }
@@ -270,7 +271,7 @@ void RobotGrid::pathGen3(){
         }
     }
 
-    nSteps = ii;
+    nSteps = ii+1;
 }
 
 void RobotGrid::pathGen2(){
@@ -301,7 +302,7 @@ void RobotGrid::pathGen2(){
         }
     }
 
-    nSteps = ii;
+    nSteps = ii+1;
 }
 
 void RobotGrid::pathGen(){
@@ -331,7 +332,7 @@ void RobotGrid::pathGen(){
         }
     }
 
-    nSteps = ii;
+    nSteps = ii+1;
 }
 
 void RobotGrid::clearTargetDict(){
@@ -621,6 +622,22 @@ bool RobotGrid::isValidAssignment(int robotID, int targetID){
 //     // rewrite!!!
 // }
 
+double RobotGrid::closestApproach2(int robotID){
+    double minDist2 = 1e15; // to be minimized
+    auto robot1 = robotDict[robotID];
+    for (auto otherRobotID : robot1->robotNeighbors){
+        auto robot2 = robotDict[otherRobotID];
+        auto dist2 = dist3D_Segment_to_Segment(
+                robot2->betaCollisionSegment[0], robot2->betaCollisionSegment[1],
+                robot1->betaCollisionSegment[0], robot1->betaCollisionSegment[1]
+            );
+        if (dist2 < minDist2){
+            minDist2 = dist2;
+        }
+    }
+    return minDist2;
+}
+
 bool RobotGrid::isCollided(int robotID){
     auto robotsColliding = robotColliders(robotID);
     if (robotsColliding.size() != 0){
@@ -636,14 +653,12 @@ bool RobotGrid::isCollided(int robotID){
 std::vector<int> RobotGrid::robotColliders(int robotID){
 
     std::vector<int> collidingNeighbors;
-    // so scope really fucked me on this one?
-    // lots of returns fixed it.
     double dist2, collideDist2;
     // check collisions with neighboring robots
     auto robot1 = robotDict[robotID];
     for (auto otherRobotID : robot1->robotNeighbors){
         auto robot2 = robotDict[otherRobotID];
-        // squared distance
+        // squared distance returned
         dist2 = dist3D_Segment_to_Segment(
                 robot2->betaCollisionSegment[0], robot2->betaCollisionSegment[1],
                 robot1->betaCollisionSegment[0], robot1->betaCollisionSegment[1]
@@ -725,14 +740,29 @@ void RobotGrid::decollideRobot(int robotID){
     // }
 }
 
+std::vector<int> RobotGrid::deadlockedRobots(){
+    std::vector<int> deadlockedRobotIDs;
+    for (auto rPair : robotDict){
+        auto robot = rPair.second;
+        if (robot->targetAlpha != robot->alpha or robot->targetBeta != robot->beta){
+            deadlockedRobotIDs.push_back(robot->id);
+        }
+    }
+    return deadlockedRobotIDs;
+}
+
 void RobotGrid::stepRotational(std::shared_ptr<Robot> robot, int stepNum){
 
     bool alphaOnTarg, betaOnTarg;
     double currAlpha = robot->alpha;
     double currBeta = robot->beta;
-    double bestAlpha, bestBeta;
+    double bestAlpha, bestBeta, bestScore;
     bestAlpha = currAlpha;
     bestBeta = currBeta;
+    // bestScore = robot->score() + 1/closestApproach2(robot->id);
+    // bestScore = 1e16;
+    auto currClosestApproach = closestApproach2(robot->id);
+    bestScore = robot->score(); // + currClosestApproach;
     int bestInd = -1;
 
     Eigen::Vector2d alphaPathPoint;
@@ -743,78 +773,53 @@ void RobotGrid::stepRotational(std::shared_ptr<Robot> robot, int stepNum){
     betaPathPoint(0) = stepNum;
 
 
-    if (currBeta==robot->targetBeta and currAlpha==robot->targetAlpha){
-        // done folding don't move
-        alphaPathPoint(1) = currAlpha;
-        betaPathPoint(1) = currBeta;
-        robot->alphaPath.push_back(alphaPathPoint);
-        robot->betaPath.push_back(betaPathPoint);
-        robot->onTargetVec.push_back(true);
+    // if (currBeta==robot->targetBeta and currAlpha==robot->targetAlpha){ // replace this with score?
+    //     // done folding don't move
+    //     alphaPathPoint(1) = currAlpha;
+    //     betaPathPoint(1) = currBeta;
+    //     robot->alphaPath.push_back(alphaPathPoint);
+    //     robot->betaPath.push_back(betaPathPoint);
+    //     robot->onTargetVec.push_back(true);
 
-        // note make collision segment just two points
+    //     // note make collision segment just two points
 
-        temp(0) = stepNum;
-        temp(1) = robot->betaCollisionSegment[0](0); // xAlphaEnd
-        robot->roughAlphaX.push_back(temp);
-        temp(1) = robot->betaCollisionSegment[0](1); // yAlphaEnd
-        robot->roughAlphaY.push_back(temp);
-        temp(1) = robot->betaCollisionSegment.back()(0); // xBetaEnd
-        robot->roughBetaX.push_back(temp);
-        temp(1) = robot->betaCollisionSegment.back()(1); // yBetaEnd
-        robot->roughBetaY.push_back(temp);
+    //     temp(0) = stepNum;
+    //     temp(1) = robot->betaCollisionSegment[0](0); // xAlphaEnd
+    //     robot->roughAlphaX.push_back(temp);
+    //     temp(1) = robot->betaCollisionSegment[0](1); // yAlphaEnd
+    //     robot->roughAlphaY.push_back(temp);
+    //     temp(1) = robot->betaCollisionSegment.back()(0); // xBetaEnd
+    //     robot->roughBetaX.push_back(temp);
+    //     temp(1) = robot->betaCollisionSegment.back()(1); // yBetaEnd
+    //     robot->roughBetaY.push_back(temp);
 
-        return;
-    }
+    //     return;
+    // }
 
     robot->lastStepNum = stepNum;
-
-    double bestScore = 1e15; // large number to be minimized
-    double score;
-    // determine the prefered direction of motion for alpha/beta
-    double alphaDist = robot->targetAlpha - currAlpha;
-    double betaDist = robot->targetBeta - currBeta;
-    int prefAlphaDir, prefBetaDir;
-    if (alphaDist > 0){
-        prefAlphaDir = 1; // prefer to increase alpha
-    }
-    else if (alphaDist == 0){
-        prefAlphaDir = 0;
-    }
-    else {
-        prefAlphaDir = -1;
-    }
-    if (betaDist > 0){
-        prefBetaDir = 1;
-    }
-    else if (betaDist == 0){
-        prefBetaDir = 0;
-    }
-    else {
-        prefBetaDir = -1;
-    }
 
     // check all move combinations for each axis
     for (int betaDir=-1; betaDir<2; betaDir++){
         for (int alphaDir=-1; alphaDir<2; alphaDir++){
-            if (alphaDir==0 and betaDir==0){
-                // skip this check, always favor a move
-                // over a non move
-                continue;
-            }
+            // if (alphaDir==0 and betaDir==0){
+            //     // skip this check, always favor a move
+            //     // over a non move
+            //     continue;
+            // }
 
             double nextAlpha = currAlpha + alphaDir * angStep;
             double nextBeta = currBeta + betaDir * angStep;
             // careful not to overshoot
-            if (currAlpha > robot->targetAlpha and nextAlpha < robot->targetAlpha){
+            if (currAlpha > robot->targetAlpha and nextAlpha <= robot->targetAlpha){
                 nextAlpha = robot->targetAlpha;
             }
-            if (currAlpha < robot->targetAlpha and nextAlpha > robot->targetAlpha){
+            if (currAlpha < robot->targetAlpha and nextAlpha >= robot->targetAlpha){
                 nextAlpha = robot->targetAlpha;
             }
-            if (currBeta > robot->targetBeta and nextBeta < robot->targetBeta){
+            if (currBeta > robot->targetBeta and nextBeta <= robot->targetBeta){
                 nextBeta = robot->targetBeta;
             }
-            if (currBeta < robot->targetBeta and nextBeta > robot->targetBeta){
+            if (currBeta < robot->targetBeta and nextBeta >= robot->targetBeta){
                 nextBeta = robot->targetBeta;
             }
             // handle limits of travel
@@ -834,17 +839,16 @@ void RobotGrid::stepRotational(std::shared_ptr<Robot> robot, int stepNum){
             }
             // if next choice results in no move skip it
             // always favor a move
-            if (nextBeta==currBeta and nextAlpha==currAlpha){
-                continue;
-            }
+            // if (nextBeta==currBeta and nextAlpha==currAlpha){
+            //     continue;
+            // }
             robot->setAlphaBeta(nextAlpha, nextBeta);
+            auto nextClosestApproach2 = closestApproach2(robot->id);
+            auto score = robot->score(); //+ nextClosestApproach2;
 
             if (!isCollided(robot->id)){
                 // this is a valid move see if its the best option so far
-                // compare to the desired gradient
-                score = (alphaDir - prefAlphaDir)*(alphaDir - prefAlphaDir) + (betaDir - prefBetaDir)*(betaDir - prefBetaDir);
 
-                // favor alpha over beta by putting first
                 if (score < bestScore){
                     bestScore = score;
                     bestAlpha = nextAlpha;

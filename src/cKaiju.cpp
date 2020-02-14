@@ -41,7 +41,9 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("alpha", &Robot::alpha, R"pbdoc(
             Robot's alpha position (degrees).
             )pbdoc")
+        .def_readwrite("targetAlpha", &Robot::targetAlpha)
         .def_readwrite("alphaVel", &Robot::alphaVel)
+        .def_readwrite("targetBeta", &Robot::targetBeta)
         .def_readwrite("betaVel", &Robot::betaVel)
         .def_readwrite("smoothAlphaVel", &Robot::smoothAlphaVel)
         .def_readwrite("smoothBetaVel", &Robot::smoothBetaVel)
@@ -108,6 +110,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("fiducialDict", &RobotGrid::fiducialDict)
         .def_readwrite("targetDict", &RobotGrid::targetDict)
         .def("getNCollisions", &RobotGrid::getNCollisions)
+        .def("deadlockedRobots", &RobotGrid::deadlockedRobots)
         .def("addRobot", &RobotGrid::addRobot,
             "robotID"_a, "xPos"_a, "yPos"_a, "hasApogee"_a = true)
         .def("addFiducial", &RobotGrid::addFiducial,
