@@ -62,7 +62,7 @@ def test_reversePathGen(plot=False):
         if plot:
             utils.plotOne(0, rg, figname="reversePathDecollidedRot.png", isSequence=False)
         for robot in rg.robotDict.values():
-            robot.setTargetAlphaBeta(30, 170)
+            robot.setTargetAlphaBeta(30, 180)
         assert rg.getNCollisions() == 0
         rg.pathGen3()
         # rg.pathGen4()

@@ -1035,7 +1035,7 @@ void RobotGrid::stepRotational(std::shared_ptr<Robot> robot, int stepNum){
     betaPathPoint(0) = stepNum;
 
 
-    if (robot->score()==0 and encroachmentScore(robot->id, 2.5*collisionBuffer)==0){ // replace this with score?
+    if (robot->score()==0 and encroachmentScore(robot->id, 2.5*collisionBuffer*robot->maxDisplacement)==0){ // replace this with score?
         // done folding no one coming don't move
         alphaPathPoint(1) = currAlpha;
         betaPathPoint(1) = currBeta;
