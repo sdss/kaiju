@@ -42,7 +42,7 @@ RobotGrid::RobotGrid(double angStep, double collisionBuffer, double epsilon, int
     // collisionBuffer = myCollisionBuffer;
     // angStep = myAngStep;
     smoothCollisions = 0;
-    maxPathSteps = (int)(ceil(700.0/angStep));
+    maxPathSteps = (int)(ceil(1000.0/angStep));
 }
 
 void RobotGrid::addRobot(int robotID, double xPos, double yPos, bool hasApogee){
@@ -238,8 +238,41 @@ void RobotGrid::clearPaths(){
         r->roughAlphaY.clear();
         r->roughBetaX.clear();
         r->roughBetaY.clear();
+        r->onTargetVec.clear();
     }
 
+}
+
+void RobotGrid::pathGen4(){
+    // path gen 2 steps towards beta target
+    clearPaths();
+    didFail = true;
+    int ii;
+    for (ii=0; ii<maxPathSteps; ii++){
+
+        bool allAtTarget = true;
+
+        for (auto rPair : robotDict){
+            auto r = rPair.second;
+            // std::cout << "path gen " << r.betaOrientation.size() << " " << r.betaModel.size() << std::endl;
+            // std::cout << "alpha beta " << r.alpha << " " << r.beta << std::endl;
+            stepBeta(r, ii);
+
+            if (r->betaScore()!=0) {
+                // could just check the last elemet in onTargetVec? same thing.
+                // or use robot->score
+                allAtTarget = false;
+            }
+        }
+
+        if (allAtTarget){
+            std::cout << "all at target" << std::endl;
+            didFail = false;
+            break;
+        }
+    }
+
+    nSteps = ii+1;
 }
 
 void RobotGrid::pathGen3(){
@@ -650,6 +683,75 @@ bool RobotGrid::isCollided(int robotID){
     return false;
 }
 
+
+double RobotGrid::encroachmentScore(int robotID, double distance){
+    // score, separation2
+    // look ahead and see robots getting close
+    double dist2, dist, score;
+    double encroachment = 0;
+    // for (auto nsd : neighborScoreDist){
+    //     if (score < nsd[0] and nsd[1] < 2.5*collisionBuffer){
+    //         // 4*collisions buffer is factor of two bigger
+    //         // than collision
+    //         encroachment += 1/nsd[1];
+    //     }
+    // }
+
+
+    // check collisions with neighboring robots
+    auto robot1 = robotDict[robotID];
+    score = robot1->score();
+    for (auto otherRobotID : robot1->robotNeighbors){
+        auto robot2 = robotDict[otherRobotID];
+        // squared distance returned
+        dist2 = dist3D_Segment_to_Segment(
+                robot2->betaCollisionSegment[0], robot2->betaCollisionSegment[1],
+                robot1->betaCollisionSegment[0], robot1->betaCollisionSegment[1]
+            );
+
+        dist = sqrt(dist2);
+
+        if ((score < robot2->score()) and (dist < distance)){
+            encroachment += 1/dist;
+        }
+    }
+    return encroachment;
+}
+
+double RobotGrid::betaEncroachmentScore(int robotID, double distance){
+    // score, separation2
+    // look ahead and see robots getting close
+    double dist2, dist, score;
+    double encroachment = 0;
+    // for (auto nsd : neighborScoreDist){
+    //     if (score < nsd[0] and nsd[1] < 2.5*collisionBuffer){
+    //         // 4*collisions buffer is factor of two bigger
+    //         // than collision
+    //         encroachment += 1/nsd[1];
+    //     }
+    // }
+
+
+    // check collisions with neighboring robots
+    auto robot1 = robotDict[robotID];
+    score = robot1->betaWeightedScore();
+    for (auto otherRobotID : robot1->robotNeighbors){
+        auto robot2 = robotDict[otherRobotID];
+        // squared distance returned
+        dist2 = dist3D_Segment_to_Segment(
+                robot2->betaCollisionSegment[0], robot2->betaCollisionSegment[1],
+                robot1->betaCollisionSegment[0], robot1->betaCollisionSegment[1]
+            );
+
+        dist = sqrt(dist2);
+
+        if ((score < robot2->betaWeightedScore()) and (dist < distance)){
+            encroachment += 1/dist;
+        }
+    }
+    return encroachment;
+}
+
 std::vector<int> RobotGrid::robotColliders(int robotID){
 
     std::vector<int> collidingNeighbors;
@@ -751,19 +853,18 @@ std::vector<int> RobotGrid::deadlockedRobots(){
     return deadlockedRobotIDs;
 }
 
-void RobotGrid::stepRotational(std::shared_ptr<Robot> robot, int stepNum){
+void RobotGrid::stepBeta(std::shared_ptr<Robot> robot, int stepNum){
 
-    bool alphaOnTarg, betaOnTarg;
+    double encroachment, score;
     double currAlpha = robot->alpha;
     double currBeta = robot->beta;
-    double bestAlpha, bestBeta, bestScore;
+    double bestAlpha, bestBeta, bestScore, bestEncroachment;
     bestAlpha = currAlpha;
     bestBeta = currBeta;
+    bestScore = 1e16; // to be minimized
+    bestEncroachment = 1e16; // to be minimized
     // bestScore = robot->score() + 1/closestApproach2(robot->id);
     // bestScore = 1e16;
-    auto currClosestApproach = closestApproach2(robot->id);
-    bestScore = robot->score(); // + currClosestApproach;
-    int bestInd = -1;
 
     Eigen::Vector2d alphaPathPoint;
     Eigen::Vector2d betaPathPoint;
@@ -773,39 +874,34 @@ void RobotGrid::stepRotational(std::shared_ptr<Robot> robot, int stepNum){
     betaPathPoint(0) = stepNum;
 
 
-    // if (currBeta==robot->targetBeta and currAlpha==robot->targetAlpha){ // replace this with score?
-    //     // done folding don't move
-    //     alphaPathPoint(1) = currAlpha;
-    //     betaPathPoint(1) = currBeta;
-    //     robot->alphaPath.push_back(alphaPathPoint);
-    //     robot->betaPath.push_back(betaPathPoint);
-    //     robot->onTargetVec.push_back(true);
+    if (robot->betaScore()==0 and betaEncroachmentScore(robot->id, 2.5*collisionBuffer+robot->maxDisplacement)==0){ // replace this with score?
+        // done folding no one coming don't move
+        alphaPathPoint(1) = currAlpha;
+        betaPathPoint(1) = currBeta;
+        robot->alphaPath.push_back(alphaPathPoint);
+        robot->betaPath.push_back(betaPathPoint);
+        robot->onTargetVec.push_back(true);
 
-    //     // note make collision segment just two points
+        // note make collision segment just two points
 
-    //     temp(0) = stepNum;
-    //     temp(1) = robot->betaCollisionSegment[0](0); // xAlphaEnd
-    //     robot->roughAlphaX.push_back(temp);
-    //     temp(1) = robot->betaCollisionSegment[0](1); // yAlphaEnd
-    //     robot->roughAlphaY.push_back(temp);
-    //     temp(1) = robot->betaCollisionSegment.back()(0); // xBetaEnd
-    //     robot->roughBetaX.push_back(temp);
-    //     temp(1) = robot->betaCollisionSegment.back()(1); // yBetaEnd
-    //     robot->roughBetaY.push_back(temp);
+        temp(0) = stepNum;
+        temp(1) = robot->betaCollisionSegment[0](0); // xAlphaEnd
+        robot->roughAlphaX.push_back(temp);
+        temp(1) = robot->betaCollisionSegment[0](1); // yAlphaEnd
+        robot->roughAlphaY.push_back(temp);
+        temp(1) = robot->betaCollisionSegment.back()(0); // xBetaEnd
+        robot->roughBetaX.push_back(temp);
+        temp(1) = robot->betaCollisionSegment.back()(1); // yBetaEnd
+        robot->roughBetaY.push_back(temp);
 
-    //     return;
-    // }
+        return;
+    }
 
     robot->lastStepNum = stepNum;
 
     // check all move combinations for each axis
     for (int betaDir=-1; betaDir<2; betaDir++){
         for (int alphaDir=-1; alphaDir<2; alphaDir++){
-            // if (alphaDir==0 and betaDir==0){
-            //     // skip this check, always favor a move
-            //     // over a non move
-            //     continue;
-            // }
 
             double nextAlpha = currAlpha + alphaDir * angStep;
             double nextBeta = currBeta + betaDir * angStep;
@@ -837,31 +933,216 @@ void RobotGrid::stepRotational(std::shared_ptr<Robot> robot, int stepNum){
             if (nextBeta < 0){
                 nextBeta = 0;
             }
-            // if next choice results in no move skip it
-            // always favor a move
-            // if (nextBeta==currBeta and nextAlpha==currAlpha){
-            //     continue;
-            // }
-            robot->setAlphaBeta(nextAlpha, nextBeta);
-            auto nextClosestApproach2 = closestApproach2(robot->id);
-            auto score = robot->score(); //+ nextClosestApproach2;
 
+            robot->setAlphaBeta(nextAlpha, nextBeta);
+            score = robot->betaWeightedScore(); //+ nextClosestApproach2;
+            // double encroachment = 0;
+
+
+            encroachment = betaEncroachmentScore(robot->id, 2*collisionBuffer+robot->maxDisplacement);
+            // for (auto nsd : neighborScoreDist){
+            //     if (score < nsd[0] and nsd[1] < 2.5*collisionBuffer){
+            //         // 4*collisions buffer is factor of two bigger
+            //         // than collision
+            //         encroachment += 1/nsd[1];
+            //     }
+            // }
+            // if (encroachment > 0){
+            //     std::cout << "encroachment " << encroachment << std::endl;
+            // }
             if (!isCollided(robot->id)){
                 // this is a valid move see if its the best option so far
+                // filter first by encroachment
+                // bool bestMoveYet = (encroachment <= bestEncroachment) and
+                //                    (score < bestScore and randomSample() >= 0.25 or
+                //                     score == bestScore and randomSample()>=0.5);
 
-                if (score < bestScore){
-                    bestScore = score;
-                    bestAlpha = nextAlpha;
-                    bestBeta = nextBeta;
+                // if (bestMoveYet){
+                //     bestScore = score;
+                //     bestAlpha = nextAlpha;
+                //     bestBeta = nextBeta;
+                //     bestEncroachment = encroachment;
+                // }
+
+                if (encroachment <= bestEncroachment){
+
+                    if (score < bestScore and randomSample() >= 0.25){
+                        bestScore = score;
+                        bestAlpha = nextAlpha;
+                        bestBeta = nextBeta;
+                        bestEncroachment = encroachment;
+
+                    }
+
+                    else if (score == bestScore and randomSample() >= 0.5){
+                        // flip a coin to see whether to accept
+                        bestScore = score;
+                        bestAlpha = nextAlpha;
+                        bestBeta = nextBeta;
+                        bestEncroachment = encroachment;
+                    }
                 }
+            }
+        }
+    }  // end loop over perturbations
 
-                else if (score == bestScore and randomSample()>=0.5){
-                    // flip a coin to see whether to accept
-                    bestScore = score;
-                    bestAlpha = nextAlpha;
-                    bestBeta = nextBeta;
+    // set alpha beta to best found option
+    robot->setAlphaBeta(bestAlpha, bestBeta);
+    alphaPathPoint(1) = bestAlpha;
+    betaPathPoint(1) = bestBeta;
+    robot->alphaPath.push_back(alphaPathPoint);
+    robot->betaPath.push_back(betaPathPoint);
+    if (robot->betaScore()==0){
+        robot->onTargetVec.push_back(true);
+    }
+    else {
+        robot->onTargetVec.push_back(false);
+    }
+
+    // add alpha/beta xy points
+    // Eigen::Vector2d temp;
+    temp(0) = stepNum;
+    temp(1) = robot->betaCollisionSegment[0](0); // xAlphaEnd
+    robot->roughAlphaX.push_back(temp);
+    temp(1) = robot->betaCollisionSegment[0](1); // yAlphaEnd
+    robot->roughAlphaY.push_back(temp);
+    temp(1) = robot->betaCollisionSegment.back()(0); // xBetaEnd
+    robot->roughBetaX.push_back(temp);
+    temp(1) = robot->betaCollisionSegment.back()(1); // yBetaEnd
+    robot->roughBetaY.push_back(temp);
+
+
+}
+
+void RobotGrid::stepRotational(std::shared_ptr<Robot> robot, int stepNum){
+
+    double encroachment, score;
+    double currAlpha = robot->alpha;
+    double currBeta = robot->beta;
+    double bestAlpha, bestBeta, bestScore, bestEncroachment;
+    bestAlpha = currAlpha;
+    bestBeta = currBeta;
+    bestScore = 1e16; // to be minimized
+    bestEncroachment = 1e16; // to be minimized
+    // bestScore = robot->score() + 1/closestApproach2(robot->id);
+    // bestScore = 1e16;
+
+    Eigen::Vector2d alphaPathPoint;
+    Eigen::Vector2d betaPathPoint;
+    Eigen::Vector2d temp;
+
+    alphaPathPoint(0) = stepNum;
+    betaPathPoint(0) = stepNum;
+
+
+    if (robot->score()==0 and encroachmentScore(robot->id, 2.5*collisionBuffer)==0){ // replace this with score?
+        // done folding no one coming don't move
+        alphaPathPoint(1) = currAlpha;
+        betaPathPoint(1) = currBeta;
+        robot->alphaPath.push_back(alphaPathPoint);
+        robot->betaPath.push_back(betaPathPoint);
+        robot->onTargetVec.push_back(true);
+
+        // note make collision segment just two points
+
+        temp(0) = stepNum;
+        temp(1) = robot->betaCollisionSegment[0](0); // xAlphaEnd
+        robot->roughAlphaX.push_back(temp);
+        temp(1) = robot->betaCollisionSegment[0](1); // yAlphaEnd
+        robot->roughAlphaY.push_back(temp);
+        temp(1) = robot->betaCollisionSegment.back()(0); // xBetaEnd
+        robot->roughBetaX.push_back(temp);
+        temp(1) = robot->betaCollisionSegment.back()(1); // yBetaEnd
+        robot->roughBetaY.push_back(temp);
+
+        return;
+    }
+
+    robot->lastStepNum = stepNum;
+
+    // check all move combinations for each axis
+    for (int betaDir=-1; betaDir<2; betaDir++){
+        for (int alphaDir=-1; alphaDir<2; alphaDir++){
+
+            double nextAlpha = currAlpha + alphaDir * angStep;
+            double nextBeta = currBeta + betaDir * angStep;
+            // careful not to overshoot
+            if (currAlpha > robot->targetAlpha and nextAlpha <= robot->targetAlpha){
+                nextAlpha = robot->targetAlpha;
+            }
+            if (currAlpha < robot->targetAlpha and nextAlpha >= robot->targetAlpha){
+                nextAlpha = robot->targetAlpha;
+            }
+            if (currBeta > robot->targetBeta and nextBeta <= robot->targetBeta){
+                nextBeta = robot->targetBeta;
+            }
+            if (currBeta < robot->targetBeta and nextBeta >= robot->targetBeta){
+                nextBeta = robot->targetBeta;
+            }
+            // handle limits of travel
+            // can probably ditch this as target
+            // must be in range anyways
+            if (nextAlpha > 360){
+                nextAlpha = 360;
+            }
+            if (nextAlpha < 0){
+                nextAlpha = 0;
+            }
+            if (nextBeta > 360){
+                nextBeta = 360;
+            }
+            if (nextBeta < 0){
+                nextBeta = 0;
+            }
+
+            robot->setAlphaBeta(nextAlpha, nextBeta);
+            score = robot->score(); //+ nextClosestApproach2;
+            // double encroachment = 0;
+
+
+            encroachment = encroachmentScore(robot->id, 2.5*collisionBuffer);
+            // for (auto nsd : neighborScoreDist){
+            //     if (score < nsd[0] and nsd[1] < 2.5*collisionBuffer){
+            //         // 4*collisions buffer is factor of two bigger
+            //         // than collision
+            //         encroachment += 1/nsd[1];
+            //     }
+            // }
+            // if (encroachment > 0){
+            //     std::cout << "encroachment " << encroachment << std::endl;
+            // }
+            if (!isCollided(robot->id)){
+                // this is a valid move see if its the best option so far
+                // filter first by encroachment
+                // bool bestMoveYet = (encroachment <= bestEncroachment) and
+                //                    (score < bestScore and randomSample() >= 0.25 or
+                //                     score == bestScore and randomSample()>=0.5);
+
+                // if (bestMoveYet){
+                //     bestScore = score;
+                //     bestAlpha = nextAlpha;
+                //     bestBeta = nextBeta;
+                //     bestEncroachment = encroachment;
+                // }
+
+                if (encroachment <= bestEncroachment){
+
+                    if (score < bestScore and randomSample() >= 0.25){
+                        bestScore = score;
+                        bestAlpha = nextAlpha;
+                        bestBeta = nextBeta;
+                        bestEncroachment = encroachment;
+
+                    }
+
+                    else if (score == bestScore and randomSample() >= 0.5){
+                        // flip a coin to see whether to accept
+                        bestScore = score;
+                        bestAlpha = nextAlpha;
+                        bestBeta = nextBeta;
+                        bestEncroachment = encroachment;
+                    }
                 }
-
             }
         }
     }  // end loop over perturbations

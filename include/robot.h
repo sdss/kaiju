@@ -34,6 +34,7 @@ public:
     bool hasBoss;
     double xPos, yPos, alpha, beta, targetAlpha, targetBeta, targetX, targetY;
     double angStep;
+    double maxDisplacement;
     double collisionBuffer = 0;
     std::vector<double> alphaVel;
     std::vector<double> betaVel;
@@ -64,6 +65,8 @@ public:
     void setFiberXY (double xFiberGlobal, double yFiberGlobal, FiberType fiberType); // xy in focal plane coord sys
     // void setAlphaBetaRand();
     double score(); // metric for how close to target I am
+    double betaWeightedScore(); // metric for how close to target I am
+    double betaScore();
     void addRobotNeighbor(int robotID);
     void addFiducialNeighbor(int fiducialID);
     // bool isCollided();

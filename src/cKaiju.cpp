@@ -128,6 +128,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("pathGen", &RobotGrid::pathGen)
         .def("pathGen2", &RobotGrid::pathGen2)
         .def("pathGen3", &RobotGrid::pathGen3)
+        .def("pathGen4", &RobotGrid::pathGen4)
         // .def("setTargetList", &RobotGrid::setTargetList)
         // .def("addTargetList", &RobotGrid::addTargetList)
         .def("targetlessRobots", &RobotGrid::targetlessRobots)
