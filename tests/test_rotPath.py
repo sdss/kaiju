@@ -40,9 +40,11 @@ def test_forwardPathGen(plot=False):
         utils.plotPaths(rg, filename="forwardPathGenRot.mp4")
 
 def test_reversePathGen(plot=False):
-    xPos, yPos = utils.hexFromDia(45, pitch=22.4)
+    xPos, yPos = utils.hexFromDia(27, pitch=22.4)
     print("n robots", len(xPos))
     seed = 1
+    # angStep = 1
+    collisionBuffer = 2.25
     for seed in range(100):
         rg = RobotGrid(
             stepSize=angStep, collisionBuffer=collisionBuffer,
@@ -62,7 +64,7 @@ def test_reversePathGen(plot=False):
         if plot:
             utils.plotOne(0, rg, figname="reversePathDecollidedRot.png", isSequence=False)
         for robot in rg.robotDict.values():
-            robot.setTargetAlphaBeta(30, 170)
+            robot.setTargetAlphaBeta(60, 170)
         assert rg.getNCollisions() == 0
         rg.pathGen3()
         # rg.pathGen4()
