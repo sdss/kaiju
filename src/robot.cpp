@@ -160,8 +160,15 @@ double Robot::score(){
 }
 
 double Robot::betaScore(){
-    double betaDist = beta - targetBeta;
-    return betaDist*betaDist;
+    // double betaDist = beta - targetBeta;
+    // return betaDist*betaDist;
+    return abs(beta-targetBeta);
+}
+
+double Robot::alphaScore(){
+    // double betaDist = beta - targetBeta;
+    // return betaDist*betaDist;
+    return abs(alpha - targetAlpha);
 }
 
 double Robot::betaWeightedScore(){

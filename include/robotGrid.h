@@ -41,10 +41,9 @@ public:
     int getNCollisions();
     std::vector<int> deadlockedRobots(); // robots not on target
     void clearPaths();
-    void pathGen(); // step towards fold
-    void pathGen2(); // stepEuclidean
-    void pathGen3(); // stepRotational with encroachment
-    void pathGen4(); // stepBeta with encroachment
+    void pathGen(); // step towards fold, initial solution
+    void pathGenGreedy(); // stepRotational with encroachment
+    void pathGenMDP(); // Markov Decision Process
     void simplifyPaths();
     void smoothPaths(int points);
     void verifySmoothed();
@@ -70,14 +69,13 @@ public:
     std::vector<int> robotColliders(int robotID);
     std::vector<int> fiducialColliders(int robotID);
     double encroachmentScore(int robotID, double distance);
-    double betaEncroachmentScore(int robotID, double distance);
-    double betaEncroachmentScore2(int robotID);
     // bool isFiducialCollided(std::shared_ptr<Robot> r1);
     // bool isCollidedInd(int robotInd);
     void decollideRobot(int robotID);
     void stepTowardFold(std::shared_ptr<Robot> r1, int stepNum);
-    void stepEuclidean(std::shared_ptr<Robot> r1, int stepNum);
-    void stepRotational(std::shared_ptr<Robot> r1, int stepNum);
+    // void stepEuclidean(std::shared_ptr<Robot> r1, int stepNum);
+    void stepGreedy(std::shared_ptr<Robot> r1, int stepNum);
+    void stepMDP(std::shared_ptr<Robot> r1, int stepNum);
     void stepBeta(std::shared_ptr<Robot> r1, int stepNum);
     double closestApproach2(int robotID); // squared distance to closest neighbor
     // void smoothPath(std::shared_ptr<Robot> robot, double epsilon);

@@ -67,6 +67,7 @@ public:
     double score(); // metric for how close to target I am
     double betaWeightedScore(); // metric for how close to target I am
     double betaScore();
+    double alphaScore();
     void addRobotNeighbor(int robotID);
     void addFiducialNeighbor(int fiducialID);
     // bool isCollided();
