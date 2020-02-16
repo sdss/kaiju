@@ -71,6 +71,7 @@ public:
     std::vector<int> fiducialColliders(int robotID);
     double encroachmentScore(int robotID, double distance);
     double betaEncroachmentScore(int robotID, double distance);
+    double betaEncroachmentScore2(int robotID);
     // bool isFiducialCollided(std::shared_ptr<Robot> r1);
     // bool isCollidedInd(int robotInd);
     void decollideRobot(int robotID);

@@ -44,6 +44,7 @@ def test_reversePathGen(plot=False):
     print("n robots", len(xPos))
     seed = 1
     # angStep = 1
+    angStep = 3
     collisionBuffer = 2.25
     for seed in range(100):
         rg = RobotGrid(
@@ -64,7 +65,7 @@ def test_reversePathGen(plot=False):
         if plot:
             utils.plotOne(0, rg, figname="reversePathDecollidedRot.png", isSequence=False)
         for robot in rg.robotDict.values():
-            robot.setTargetAlphaBeta(60, 170)
+            robot.setTargetAlphaBeta(0, 180)
         assert rg.getNCollisions() == 0
         rg.pathGen3()
         # rg.pathGen4()
@@ -73,7 +74,7 @@ def test_reversePathGen(plot=False):
             if not r.onTargetVec[-1]:
                 deadlockedRobots.append(r.id)
         if len(deadlockedRobots):
-            print("seed", seed, "failed with these", deadlockedRobots)
+            print("seed", seed, "failed with these", deadlockedRobots, "in ", rg.nSteps)
             break
         else:
             print("seed", seed, "didn't fail", rg.nSteps, " taken to solve")

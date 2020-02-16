@@ -42,7 +42,7 @@ RobotGrid::RobotGrid(double angStep, double collisionBuffer, double epsilon, int
     // collisionBuffer = myCollisionBuffer;
     // angStep = myAngStep;
     smoothCollisions = 0;
-    maxPathSteps = (int)(ceil(1000.0/angStep));
+    maxPathSteps = (int)(ceil(1500.0/angStep));
 }
 
 void RobotGrid::addRobot(int robotID, double xPos, double yPos, bool hasApogee){
@@ -718,6 +718,42 @@ double RobotGrid::encroachmentScore(int robotID, double distance){
     return encroachment;
 }
 
+
+double RobotGrid::betaEncroachmentScore2(int robotID){
+    // score, separation2
+    // look ahead and see robots getting close
+    double dist2, dist;
+    double encroachment = 0;
+    // for (auto nsd : neighborScoreDist){
+    //     if (score < nsd[0] and nsd[1] < 2.5*collisionBuffer){
+    //         // 4*collisions buffer is factor of two bigger
+    //         // than collision
+    //         encroachment += 1/nsd[1];
+    //     }
+    // }
+
+
+    // check collisions with neighboring robots
+    auto robot1 = robotDict[robotID];
+
+    double distLim = (-1/32400*robot1->betaScore() + 1)*3*collisionBuffer;
+    for (auto otherRobotID : robot1->robotNeighbors){
+        auto robot2 = robotDict[otherRobotID];
+        // squared distance returned
+        dist2 = dist3D_Segment_to_Segment(
+                robot2->betaCollisionSegment[0], robot2->betaCollisionSegment[1],
+                robot1->betaCollisionSegment[0], robot1->betaCollisionSegment[1]
+            );
+
+        dist = sqrt(dist2);
+
+        if (dist < distLim){
+            encroachment += 1/(dist*dist)*robot2->betaScore()/robot1->betaScore();
+        }
+    }
+    return encroachment;
+}
+
 double RobotGrid::betaEncroachmentScore(int robotID, double distance){
     // score, separation2
     // look ahead and see robots getting close
@@ -1036,6 +1072,7 @@ void RobotGrid::stepRotational(std::shared_ptr<Robot> robot, int stepNum){
 
 
     if (robot->score()==0 and encroachmentScore(robot->id, 2.4*collisionBuffer)==0){ // replace this with score?
+    // if (robot->score()==0 and betaEncroachmentScore2(robot->id)==0){ // replace this with score?
     // if (robot->betaScore()==0 and encroachmentScore(robot->id, 2*collisionBuffer+robot->maxDisplacement)==0){ // replace this with score?
         // done folding no one coming don't move
         alphaPathPoint(1) = currAlpha;
