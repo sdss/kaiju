@@ -245,7 +245,7 @@ void RobotGrid::clearPaths(){
 
 }
 
-void RobotGrid::pathGenMDP(){
+void RobotGrid::pathGenMDP(double greed, double phobia){
     // path gen 2 steps towards alpha beta target
     clearPaths();
     didFail = true;
@@ -263,7 +263,7 @@ void RobotGrid::pathGenMDP(){
             auto r = robotDict[robotID];
             // std::cout << "path gen " << r.betaOrientation.size() << " " << r.betaModel.size() << std::endl;
             // std::cout << "alpha beta " << r.alpha << " " << r.beta << std::endl;
-            stepMDP(r, ii);
+            stepMDP(r, ii, greed, phobia);
 
             if (r->score()!=0) {
                 // could just check the last elemet in onTargetVec? same thing.
@@ -908,7 +908,7 @@ void RobotGrid::stepGreedy(std::shared_ptr<Robot> robot, int stepNum){
 
 }
 
-void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
+void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum, double greed, double phobia){
 
     double encroachment, score, dist, dist2, localEnergy, closestNeighbor, cost;
     double currAlpha = robot->alpha;
@@ -919,6 +919,7 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
     bestScore = 1e16; // to be minimized
     bestEncroachment = 1e16; // to be minimized
     double bestCost = 1e16; // to be minimized
+    double maxDisplacement = robot->maxDisplacement();
     // bestScore = robot->score() + 1/closestApproach2(robot->id);
     // bestScore = 1e16;
 
@@ -1016,7 +1017,7 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
                 }
             }
 
-            if (closestNeighbor < 2*collisionBuffer){
+            if (closestNeighbor < (2*collisionBuffer + maxDisplacement)){
                 // this is not a viable move option
                 // go on to next try
                 continue;
@@ -1035,7 +1036,7 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
 
     // determine whether to rank on score, or energy
     int ind;
-    if (randomSample() > 0.8) { //} (0.75 + stepNum / (0.25*maxPathSteps))){
+    if (randomSample() < phobia) { //} (0.75 + stepNum / (0.25*maxPathSteps))){
         ind = 2; // increase distance to neighbors
     }
     else{
@@ -1044,7 +1045,7 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
 
     for (auto stateOption : stateOptions){
         score = stateOption[ind];
-        if (score < bestScore and randomSample() > 0.2){
+        if (score < bestScore and randomSample() < greed){
             // almost always pick a better score
             bestScore = score;
             bestAlpha = stateOption[0];

@@ -102,7 +102,6 @@ Robot::Robot(int id, double xPos, double yPos, double angStep, bool hasApogee)
     // hasApogee = myHasApogee;
     hasBoss = true; // break this out into a config/constructor
     betaCollisionSegment = neutralBetaCollisionSegment;
-    maxDisplacement = sin(2 * angStep * M_PI / 180)*(alphaLen+betaLen);
     // std::pair<betaGeometry, std::vector<double>> betaPair = getBetaGeom(8);
     // betaModel = betaPair.first;
     // betaOrientation = betaPair.first;
@@ -151,6 +150,11 @@ void Robot::setFiberXY(double xFiberGlobal, double yFiberGlobal, FiberType fiber
     }
     setAlphaBeta(newAlphaBeta[0], newAlphaBeta[1]);
 
+}
+
+double Robot::maxDisplacement(){
+    double x = cos(beta * M_PI/180)*(betaAxis2End - betaEndRadius);
+    return 2 * (alphaLen+x) * cos(angStep * M_PI / 180);
 }
 
 double Robot::score(){

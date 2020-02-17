@@ -34,7 +34,6 @@ public:
     bool hasBoss;
     double xPos, yPos, alpha, beta, targetAlpha, targetBeta, targetX, targetY;
     double angStep;
-    double maxDisplacement;
     double collisionBuffer = 0;
     std::vector<double> alphaVel;
     std::vector<double> betaVel;
@@ -85,5 +84,6 @@ public:
     void assignTarget(int targetID);
     void clearAssignment();
     bool isAssigned();
+    double maxDisplacement();
     // bool canSwapTarget(std::shared_ptr<Robot> robot);
 };

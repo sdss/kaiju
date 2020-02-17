@@ -115,8 +115,12 @@ def test_reverseMDP(plot=False):
 
 def test_setMDP(plot=False):
 
-    xPos, yPos = utils.hexFromDia(45, pitch=22.4)
+    greed = 1
+    phobia = 0
+    xPos, yPos = utils.hexFromDia(9, pitch=22.4)
     print("using ", len(xPos), "robots")
+    # collisionBuffer = 3
+    # stepSize = 0.5
     for seed in range(100):
         rg = RobotGrid(
             stepSize=angStep, collisionBuffer=collisionBuffer,
@@ -134,9 +138,9 @@ def test_setMDP(plot=False):
         rg.decollideGrid()
 
         for robot in rg.robotDict.values():
-            robot.setTargetAlphaBeta(20, 170)
+            robot.setTargetAlphaBeta(20, 160)
         assert rg.getNCollisions() == 0
-        rg.pathGenMDP()
+        rg.pathGenMDP(greed, phobia)
 
         deadlockedRobots = []
         for r in rg.robotDict.values():

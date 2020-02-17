@@ -161,8 +161,8 @@ double dist3D_Segment_to_Segment(
         }
     }
     // finally do the division to get sc and tc
-    sc = (abs(sN) < SMALL_NUM ? 0.0 : sN / sD);
-    tc = (abs(tN) < SMALL_NUM ? 0.0 : tN / tD);
+    sc = (std::fabs(sN) < SMALL_NUM ? 0.0 : sN / sD);
+    tc = (std::fabs(tN) < SMALL_NUM ? 0.0 : tN / tD);
 
     // get the difference of the two closest points
     Eigen::Vector3d   dP = w + (sc * u) - (tc * v);  // =  S1(sc) - S2(tc)

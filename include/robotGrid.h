@@ -43,7 +43,7 @@ public:
     void clearPaths();
     void pathGen(); // step towards fold, initial solution
     void pathGenGreedy(); // stepRotational with encroachment
-    void pathGenMDP(); // Markov Decision Process
+    void pathGenMDP(double greed, double phobia); // Markov Decision Process
     void simplifyPaths();
     void smoothPaths(int points);
     void verifySmoothed();
@@ -75,7 +75,7 @@ public:
     void stepTowardFold(std::shared_ptr<Robot> r1, int stepNum);
     // void stepEuclidean(std::shared_ptr<Robot> r1, int stepNum);
     void stepGreedy(std::shared_ptr<Robot> r1, int stepNum);
-    void stepMDP(std::shared_ptr<Robot> r1, int stepNum);
+    void stepMDP(std::shared_ptr<Robot> r1, int stepNum, double greed, double phobia);
     void stepBeta(std::shared_ptr<Robot> r1, int stepNum);
     double closestApproach2(int robotID); // squared distance to closest neighbor
     // void smoothPath(std::shared_ptr<Robot> robot, double epsilon);
