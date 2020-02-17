@@ -28,6 +28,7 @@ public:
     int maxPathSteps;
     int smoothCollisions;
     bool initialized = false;
+    double maxDisplacement;
     std::map<int, std::shared_ptr<Robot>> robotDict;
     std::map<int, std::shared_ptr<Fiducial>> fiducialDict;
     // std::vector<std::array<double, 2>> fiducialList;
@@ -77,6 +78,6 @@ public:
     void stepGreedy(std::shared_ptr<Robot> r1, int stepNum);
     void stepMDP(std::shared_ptr<Robot> r1, int stepNum, double greed, double phobia);
     void stepBeta(std::shared_ptr<Robot> r1, int stepNum);
-    double closestApproach2(int robotID); // squared distance to closest neighbor
+    // double closestApproach2(int robotID); // squared distance to closest neighbor
     // void smoothPath(std::shared_ptr<Robot> robot, double epsilon);
 };

@@ -17,6 +17,11 @@ rg = None # need global because C++ obj can't be pickled for multiprocessing
 
 def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=False, xlim=None, ylim=None, highlightRobot=None):
     global rg
+    if hasattr(step, "__len__"):
+        fig = step[1]
+        step = step[0]
+    else:
+        fig = step
 
     if robotGrid is not None:
         rg = robotGrid
@@ -55,7 +60,7 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
             topcolor = "skyblue"
         if onTarget:
             topcolor = "gold"
-        if rg.isCollided(robotID):
+        if not isSequence and rg.isCollided(robotID):
             # collision trumps not assigned
             topcolor = "red"
         if highlightRobot == robotID:
@@ -76,20 +81,26 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
     # ax.set_aspect("equal")
 
     if figname is None:
-        figname = "step_%04d.png"%(step)
+        figname = "step_%04d.png"%(fig)
     plt.savefig(figname, dpi=100)
     plt.close()
 
-def plotPaths(robotGrid, nframes=None, filename=None):
+def plotPaths(robotGrid, downsample=None, filename=None):
     # figure out how to downsample paths
     global rg
     rg = robotGrid
-    steps = range(len(robotGrid.robotDict[1].alphaPath)) # not sure why rg.nSteps is broken
-    print("plotting steps", steps)
+    steps = list(range(len(robotGrid.robotDict[1].alphaPath))) # not sure why rg.nSteps is broken
+    if downsample is not None:
+        steps = steps[::downsample] + [steps[-1]]
+
+
+    figs = list(range(len(steps)))
+    stepfigs = list(zip(steps, figs))
+    print("plotting steps", figs[-1])
     # down sample if nframes specified
 
     p = Pool(cpu_count())
-    p.map(plotOne, steps)
+    p.map(plotOne, stepfigs)
 
     fps = 30 # frames per second
     if filename is None:

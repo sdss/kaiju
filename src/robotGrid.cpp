@@ -44,7 +44,8 @@ RobotGrid::RobotGrid(double angStep, double collisionBuffer, double epsilon, int
     // collisionBuffer = myCollisionBuffer;
     // angStep = myAngStep;
     smoothCollisions = 0;
-    maxPathSteps = (int)(ceil(1500.0/angStep));
+    maxPathSteps = (int)(ceil(1700.0/angStep));
+    maxDisplacement = 2*sin(angStep*M_PI/180)*(alphaLen+betaLen);
 }
 
 void RobotGrid::addRobot(int robotID, double xPos, double yPos, bool hasApogee){
@@ -218,7 +219,7 @@ void RobotGrid::clearPaths(){
     for (auto rPair : robotDict){
         auto r = rPair.second;
         // verify that a target alpha beta has been set
-        if (!r->hasTargetAlphaBeta){
+        if (!r->hasDestinationAlphaBeta){
             throw std::runtime_error("One or more robots have not received target alpha/beta");
         }
         // clear any existing path
@@ -632,21 +633,21 @@ bool RobotGrid::isValidAssignment(int robotID, int targetID){
 //     // rewrite!!!
 // }
 
-double RobotGrid::closestApproach2(int robotID){
-    double minDist2 = 1e15; // to be minimized
-    auto robot1 = robotDict[robotID];
-    for (auto otherRobotID : robot1->robotNeighbors){
-        auto robot2 = robotDict[otherRobotID];
-        auto dist2 = dist3D_Segment_to_Segment(
-                robot2->betaCollisionSegment[0], robot2->betaCollisionSegment[1],
-                robot1->betaCollisionSegment[0], robot1->betaCollisionSegment[1]
-            );
-        if (dist2 < minDist2){
-            minDist2 = dist2;
-        }
-    }
-    return minDist2;
-}
+// double RobotGrid::closestApproach2(int robotID){
+//     double minDist2 = 1e15; // to be minimized
+//     auto robot1 = robotDict[robotID];
+//     for (auto otherRobotID : robot1->robotNeighbors){
+//         auto robot2 = robotDict[otherRobotID];
+//         auto dist2 = dist3D_Segment_to_Segment(
+//                 robot2->betaCollisionSegment[0], robot2->betaCollisionSegment[1],
+//                 robot1->betaCollisionSegment[0], robot1->betaCollisionSegment[1]
+//             );
+//         if (dist2 < minDist2){
+//             minDist2 = dist2;
+//         }
+//     }
+//     return minDist2;
+// }
 
 bool RobotGrid::isCollided(int robotID){
     auto robotsColliding = robotColliders(robotID);
@@ -699,9 +700,10 @@ double RobotGrid::encroachmentScore(int robotID, double distance){
 std::vector<int> RobotGrid::robotColliders(int robotID){
 
     std::vector<int> collidingNeighbors;
-    double dist2, collideDist2;
+    double dist2, collideDist2, dist;
     // check collisions with neighboring robots
     auto robot1 = robotDict[robotID];
+    // std::cout << "robot max displace " << maxDisplacement << std::endl;
     for (auto otherRobotID : robot1->robotNeighbors){
         auto robot2 = robotDict[otherRobotID];
         // squared distance returned
@@ -709,9 +711,9 @@ std::vector<int> RobotGrid::robotColliders(int robotID){
                 robot2->betaCollisionSegment[0], robot2->betaCollisionSegment[1],
                 robot1->betaCollisionSegment[0], robot1->betaCollisionSegment[1]
             );
-
-        collideDist2 = (2*collisionBuffer)*(2*collisionBuffer);
-        if (dist2 < collideDist2){
+        dist = sqrt(dist2);
+        // collideDist2 = (2*collisionBuffer)*(2*collisionBuffer);
+        if (dist < (2*collisionBuffer+ maxDisplacement)){
             // std::cout << "dist " << dist2 - collide_dist_squared << std::endl;
             collidingNeighbors.push_back(robot2->id);
         }
@@ -771,7 +773,7 @@ std::vector<int> RobotGrid::deadlockedRobots(){
     std::vector<int> deadlockedRobotIDs;
     for (auto rPair : robotDict){
         auto robot = rPair.second;
-        if (robot->targetAlpha != robot->alpha or robot->targetBeta != robot->beta){
+        if (robot->score() != 0){
             deadlockedRobotIDs.push_back(robot->id);
         }
     }
@@ -830,17 +832,17 @@ void RobotGrid::stepGreedy(std::shared_ptr<Robot> robot, int stepNum){
             double nextAlpha = currAlpha + alphaDir * angStep;
             double nextBeta = currBeta + betaDir * angStep;
             // careful not to overshoot
-            if (currAlpha > robot->targetAlpha and nextAlpha <= robot->targetAlpha){
-                nextAlpha = robot->targetAlpha;
+            if (currAlpha > robot->destinationAlpha and nextAlpha <= robot->destinationAlpha){
+                nextAlpha = robot->destinationAlpha;
             }
-            if (currAlpha < robot->targetAlpha and nextAlpha >= robot->targetAlpha){
-                nextAlpha = robot->targetAlpha;
+            if (currAlpha < robot->destinationAlpha and nextAlpha >= robot->destinationAlpha){
+                nextAlpha = robot->destinationAlpha;
             }
-            if (currBeta > robot->targetBeta and nextBeta <= robot->targetBeta){
-                nextBeta = robot->targetBeta;
+            if (currBeta > robot->destinationBeta and nextBeta <= robot->destinationBeta){
+                nextBeta = robot->destinationBeta;
             }
-            if (currBeta < robot->targetBeta and nextBeta >= robot->targetBeta){
-                nextBeta = robot->targetBeta;
+            if (currBeta < robot->destinationBeta and nextBeta >= robot->destinationBeta){
+                nextBeta = robot->destinationBeta;
             }
             // handle limits of travel
             // can probably ditch this as target
@@ -919,7 +921,6 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum, double greed,
     bestScore = 1e16; // to be minimized
     bestEncroachment = 1e16; // to be minimized
     double bestCost = 1e16; // to be minimized
-    double maxDisplacement = robot->maxDisplacement();
     // bestScore = robot->score() + 1/closestApproach2(robot->id);
     // bestScore = 1e16;
 
@@ -968,17 +969,17 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum, double greed,
             double nextAlpha = currAlpha + alphaDir * angStep;
             double nextBeta = currBeta + betaDir * angStep;
             // careful not to overshoot
-            if (currAlpha > robot->targetAlpha and nextAlpha <= robot->targetAlpha){
-                nextAlpha = robot->targetAlpha;
+            if (currAlpha > robot->destinationAlpha and nextAlpha <= robot->destinationAlpha){
+                nextAlpha = robot->destinationAlpha;
             }
-            if (currAlpha < robot->targetAlpha and nextAlpha >= robot->targetAlpha){
-                nextAlpha = robot->targetAlpha;
+            if (currAlpha < robot->destinationAlpha and nextAlpha >= robot->destinationAlpha){
+                nextAlpha = robot->destinationAlpha;
             }
-            if (currBeta > robot->targetBeta and nextBeta <= robot->targetBeta){
-                nextBeta = robot->targetBeta;
+            if (currBeta > robot->destinationBeta and nextBeta <= robot->destinationBeta){
+                nextBeta = robot->destinationBeta;
             }
-            if (currBeta < robot->targetBeta and nextBeta >= robot->targetBeta){
-                nextBeta = robot->targetBeta;
+            if (currBeta < robot->destinationBeta and nextBeta >= robot->destinationBeta){
+                nextBeta = robot->destinationBeta;
             }
             // handle limits of travel
             // can probably ditch this as target
@@ -1066,7 +1067,7 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum, double greed,
     betaPathPoint(1) = bestBeta;
     robot->alphaPath.push_back(alphaPathPoint);
     robot->betaPath.push_back(betaPathPoint);
-    if (robot->targetAlpha == robot->alpha and robot->targetBeta == robot->beta){
+    if (robot->score()==0){
         robot->onTargetVec.push_back(true);
     }
     else {
@@ -1354,13 +1355,13 @@ void RobotGrid::stepTowardFold(std::shared_ptr<Robot> robot, int stepNum){
 //     betaPathPoint(0) = stepNum;
 
 //     // hangle alpha wrapping
-//     if (currAlpha == 360 and robot->targetAlpha==0){
+//     if (currAlpha == 360 and robot->destinationAlpha==0){
 //         alphaOnTarg = true;
 //     }
-//     else if (currAlpha == 0 and robot->targetAlpha==360){
+//     else if (currAlpha == 0 and robot->destinationAlpha==360){
 //         alphaOnTarg = true;
 //     }
-//     else if (currAlpha == robot->targetAlpha){
+//     else if (currAlpha == robot->destinationAlpha){
 //         alphaOnTarg = true;
 //     }
 //     else {
@@ -1368,13 +1369,13 @@ void RobotGrid::stepTowardFold(std::shared_ptr<Robot> robot, int stepNum){
 //     }
 
 //     // hangle alpha wrapping
-//     if (currBeta == 360 and robot->targetBeta==0){
+//     if (currBeta == 360 and robot->destinationBeta==0){
 //         betaOnTarg = true;
 //     }
-//     else if (currBeta == 0 and robot->targetBeta==360){
+//     else if (currBeta == 0 and robot->destinationBeta==360){
 //         betaOnTarg = true;
 //     }
-//     else if (currBeta == robot->targetBeta){
+//     else if (currBeta == robot->destinationBeta){
 //         betaOnTarg = true;
 //     }
 //     else {
@@ -1423,17 +1424,17 @@ void RobotGrid::stepTowardFold(std::shared_ptr<Robot> robot, int stepNum){
 //         double nextAlpha = currAlpha + alphaBetaStepChoices(ii,0)*angStep;
 //         double nextBeta = currBeta + alphaBetaStepChoices(ii,1)*angStep;
 //         // careful not to overshoot
-//         if (currAlpha > robot->targetAlpha and nextAlpha < robot->targetAlpha){
-//             nextAlpha = robot->targetAlpha;
+//         if (currAlpha > robot->destinationAlpha and nextAlpha < robot->destinationAlpha){
+//             nextAlpha = robot->destinationAlpha;
 //         }
-//         if (currAlpha < robot->targetAlpha and nextAlpha > robot->targetAlpha){
-//             nextAlpha = robot->targetAlpha;
+//         if (currAlpha < robot->destinationAlpha and nextAlpha > robot->destinationAlpha){
+//             nextAlpha = robot->destinationAlpha;
 //         }
-//         if (currBeta > robot->targetBeta and nextBeta < robot->targetBeta){
-//             nextBeta = robot->targetBeta;
+//         if (currBeta > robot->destinationBeta and nextBeta < robot->destinationBeta){
+//             nextBeta = robot->destinationBeta;
 //         }
-//         if (currBeta < robot->targetBeta and nextBeta > robot->targetBeta){
-//             nextBeta = robot->targetBeta;
+//         if (currBeta < robot->destinationBeta and nextBeta > robot->destinationBeta){
+//             nextBeta = robot->destinationBeta;
 //         }
 
 //         // handle limits of travel
@@ -1517,7 +1518,7 @@ void RobotGrid::stepTowardFold(std::shared_ptr<Robot> robot, int stepNum){
 //             // std::cout << "alpha beta " << r.alpha << " " << r.beta << std::endl;
 //             stepEuclidean(r, ii);
 
-//             if (r->beta!=r->targetBeta or r->alpha!=r->targetAlpha) {
+//             if (r->beta!=r->destinationBeta or r->alpha!=r->destinationAlpha) {
 //                 // could just check the last elemet in onTargetVec? same thing.
 //                 allAtTarget = false;
 //             }

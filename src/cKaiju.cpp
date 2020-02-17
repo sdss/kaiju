@@ -16,13 +16,13 @@ PYBIND11_MODULE(cKaiju, m) {
         .value("BossFiber", BossFiber)
         .export_values();
 
-    py::class_<Fiducial, std::shared_ptr<Fiducial>>(m, "Fiducial")
+    py::class_<Fiducial, std::shared_ptr<Fiducial>>(m, "Fiducial", py::dynamic_attr())
         .def_readwrite("x", &Fiducial::x)
         .def_readwrite("y", &Fiducial::y)
         .def_readwrite("collisionBuffer", &Fiducial::collisionBuffer)
         .def_readwrite("id", &Fiducial::id);
 
-    py::class_<Target, std::shared_ptr<Target>>(m, "Target")
+    py::class_<Target, std::shared_ptr<Target>>(m, "Target", py::dynamic_attr())
         .def_readwrite("x", &Target::x)
         .def_readwrite("y", &Target::y)
         .def_readwrite("id", &Target::id)
@@ -31,7 +31,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("validRobotIDs", &Target::validRobotIDs)
         .def("isAssigned", &Target::isAssigned);
 
-    py::class_<Robot, std::shared_ptr<Robot>>(m, "Robot", R"pbdoc(
+    py::class_<Robot, std::shared_ptr<Robot>>(m, "Robot", py::dynamic_attr(), R"pbdoc(
         A robot positioner class
 
         This class is something totally awesome.
@@ -41,9 +41,12 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("alpha", &Robot::alpha, R"pbdoc(
             Robot's alpha position (degrees).
             )pbdoc")
-        .def_readwrite("targetAlpha", &Robot::targetAlpha)
+        .def_readwrite("angStep", &Robot::angStep)
+        .def_readwrite("collisionBuffer", &Robot::collisionBuffer)
+        .def_readwrite("lastStepNum", &Robot::lastStepNum)
+        .def_readwrite("destinationAlpha", &Robot::destinationAlpha)
+        .def_readwrite("destinationBeta", &Robot::destinationBeta)
         .def_readwrite("alphaVel", &Robot::alphaVel)
-        .def_readwrite("targetBeta", &Robot::targetBeta)
         .def_readwrite("betaVel", &Robot::betaVel)
         .def_readwrite("smoothAlphaVel", &Robot::smoothAlphaVel)
         .def_readwrite("smoothBetaVel", &Robot::smoothBetaVel)
@@ -83,7 +86,7 @@ PYBIND11_MODULE(cKaiju, m) {
 
             And some other bs.
         )pbdoc")
-        .def("setTargetAlphaBeta", &Robot::setTargetAlphaBeta)
+        .def("setDestinationAlphaBeta", &Robot::setDestinationAlphaBeta)
         .def("setXYUniform", &Robot::setXYUniform)
         .def("randomXYUniform", &Robot::randomXYUniform)
         .def("alphaBetaFromFiberXY", &Robot::alphaBetaFromFiberXY)
@@ -93,7 +96,7 @@ PYBIND11_MODULE(cKaiju, m) {
         // .def("decollide", &Robot::decollide)
         .def("isAssigned", &Robot::isAssigned);
 
-    py::class_<RobotGrid, std::shared_ptr<RobotGrid>>(m, "RobotGrid", R"pbdoc(
+    py::class_<RobotGrid, std::shared_ptr<RobotGrid>>(m, "RobotGrid", py::dynamic_attr(), R"pbdoc(
             Robot Grid Class
 
             A class for holding a grid of robots.
@@ -109,6 +112,8 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("nRobots", &RobotGrid::nRobots)
         .def_readwrite("fiducialDict", &RobotGrid::fiducialDict)
         .def_readwrite("targetDict", &RobotGrid::targetDict)
+        .def_readwrite("maxPathSteps", &RobotGrid::maxPathSteps)
+        .def_readwrite("maxDisplacement", &RobotGrid::maxDisplacement)
         .def("getNCollisions", &RobotGrid::getNCollisions)
         .def("deadlockedRobots", &RobotGrid::deadlockedRobots)
         .def("addRobot", &RobotGrid::addRobot,
@@ -147,6 +152,5 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("robotColliders", &RobotGrid::robotColliders)
         .def("fiducialColliders", &RobotGrid::fiducialColliders)
         .def("isCollided", &RobotGrid::isCollided);
-        // .def("greedyAssign", &RobotGrid::greedyAssign);
 }
 

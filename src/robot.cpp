@@ -152,34 +152,23 @@ void Robot::setFiberXY(double xFiberGlobal, double yFiberGlobal, FiberType fiber
 
 }
 
-double Robot::maxDisplacement(){
-    double x = cos(beta * M_PI/180)*(betaAxis2End - betaEndRadius);
-    return 2 * (alphaLen+x) * cos(angStep * M_PI / 180);
-}
+// double Robot::maxDisplacement(){
+//     double x;
+//     if (beta > 90){
+//         x = 0;
+//     }
+//     else {
+//         x = cos(beta * M_PI/180)*(betaAxis2End - betaEndRadius);
+//     }
+//     return 2 * (alphaLen+x) * sin(angStep * M_PI / 180);
+// }
 
 double Robot::score(){
-    double alphaDist = alpha - targetAlpha;
-    double betaDist = beta - targetBeta;
+    double alphaDist = alpha - destinationAlpha;
+    double betaDist = beta - destinationBeta;
     return alphaDist*alphaDist + betaDist*betaDist;
 }
 
-double Robot::betaScore(){
-    // double betaDist = beta - targetBeta;
-    // return betaDist*betaDist;
-    return abs(beta-targetBeta);
-}
-
-double Robot::alphaScore(){
-    // double betaDist = beta - targetBeta;
-    // return betaDist*betaDist;
-    return abs(alpha - targetAlpha);
-}
-
-double Robot::betaWeightedScore(){
-    double alphaDist = alpha - targetAlpha;
-    double betaDist = beta - targetBeta;
-    return alphaDist*alphaDist + betaDist*betaDist;
-}
 
 void Robot::addRobotNeighbor(int robotID){
     robotNeighbors.push_back(robotID);
@@ -189,15 +178,15 @@ void Robot::addFiducialNeighbor(int fiducialID){
     fiducialNeighbors.push_back(fiducialID);
 }
 
-void Robot::setTargetAlphaBeta(double talpha, double tbeta){
+void Robot::setDestinationAlphaBeta(double talpha, double tbeta){
     // enforce limits here?
     double currAlpha = alpha;
     double currBeta = beta;
-    targetAlpha = talpha;
-    targetBeta = tbeta;
+    destinationAlpha = talpha;
+    destinationBeta = tbeta;
     setAlphaBeta(talpha, tbeta); // to set metFiberPos
-    targMetFiberPos = metFiberPos;
-    hasTargetAlphaBeta = true;
+    // targMetFiberPos = metFiberPos;
+    hasDestinationAlphaBeta = true;
     setAlphaBeta(currAlpha, currBeta);
 }
 

@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy
 from kaiju import RobotGrid
 from kaiju import utils
+import json
 
 nDia = 15
 angStep = 3
@@ -30,7 +31,7 @@ def test_forwardGreedy(plot=False):
     rg.decollideGrid()
 
     for robot in rg.robotDict.values():
-        robot.setTargetAlphaBeta(robot.alpha, robot.beta)
+        robot.setDestinationAlphaBeta(robot.alpha, robot.beta)
         robot.setAlphaBeta(0, 180)
     assert rg.getNCollisions() == 0
     rg.pathGenGreedy()
@@ -56,7 +57,7 @@ def test_reverseGreedy(plot=False):
     rg.decollideGrid()
 
     for robot in rg.robotDict.values():
-        robot.setTargetAlphaBeta(0, 180)
+        robot.setDestinationAlphaBeta(0, 180)
     assert rg.getNCollisions() == 0
     rg.pathGenGreedy()
     if plot:
@@ -81,7 +82,7 @@ def test_forwardMDP(plot=False):
     rg.decollideGrid()
 
     for robot in rg.robotDict.values():
-        robot.setTargetAlphaBeta(robot.alpha, robot.beta)
+        robot.setDestinationAlphaBeta(robot.alpha, robot.beta)
         robot.setAlphaBeta(0, 180)
     assert rg.getNCollisions() == 0
     rg.pathGenMDP()
@@ -89,6 +90,10 @@ def test_forwardMDP(plot=False):
         utils.plotPaths(rg, filename="forwardMDP.mp4")
 
 def test_reverseMDP(plot=False):
+    greed = 1
+    phobia = 0
+    angStep = 1
+    downsample = int(numpy.floor(3 / angStep))
     xPos, yPos = utils.hexFromDia(35, pitch=22.4)
     seed = 1
     rg = RobotGrid(
@@ -107,20 +112,22 @@ def test_reverseMDP(plot=False):
     rg.decollideGrid()
 
     for robot in rg.robotDict.values():
-        robot.setTargetAlphaBeta(0, 180)
+        robot.setDestinationAlphaBeta(0, 180)
     assert rg.getNCollisions() == 0
-    rg.pathGenMDP()
+    rg.pathGenMDP(greed, phobia)
     if plot:
-        utils.plotPaths(rg, filename="reverseMDP.mp4")
+        utils.plotPaths(rg, downsample=downsample, filename="reverseMDP.mp4")
 
 def test_setMDP(plot=False):
 
-    greed = 1
-    phobia = 0
-    xPos, yPos = utils.hexFromDia(9, pitch=22.4)
+    greed = 0.8
+    phobia = 0.2
+    xPos, yPos = utils.hexFromDia(45, pitch=22.4)
     print("using ", len(xPos), "robots")
     # collisionBuffer = 3
-    # stepSize = 0.5
+    angStep = 0.5
+    collisionBuffer = 3
+    downsample = int(numpy.floor(3 / angStep))
     for seed in range(100):
         rg = RobotGrid(
             stepSize=angStep, collisionBuffer=collisionBuffer,
@@ -138,7 +145,7 @@ def test_setMDP(plot=False):
         rg.decollideGrid()
 
         for robot in rg.robotDict.values():
-            robot.setTargetAlphaBeta(20, 160)
+            robot.setDestinationAlphaBeta(90, 180)
         assert rg.getNCollisions() == 0
         rg.pathGenMDP(greed, phobia)
 
@@ -153,15 +160,77 @@ def test_setMDP(plot=False):
             print("seed", seed, "didn't fail", rg.nSteps, " taken to solve")
 
     if plot:
-        utils.plotPaths(rg, filename="reverseSetMDP.mp4")
+        utils.plotPaths(rg, downsample=downsample, filename="reverseSetMDP.mp4")
+
+def test_initialConfigs(plot=True):
+
+    xPos, yPos = utils.hexFromDia(21, pitch=22.4)
+    angStep = 1
+    greed = 1
+    phobia = 0
+    downsample = int(numpy.floor(3 / angStep))
+    rg = RobotGrid(
+        stepSize=angStep, collisionBuffer=collisionBuffer,
+        epsilon=epsilon, seed=1
+    )
+
+    for robotID, (x, y) in enumerate(zip(xPos, yPos)):
+        rg.addRobot(robotID, x, y, hasApogee)
+    rg.initGrid()
+    for rID in rg.robotDict:
+        robot = rg.getRobot(rID)
+        robot.setXYUniform()
+    assert rg.getNCollisions() > 10
+    if plot:
+        utils.plotOne(-1, rg, figname="angStepO.png", isSequence=False)
+
+    rg.decollideGrid()
+    for robot in rg.robotDict.values():
+        robot.setDestinationAlphaBeta(0, 180)
+    if plot:
+        utils.plotOne(-1, rg, figname="angStepD.png", isSequence=False)
+    rg.pathGenMDP(greed, phobia)
+    if plot:
+        utils.plotOne(-1, rg, figname="angStepE.png", isSequence=False)
+    if plot:
+        utils.plotPaths(rg, downsample=downsample, filename="init.mp4")
+
+def test_json():
+    xPos, yPos = utils.hexFromDia(21, pitch=22.4)
+    angStep = 1
+    greed = 1
+    phobia = 0
+    rg = RobotGrid(
+        stepSize=angStep, collisionBuffer=collisionBuffer,
+        epsilon=epsilon, seed=1
+    )
+
+    for robotID, (x, y) in enumerate(zip(xPos, yPos)):
+        rg.addRobot(robotID, x, y, hasApogee)
+    rg.initGrid()
+    for rID in rg.robotDict:
+        robot = rg.getRobot(rID)
+        robot.setXYUniform()
+    assert rg.getNCollisions() > 10
+
+    rg.decollideGrid()
+    for robot in rg.robotDict.values():
+        robot.setDestinationAlphaBeta(0, 180)
+    rg.smoothPaths(3)
+    rg.simplifyPaths()
+    rg.verifySmoothed()
+    rg.pathGenMDP(greed, phobia)
+    rg.fullJSON("test.txt")
 
 if __name__ == "__main__":
     # test_forwardGreedy(plot=True)
     # test_reverseGreedy(plot=True)
     # test_forwardMDP(plot=True)
     # test_reverseMDP(plot=True)
+    # test_initialConfigs(plot=True)
 
-    test_setMDP(plot=True)
+    # test_setMDP(plot=True)
+    test_json()
     # test_forwardPathGen(plot=True)
     # test_reversePathGen(plot=True)
     # test_reversePathGen2(plot=True)

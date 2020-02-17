@@ -28,18 +28,18 @@ public:
     int nDecollide = 0;
     int lastStepNum = 0;
     int assignedTargetID = -1; // -1 indicates no assigned target
-    bool atTarget = false;
-    bool hasTargetAlphaBeta = false;
+    // bool atTarget = false;
+    bool hasDestinationAlphaBeta = false;
     bool hasApogee;
     bool hasBoss;
-    double xPos, yPos, alpha, beta, targetAlpha, targetBeta, targetX, targetY;
-    double angStep;
+    double xPos, yPos, alpha, beta, destinationAlpha, destinationBeta; //, targetX, targetY;
+    double angStep; // could remove (robot doesn't need to know ang step anymore)
     double collisionBuffer = 0;
     std::vector<double> alphaVel;
     std::vector<double> betaVel;
     std::vector<double> smoothAlphaVel;
     std::vector<double> smoothBetaVel;
-    Eigen::Array<double, 8, 2> alphaBetaArr;
+    Eigen::Array<double, 8, 2> alphaBetaArr; // delete this soon
     Eigen::Affine3d betaRot, alphaRot;
     Eigen::Vector3d metFiberPos;
     Eigen::Vector3d targMetFiberPos;
@@ -60,13 +60,13 @@ public:
     std::vector<int> validTargetIDs; // target IDs in RobotGrid.targetDict that I can reach
     Robot (int id, double xPos, double yPos, double angStep = 1, bool hasApogee = true);
     void setAlphaBeta (double alpha, double beta);
-    void setTargetAlphaBeta(double alpha, double beta);
+    void setDestinationAlphaBeta(double alpha, double beta);
     void setFiberXY (double xFiberGlobal, double yFiberGlobal, FiberType fiberType); // xy in focal plane coord sys
     // void setAlphaBetaRand();
     double score(); // metric for how close to target I am
-    double betaWeightedScore(); // metric for how close to target I am
-    double betaScore();
-    double alphaScore();
+    // double betaWeightedScore(); // metric for how close to target I am
+    // double betaScore();
+    // double alphaScore();
     void addRobotNeighbor(int robotID);
     void addFiducialNeighbor(int fiducialID);
     // bool isCollided();
@@ -84,6 +84,6 @@ public:
     void assignTarget(int targetID);
     void clearAssignment();
     bool isAssigned();
-    double maxDisplacement();
+    // double maxDisplacement();
     // bool canSwapTarget(std::shared_ptr<Robot> robot);
 };
