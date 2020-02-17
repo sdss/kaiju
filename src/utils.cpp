@@ -160,9 +160,10 @@ double dist3D_Segment_to_Segment(
             sD = a;
         }
     }
+
     // finally do the division to get sc and tc
-    sc = (abs(sN) < SMALL_NUM ? 0.0 : sN / sD);
-    tc = (abs(tN) < SMALL_NUM ? 0.0 : tN / tD);
+    sc = (std::abs(sN) < SMALL_NUM ? 0.0 : sN / sD);
+    tc = (std::abs(tN) < SMALL_NUM ? 0.0 : tN / tD);
 
     // get the difference of the two closest points
     Eigen::Vector3d   dP = w + (sc * u) - (tc * v);  // =  S1(sc) - S2(tc)
@@ -192,7 +193,6 @@ double dist3D_Segment_to_Segment(
     if (dx4 < minDist){
         minDist = dx4;
     }
-
 
     return minDist;   // return the closest distance squared
 }
