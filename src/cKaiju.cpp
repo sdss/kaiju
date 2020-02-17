@@ -41,6 +41,8 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("alpha", &Robot::alpha, R"pbdoc(
             Robot's alpha position (degrees).
             )pbdoc")
+        .def_readwrite("robotNeighbors", &Robot::robotNeighbors)
+        .def_readwrite("fiducialNeighbors", &Robot::fiducialNeighbors)
         .def_readwrite("angStep", &Robot::angStep)
         .def_readwrite("collisionBuffer", &Robot::collisionBuffer)
         .def_readwrite("lastStepNum", &Robot::lastStepNum)
@@ -104,6 +106,8 @@ PYBIND11_MODULE(cKaiju, m) {
         .def(py::init<double, double, double, int>(),
             "angStep"_a=1, "collisionBuffer"_a = 2, "epsilon"_a = 2, "seed"_a = 0)
         .def_readwrite("robotDict", &RobotGrid::robotDict)
+        .def_readwrite("greed", &RobotGrid::greed)
+        .def_readwrite("phobia", &RobotGrid::phobia)
         .def_readwrite("angStep", &RobotGrid::angStep)
         .def_readwrite("collisionBuffer", &RobotGrid::collisionBuffer)
         .def_readwrite("smoothCollisions", &RobotGrid::smoothCollisions)

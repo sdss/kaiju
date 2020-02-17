@@ -7,6 +7,7 @@
 
 import os
 import json
+import pickle
 import numpy as np
 import fitsio
 import matplotlib.pyplot as plt
@@ -204,13 +205,17 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         self.robot_fromarray(robot_array)
         return
 
-    def singleRobotDict(self, robot):
+    def singleRobotDict(self, robot, downsample=None):
         """Dictionary for a single robot
 
         Parameters:
         -----------
         robot : cKaiju.Robot
             robot instance to scrape
+
+        downsample : int or None
+            Down sample the paths by this factor to decrease
+            data size, last step is always included
 
         Returns:
         -------------
@@ -221,7 +226,11 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         note: robot_dict is dictionary for all robots
         note: should get pybind to give this automatically
         using __dict__ but haven't figured it out yet
+        note: need to figure out interp downsampling
         """
+        if downsample is None:
+            downsample = 1
+
         r = {}
 
         r["id"] = robot.id
@@ -240,8 +249,6 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         r["collisionBuffer"] = robot.collisionBuffer
         r["alphaVel"] = robot.alphaVel
         r["betaVel"] = robot.betaVel
-        r["smoothAlphaVel"] = robot.smoothAlphaVel
-        r["smoothBetaVel"] = robot.smoothBetaVel
 
         # convert from numpy arrays to lists
         r["metFiberPos"] = list(robot.metFiberPos)
@@ -249,33 +256,116 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         r["apFiberPos"] = list(robot.apFiberPos)
         r["onTargetVec"] = robot.onTargetVec
 
+        # sequences
         # convert from numpy arrays to lists
-        r["alphaPath"] = [list(x) for x in robot.alphaPath]
-        r["betaPath"] = [list(x) for x in robot.betaPath]
+        downsampleMe = [
+            "alphaPath",
+            "betaPath",
+            "roughAlphaX",
+            "roughBetaX",
+            "roughAlphaY",
+            "roughBetaY"
+        ]
+        for item in downsampleMe:
+            # these are all lists of numpy pairs
+            l = [list(x) for x in getattr(robot, item)]
+            lastElement = l[-1]
+            l = l[::downsample] + [lastElement]
+            r[item] = l
+
+        # not sure how to handle downsampling for these yet
+        r["smoothAlphaVel"] = robot.smoothAlphaVel
+        r["smoothBetaVel"] = robot.smoothBetaVel
+        # r["alphaPath"] = [list(x) for x in robot.alphaPath]
+        # r["betaPath"] = [list(x) for x in robot.betaPath]
         r["smoothedAlphaPath"] = [list(x) for x in robot.smoothedAlphaPath]
         r["smoothedBetaPath"] = [list(x) for x in robot.smoothedBetaPath]
         r["simplifiedAlphaPath"] = [list(x) for x in robot.simplifiedAlphaPath]
         r["simplifiedBetaPath "] = [list(x) for x in robot.simplifiedBetaPath]
-        r["interpSimplifiedAlphaPath"] = [list(x) for x in robot.interpSimplifiedAlphaPathPath]
-        r["interpSimplifiedBetaPath "] = [list(x) for x in robot.interpSimplifiedBetaPathPath]
+        r["interpSimplifiedAlphaPath"] = [list(x) for x in robot.interpSimplifiedAlphaPath]
+        r["interpSimplifiedBetaPath "] = [list(x) for x in robot.interpSimplifiedBetaPath]
         r["interpAlphaX"] = [list(x) for x in robot.interpAlphaX]
         r["interpAlphaY"] = [list(x) for x in robot.interpAlphaY]
         r["interpBetaX"] = [list(x) for x in robot.interpBetaX]
         r["interpBetaY "] = [list(x) for x in robot.interpBetaY]
-        r["roughAlphaX"] = [list(x) for x in robot.roughAlphaX]
-        r["roughAlphaY"] = [list(x) for x in robot.roughAlphaY]
-        r["roughBetaX"] = [list(x) for x in robot.roughBetaX]
-        r["roughBetaY "] = [list(x) for x in robot.roughBetaY]
+        # r["roughAlphaX"] = [list(x) for x in robot.roughAlphaX]
+        # r["roughAlphaY"] = [list(x) for x in robot.roughAlphaY]
+        # r["roughBetaX"] = [list(x) for x in robot.roughBetaX]
+        # r["roughBetaY "] = [list(x) for x in robot.roughBetaY]
         r["interpCollisions "] = [list(x) for x in robot.interpCollisions]
 
-        r["robotNeighbors"] = r.robotNeighbors
-        r["fiducialNeighbors"] = r.fiducialNeighbors
-        r["validTargetIDs"] = r.validTargetIDs
+        r["robotNeighbors"] = robot.robotNeighbors
+        r["fiducialNeighbors"] = robot.fiducialNeighbors
+        r["validTargetIDs"] = robot.validTargetIDs
 
         return r
 
-    def robotGridDict(self):
+    def robotGridSummaryDict(self):
+        """Dictionary summary for this RobotGrid, contains
+        less info and thus faster read/write than a full dict
+
+        Returns:
+        -------------
+        result : a dict
+
+        Comments:
+        ---------
+        note: should get pybind to give this automatically
+        using __dict__ but haven't figured it out yet
+        """
+        rgd = self.robotGridDict(incRobotDict=False)
+        robotDict = {}
+        for rid, robot in self.robotDict.items():
+            r = {}
+            r["id"] = robot.id
+            r["nDecollide"] = robot.nDecollide
+            r["lastStepNum"] = robot.lastStepNum
+            r["assignedTargetID"] = robot.assignedTargetID
+            r["hasApogee"] = robot.hasApogee
+            r["hasBoss"] = robot.hasBoss
+            r["xPos"] = robot.xPos
+            r["yPos"] = robot.yPos
+            r["alpha"] = robot.alpha
+            r["beta"] = robot.beta
+            r["destinationAlpha"] = robot.destinationAlpha
+            r["desstinationBeta"] = robot.destinationBeta
+            r["angStep"] = robot.angStep
+            r["collisionBuffer"] = robot.collisionBuffer
+
+            # convert from numpy arrays to lists
+            r["metFiberPos"] = list(robot.metFiberPos)
+            r["bossFiberPos"] = list(robot.bossFiberPos)
+            r["apFiberPos"] = list(robot.apFiberPos)
+            r["roughAlphaX"] = robot.roughAlphaX[-1][-1]
+            r["roughAlphaY"] = robot.roughAlphaY[-1][-1]
+            r["roughBetaX"] = robot.roughBetaX[-1][-1]
+            r["roughBetaY"] = robot.roughBetaY[-1][-1]
+            # find the step at which this
+            # guy found its target
+            otv = np.array(robot.onTargetVec)
+            # find last False (after which must be true)
+            # +1 because step numbers start from 1 and indices start from 0
+            lastFalse = np.argwhere(otv==False).flatten()[-1] + 1
+            if lastFalse == len(otv):
+                # last step was false robot never got there
+                r["onTargetVec"] = -1 # -1 incicates never got to target
+            else:
+                r["onTargetVec"] = lastFalse
+
+        rgd["robotDict"] = robotDict
+        return rgd
+
+    def robotGridDict(self, downsample=None, incRobotDict=True):
         """Dictionary for this RobotGrid
+
+        Parameters:
+        ------------
+        downsample : int or None
+            Down sample the paths by this factor to decrease
+            data size, last step is always included
+
+        incRobotDict : Bool
+            If false, don't include the robot dict
 
         Returns:
         -------------
@@ -297,28 +387,91 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         r["maxPathSteps"] = self.maxPathSteps
         r["smoothCollisions"] = self.smoothCollisions
         r["maxDisplacement"] = self.maxDisplacement
-        robotDict = {}
-        for rid, robot in self.robotDict.items():
-            robotDict[rid] = self.singleRobotDict(robot)
+        r["deadlockedRobots"] = self.deadlockedRobots()
+        r["greed"] = self.greed
+        r["phobia"] = self.phobia
+        if incRobotDict:
+            robotDict = {}
+            for rid, robot in self.robotDict.items():
+                robotDict[rid] = self.singleRobotDict(robot, downsample)
+            r["robotDict"] = robotDict
         return r
 
-    def fullJSON(self, filename=None):
+    def fullPickle(self, filename, downsample=None):
+        """Pickle the output of self.robotGridDict
+
+        Parameters:
+        --------------
+        filename : filename for the pickle
+
+        downsample : int or None
+            Down sample the paths by this factor to decrease
+            data size, last step is always included
+
+        """
+        d = self.robotGridDict(downsample)
+        with open(filename, "wb") as f:
+            pickle.dump(d, f)
+
+    def fullJSON(self, filename=None, downsample=None):
         """Format robotGridDict() output as json
 
         Parameters:
         ------------
         filename : string or None
             If not none, write json to file, otherwise
+        downsample : int or None
+            Down sample the paths by this factor to decrease
+            data size, last step is always included
 
         Returns:
         -------------
         result : a json string or None
 
         """
-        d = self.robotGridDict()
+        d = self.robotGridDict(downsample)
         if filename is not None:
             with open(filename, "w") as f:
-                json.dump(d, f)
+                json.dump(d, f, separators=(',', ':'))
+        else:
+            return json.dumps(d)
+
+    def summaryPickle(self, filename, downsample=None):
+        """Pickle the output of self.robotGridDict
+
+        Parameters:
+        --------------
+        filename : filename for the pickle
+
+        downsample : int or None
+            Down sample the paths by this factor to decrease
+            data size, last step is always included
+
+        """
+        d = self.robotGridSummaryDict()
+        with open(filename, "wb") as f:
+            pickle.dump(d, f)
+
+    def summaryJSON(self, filename=None):
+        """Format robotGridDict() output as json
+
+        Parameters:
+        ------------
+        filename : string or None
+            If not none, write json to file, otherwise
+        downsample : int or None
+            Down sample the paths by this factor to decrease
+            data size, last step is always included
+
+        Returns:
+        -------------
+        result : a json string or None
+
+        """
+        d = self.robotGridSummaryDict()
+        if filename is not None:
+            with open(filename, "w") as f:
+                json.dump(d, f, separators=(',', ':'))
         else:
             return json.dumps(d)
 

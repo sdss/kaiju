@@ -338,6 +338,9 @@ void Robot::smoothVelocity(int points){
     // std::vector<double> betaVel;
     // std::vector<double> smoothAlphaVel;
     // std::vector<double> smoothBetaVel;
+    if (alphaPath.size()==0){
+        throw std::runtime_error("Cannot smooth, no alphaPath, do path gen first");
+    }
 
 
     // std::vector<double> movingWindow;
@@ -478,6 +481,9 @@ void Robot::simplifyPath(double epsilon){
     // smooth a previously generated path
     double interpSimplifiedAlpha, interpSimplifiedBeta;
 
+    if (alphaPath.size()==0){
+        throw std::runtime_error("Cannot simplify, no smoothed paths, pathgen, and smooth first");
+    }
     // int npts;
     Eigen::Vector2d atemp, btemp;
 

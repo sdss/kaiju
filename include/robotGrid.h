@@ -23,6 +23,8 @@ public:
     double epsilon;
     double collisionBuffer;
     double angStep;
+    double greed;
+    double phobia;
     bool didFail;
     int nSteps;
     int maxPathSteps;
@@ -76,7 +78,7 @@ public:
     void stepTowardFold(std::shared_ptr<Robot> r1, int stepNum);
     // void stepEuclidean(std::shared_ptr<Robot> r1, int stepNum);
     void stepGreedy(std::shared_ptr<Robot> r1, int stepNum);
-    void stepMDP(std::shared_ptr<Robot> r1, int stepNum, double greed, double phobia);
+    void stepMDP(std::shared_ptr<Robot> r1, int stepNum);
     void stepBeta(std::shared_ptr<Robot> r1, int stepNum);
     // double closestApproach2(int robotID); // squared distance to closest neighbor
     // void smoothPath(std::shared_ptr<Robot> robot, double epsilon);

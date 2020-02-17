@@ -3,7 +3,9 @@ import matplotlib.pyplot as plt
 import numpy
 from kaiju import RobotGrid
 from kaiju import utils
+import time
 import json
+import pickle
 
 nDia = 15
 angStep = 3
@@ -195,11 +197,13 @@ def test_initialConfigs(plot=True):
     if plot:
         utils.plotPaths(rg, downsample=downsample, filename="init.mp4")
 
-def test_json():
-    xPos, yPos = utils.hexFromDia(21, pitch=22.4)
-    angStep = 1
-    greed = 1
-    phobia = 0
+def test_tofile(plot=False):
+    xPos, yPos = utils.hexFromDia(27, pitch=22.4)
+    print("n robots", len(xPos))
+    angStep = 0.5
+    greed = 0.8
+    phobia = 0.4
+    downsample = int(numpy.floor(3 / angStep))
     rg = RobotGrid(
         stepSize=angStep, collisionBuffer=collisionBuffer,
         epsilon=epsilon, seed=1
@@ -215,12 +219,28 @@ def test_json():
 
     rg.decollideGrid()
     for robot in rg.robotDict.values():
-        robot.setDestinationAlphaBeta(0, 180)
-    rg.smoothPaths(3)
-    rg.simplifyPaths()
-    rg.verifySmoothed()
+        robot.setDestinationAlphaBeta(125, 70)
     rg.pathGenMDP(greed, phobia)
-    rg.fullJSON("test.txt")
+    # rg.smoothPaths(3)
+    # rg.simplifyPaths()
+    # rg.verifySmoothed()
+    t1 = time.time()
+    rg.summaryJSON("json.txt")
+    print("json took", (time.time()-t1))
+
+    t1 = time.time()
+    rg.summaryPickle("rg.pkl")
+    print("pickle took", (time.time()-t1))
+
+    t1 = time.time()
+    g = json.load(open("json.txt", "r"))
+    print("json load took", (time.time()-t1))
+
+    t1 = time.time()
+    g = pickle.load(open("rg.pkl", "rb"))
+    print("pickle load took", (time.time()-t1))
+    if plot:
+        utils.plotPaths(rg, downsample=downsample, filename="tofile.mp4")
 
 if __name__ == "__main__":
     # test_forwardGreedy(plot=True)
@@ -230,7 +250,7 @@ if __name__ == "__main__":
     # test_initialConfigs(plot=True)
 
     # test_setMDP(plot=True)
-    test_json()
+    test_tofile(plot=True)
     # test_forwardPathGen(plot=True)
     # test_reversePathGen(plot=True)
     # test_reversePathGen2(plot=True)

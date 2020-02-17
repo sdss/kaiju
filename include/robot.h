@@ -48,12 +48,12 @@ public:
     Eigen::Vector3d transXY;
     std::array<Eigen::Vector3d, 2> betaCollisionSegment;
     std::vector<Eigen::Vector2d> alphaPath, betaPath;
+    std::vector<Eigen::Vector2d> roughAlphaX, roughAlphaY, roughBetaX, roughBetaY; // jiggly
     std::vector<bool> onTargetVec;
     std::vector<Eigen::Vector2d> smoothedAlphaPath, smoothedBetaPath;
     std::vector<Eigen::Vector2d> simplifiedAlphaPath, simplifiedBetaPath; // sparse
     std::vector<Eigen::Vector2d> interpSimplifiedAlphaPath, interpSimplifiedBetaPath; // dense
     std::vector<Eigen::Vector2d> interpAlphaX, interpAlphaY, interpBetaX, interpBetaY; // smoothed
-    std::vector<Eigen::Vector2d> roughAlphaX, roughAlphaY, roughBetaX, roughBetaY; // jiggly
     std::vector<Eigen::Vector2d> interpCollisions; // boolean points for collided or not
     std::vector<int> robotNeighbors; // robot IDs in RobotGrid.robotDict may potentially collide
     std::vector<int> fiducialNeighbors; // fiducial IDs in RobotGrid.fiducialDict may potentially collide

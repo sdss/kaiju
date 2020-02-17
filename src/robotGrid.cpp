@@ -246,8 +246,11 @@ void RobotGrid::clearPaths(){
 
 }
 
-void RobotGrid::pathGenMDP(double greed, double phobia){
+void RobotGrid::pathGenMDP(double setGreed, double setPhobia){
     // path gen 2 steps towards alpha beta target
+    // move greed and phobia to constructor?
+    greed = setGreed;
+    phobia = setPhobia;
     clearPaths();
     didFail = true;
     int ii;
@@ -264,7 +267,7 @@ void RobotGrid::pathGenMDP(double greed, double phobia){
             auto r = robotDict[robotID];
             // std::cout << "path gen " << r.betaOrientation.size() << " " << r.betaModel.size() << std::endl;
             // std::cout << "alpha beta " << r.alpha << " " << r.beta << std::endl;
-            stepMDP(r, ii, greed, phobia);
+            stepMDP(r, ii);
 
             if (r->score()!=0) {
                 // could just check the last elemet in onTargetVec? same thing.
@@ -910,7 +913,7 @@ void RobotGrid::stepGreedy(std::shared_ptr<Robot> robot, int stepNum){
 
 }
 
-void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum, double greed, double phobia){
+void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
 
     double encroachment, score, dist, dist2, localEnergy, closestNeighbor, cost;
     double currAlpha = robot->alpha;
@@ -990,8 +993,8 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum, double greed,
             if (nextAlpha < 0){
                 nextAlpha = 0;
             }
-            if (nextBeta > 360){
-                nextBeta = 360;
+            if (nextBeta > 180){
+                nextBeta = 180;
             }
             if (nextBeta < 0){
                 nextBeta = 0;
