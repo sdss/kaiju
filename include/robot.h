@@ -32,6 +32,7 @@ public:
     bool hasDestinationAlphaBeta = false;
     bool hasApogee;
     bool hasBoss;
+    bool nudge = false;
     double xPos, yPos, alpha, beta, destinationAlpha, destinationBeta; //, targetX, targetY;
     double angStep; // could remove (robot doesn't need to know ang step anymore)
     double collisionBuffer = 0;

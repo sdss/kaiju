@@ -35,6 +35,7 @@ public:
     std::map<int, std::shared_ptr<Fiducial>> fiducialDict;
     // std::vector<std::array<double, 2>> fiducialList;
     std::map<int, std::shared_ptr<Target>> targetDict;
+    std::vector<std::array<double, 2>> perturbArray; // alpha/beta perturbations
     RobotGrid (double angStep = 1, double collisionBuffer = 2, double epsilon = 2, int seed = 0);
     void addRobot(int robotID, double xPos, double yPos, bool hasApogee = true);
     void addTarget(int targetID, double xPos, double yPos, FiberType fiberType, double priority = 0);
@@ -71,7 +72,7 @@ public:
     bool isCollided(int robotID);
     std::vector<int> robotColliders(int robotID);
     std::vector<int> fiducialColliders(int robotID);
-    double encroachmentScore(int robotID, double distance);
+    bool neighborEncroachment(std::shared_ptr<Robot> r1);
     // bool isFiducialCollided(std::shared_ptr<Robot> r1);
     // bool isCollidedInd(int robotInd);
     void decollideRobot(int robotID);

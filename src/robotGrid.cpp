@@ -46,6 +46,13 @@ RobotGrid::RobotGrid(double angStep, double collisionBuffer, double epsilon, int
     smoothCollisions = 0;
     maxPathSteps = (int)(ceil(1700.0/angStep));
     maxDisplacement = 2*sin(angStep*M_PI/180)*(alphaLen+betaLen);
+
+    // construct the perturbation list
+    for (int ii=-1; ii<2; ii++){
+        for (int jj=-1; jj<2; jj++){
+            perturbArray.push_back({ii*angStep, jj*angStep});
+        }
+    }
 }
 
 void RobotGrid::addRobot(int robotID, double xPos, double yPos, bool hasApogee){
@@ -359,130 +366,6 @@ void RobotGrid::clearTargetDict(){
     }
 }
 
-// void RobotGrid::addTargetList(Eigen::MatrixXd myTargetList){
-//     int nRows = myTargetList.rows();
-//     // sort by ascending priority 0 first
-//     // std::sort(myTargetList.begin(), myTargetList.end(), sortTargList);
-
-//     // add targets to robots and robots to targets
-//     for (int ii = 0; ii < nRows; ii++){
-//         auto targPtr = std::make_shared<Target>((int)myTargetList(ii, 0), myTargetList(ii, 1), myTargetList(ii, 2), (int)myTargetList(ii, 3), (int)myTargetList(ii, 4) );
-//         targetList.push_back(std::move(targPtr));
-//     }
-//     // sort target list in order of priority
-//     std::sort(targetList.begin(), targetList.end(), sortTargList);
-
-//     // associate available targets to robots
-//     int targInd = -1;
-//     for (auto t : targetList){
-//         targInd++;
-//         int robotInd = -1;
-//         for (auto r : allRobots){
-//             robotInd++;
-//             if (r->isValidTarget(t->x, t->y, t->fiberID)){
-//                 r->targetInds.push_back(targInd);  // should be sorted by priority
-//                 t->robotInds.push_back(robotInd);
-//             }
-//         }
-//     }
-// }
-
-// void RobotGrid::setTargetList(Eigen::MatrixXd myTargetList){ //std::vector<std::array<double, 5>> myTargetList){
-//     // targetID, x, y, priority, fiberID (1=apogee 2=boss)
-//     // std::array<double, 2> ab;
-
-// 	clearTargetList();
-// 	addTargetList(myTargetList);
-// }
-
-// void RobotGrid::greedyAssign(){
-//     // assign the highest priority targets to robots
-//     // initialize each robot to its highest priority target
-//     // only allow one target per robot
-//     // int robotInd = -1;
-//     for (auto rPair : robotDict){
-//         // robotInd++;
-//         auto r = rPair.second;
-//         for (auto targetInd : r->targetInds){
-//             auto targ = targetList[targetInd];
-//             if (targ->isAssigned()){
-//                 // target has been assigned to other robot
-//                 continue;
-//             }
-//             if (r->isValidTarget(targ->x, targ->y, targ->fiberID)){
-//                 targ->assignRobot(r.id);
-//                 r->assignTarget(targetInd, targ->x, targ->y, targ->fiberID);
-//                 break; // break from target loop
-//             }
-//         }
-//     }
-// }
-
-// void RobotGrid::pairwiseSwap(){
-//     // look for pairwise swaps that reduce collisions
-//     int r1ind = -1;
-//     for (auto r1 : allRobots){
-//         r1ind++;
-//         if (isCollided(r1)){
-//             // use getNCollisions because the swap may
-//             // decolide the robot, but may introduce a new
-//             // collision
-//             double initialCollisions = getNCollisions();
-//             for (auto r2ind : r1->neighborInds){
-//                 auto r2 = allRobots[r2ind];
-//                 if (canSwapTarget(r1, r2)){
-//                     swapTargets(r1ind, r2ind);
-//                     if (initialCollisions <= getNCollisions()){
-//                         // swap targets back
-//                         // collision still exists
-//                         // or is worse!
-//                         swapTargets(r1ind, r2ind);
-//                     }
-//                     else {
-//                         // collision resolved
-//                         break;
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
-
-// bool RobotGrid::canSwapTarget(std::shared_ptr<Robot> r1, std::shared_ptr<Robot> r2){
-//     // std::cout << "in canSwapTarget" << std::endl;
-//     if (!r1->isAssigned() or !r2->isAssigned()){
-//         // one positioner is without a target
-//         return false;
-//     }
-//     auto r1targ = targetList[r1->assignedTargetInd];
-//     auto r2targ = targetList[r2->assignedTargetInd];
-//     bool r1canReach = r1->isValidTarget(r2targ->x, r2targ->y, r2targ->fiberID);
-//     bool r2canReach = r2->isValidTarget(r1targ->x, r1targ->y, r1targ->fiberID);
-//     return r1canReach and r2canReach;
-// }
-
-// void RobotGrid::swapTargets(int r1Ind, int r2Ind){
-//     // std::shared_ptr<Target> savedTarget = r1->assignedTarget;
-//     // r1->assignTarget(r2->assignedTarget);
-//     // r2->assignTarget(savedTarget);
-//     // // update target->robot assignments
-//     // r1->assignedTarget->assignRobot(r1);
-//     // r2->assignedTarget->assignRobot(r2);
-//     auto r1 = allRobots[r1Ind];
-//     auto r2 = allRobots[r2Ind];
-
-//     auto r1targ = targetList[r1->assignedTargetInd];
-//     auto r2targ = targetList[r2->assignedTargetInd];
-//     auto r1targInd = r1->assignedTargetInd;
-//     auto r2targInd = r2->assignedTargetInd;
-
-//     r1->assignTarget(r2targInd, r2targ->x, r2targ->y, r2targ->fiberID);
-//     r2->assignTarget(r1targInd, r1targ->x, r1targ->y, r1targ->fiberID);
-
-//     r1targ->assignRobot(r2Ind);
-//     r2targ->assignRobot(r1Ind);
-
-// }
 
 std::vector<int> RobotGrid::unassignedRobots(){
     // return the ids of unassigned robots
@@ -539,16 +422,7 @@ std::vector<int> RobotGrid::assignedTargets(){
     return assignedTargIDs;
 }
 
-// bool RobotGrid::isValidRobotTarget(int robotID, int targetInd1){
-//     auto robot = robotDict[robotID];
-//     for (auto targetInd2 : robot->targetInds){
-//         auto target = targetList[targetInd2];
-//         if (targetInd1 == targetInd2 and !target->isAssigned()){
-// 					return true;
-//         }
-//     }
-//     return false;
-// }
+
 
 void RobotGrid::unassignTarget(int targID){
     // clear the the target assignment, and the
@@ -632,25 +506,7 @@ bool RobotGrid::isValidAssignment(int robotID, int targetID){
     return true;
 }
 
-// void RobotGrid::optimizeTargets(){
-//     // rewrite!!!
-// }
 
-// double RobotGrid::closestApproach2(int robotID){
-//     double minDist2 = 1e15; // to be minimized
-//     auto robot1 = robotDict[robotID];
-//     for (auto otherRobotID : robot1->robotNeighbors){
-//         auto robot2 = robotDict[otherRobotID];
-//         auto dist2 = dist3D_Segment_to_Segment(
-//                 robot2->betaCollisionSegment[0], robot2->betaCollisionSegment[1],
-//                 robot1->betaCollisionSegment[0], robot1->betaCollisionSegment[1]
-//             );
-//         if (dist2 < minDist2){
-//             minDist2 = dist2;
-//         }
-//     }
-//     return minDist2;
-// }
 
 bool RobotGrid::isCollided(int robotID){
     auto robotsColliding = robotColliders(robotID);
@@ -665,23 +521,13 @@ bool RobotGrid::isCollided(int robotID){
 }
 
 
-double RobotGrid::encroachmentScore(int robotID, double distance){
+bool RobotGrid::neighborEncroachment(std::shared_ptr<Robot> robot1){
     // score, separation2
     // look ahead and see robots getting close
-    double dist2, dist, score;
-    double encroachment = 0;
-    // for (auto nsd : neighborScoreDist){
-    //     if (score < nsd[0] and nsd[1] < 2.5*collisionBuffer){
-    //         // 4*collisions buffer is factor of two bigger
-    //         // than collision
-    //         encroachment += 1/nsd[1];
-    //     }
-    // }
-
+    double dist2;
+    double minDist = 3*collisionBuffer*2*maxDisplacement;
 
     // check collisions with neighboring robots
-    auto robot1 = robotDict[robotID];
-    score = robot1->score();
     for (auto otherRobotID : robot1->robotNeighbors){
         auto robot2 = robotDict[otherRobotID];
         // squared distance returned
@@ -689,14 +535,11 @@ double RobotGrid::encroachmentScore(int robotID, double distance){
                 robot2->betaCollisionSegment[0], robot2->betaCollisionSegment[1],
                 robot1->betaCollisionSegment[0], robot1->betaCollisionSegment[1]
             );
-
-        dist = sqrt(dist2);
-
-        if ((score < robot2->score()) and (dist < distance)){
-            encroachment += 1/dist;
+        if (dist2 < (minDist*minDist)){
+            return true;
         }
     }
-    return encroachment;
+    return false;
 }
 
 
@@ -785,7 +628,7 @@ std::vector<int> RobotGrid::deadlockedRobots(){
 
 void RobotGrid::stepGreedy(std::shared_ptr<Robot> robot, int stepNum){
 
-    double encroachment, score;
+    double score;
     double currAlpha = robot->alpha;
     double currBeta = robot->beta;
     double bestAlpha, bestBeta, bestScore;
@@ -915,15 +758,17 @@ void RobotGrid::stepGreedy(std::shared_ptr<Robot> robot, int stepNum){
 
 void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
 
-    double encroachment, score, dist, dist2, localEnergy, closestNeighbor, cost;
+    double score, dist2, localEnergy;
+    double nextAlpha, nextBeta;
+    bool doPhobia;
     double currAlpha = robot->alpha;
     double currBeta = robot->beta;
-    double bestAlpha, bestBeta, bestScore, bestEncroachment;
+    double bestAlpha, bestBeta, bestScore;
     bestAlpha = currAlpha;
     bestBeta = currBeta;
     bestScore = 1e16; // to be minimized
-    bestEncroachment = 1e16; // to be minimized
-    double bestCost = 1e16; // to be minimized
+    // bestEncroachment = 1e16; // to be minimized
+    // double bestCost = 1e16; // to be minimized
     // bestScore = robot->score() + 1/closestApproach2(robot->id);
     // bestScore = 1e16;
 
@@ -935,13 +780,10 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
     betaPathPoint(0) = stepNum;
 
     // nextAlpha, nextBeta, local energy, score
-    std::vector<std::array<double, 4>> stateOptions;
+    // std::vector<std::array<double, 4>> stateOptions;
 
-
-    if (robot->score()==0 and encroachmentScore(robot->id, 2.4*collisionBuffer)==0){ // replace this with score?
-    // if (robot->score()==0 and betaEncroachmentScore2(robot->id)==0){ // replace this with score?
-    // if (robot->betaScore()==0 and encroachmentScore(robot->id, 2*collisionBuffer+robot->maxDisplacement)==0){ // replace this with score?
-        // done folding no one coming don't move
+    if (robot->score()==0 and !neighborEncroachment(robot)){
+        // done folding no one knocking don't move
         alphaPathPoint(1) = currAlpha;
         betaPathPoint(1) = currBeta;
         robot->alphaPath.push_back(alphaPathPoint);
@@ -964,105 +806,99 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
     }
 
     robot->lastStepNum = stepNum;
+    // begin looping over all possible moves
+    // shuffle move options to ensure they are visited
+    // in no particular order
+    std::random_shuffle(perturbArray.begin(), perturbArray.end());
 
-    // check all move combinations for each axis
-    for (int betaDir=-1; betaDir<2; betaDir++){
-        for (int alphaDir=-1; alphaDir<2; alphaDir++){
+    // decide whether we're minimizing phobia
+    // or minimizing score
 
-            double nextAlpha = currAlpha + alphaDir * angStep;
-            double nextBeta = currBeta + betaDir * angStep;
-            // careful not to overshoot
-            if (currAlpha > robot->destinationAlpha and nextAlpha <= robot->destinationAlpha){
-                nextAlpha = robot->destinationAlpha;
-            }
-            if (currAlpha < robot->destinationAlpha and nextAlpha >= robot->destinationAlpha){
-                nextAlpha = robot->destinationAlpha;
-            }
-            if (currBeta > robot->destinationBeta and nextBeta <= robot->destinationBeta){
-                nextBeta = robot->destinationBeta;
-            }
-            if (currBeta < robot->destinationBeta and nextBeta >= robot->destinationBeta){
-                nextBeta = robot->destinationBeta;
-            }
-            // handle limits of travel
-            // can probably ditch this as target
-            // must be in range anyways
-            if (nextAlpha > 360){
-                nextAlpha = 360;
-            }
-            if (nextAlpha < 0){
-                nextAlpha = 0;
-            }
-            if (nextBeta > 180){
-                nextBeta = 180;
-            }
-            if (nextBeta < 0){
-                nextBeta = 0;
-            }
+    doPhobia = randomSample() < phobia;
 
-            robot->setAlphaBeta(nextAlpha, nextBeta);
-            // score is min possible steps till goal
-            score = robot->score(); // std::max(robot->alphaScore(), robot->betaScore()); //robot->score(); //+ nextClosestApproach2;
-            localEnergy = 0;
-            closestNeighbor = 1e16; // to be minimized
 
-            // compute robot's local energy, and nearest neighbor
-            for (auto otherRobotID : robot->robotNeighbors){
-                auto otherRobot = robotDict[otherRobotID];
-                dist2 = dist3D_Segment_to_Segment(
-                    otherRobot->betaCollisionSegment[0], otherRobot->betaCollisionSegment[1],
-                    robot->betaCollisionSegment[0], robot->betaCollisionSegment[1]
-                );
+    for (auto dAlphaBeta : perturbArray){
+        nextAlpha = currAlpha + dAlphaBeta[0];
+        nextBeta = currBeta + dAlphaBeta[1];
+        // careful not to overshoot
+        if (currAlpha > robot->destinationAlpha and nextAlpha <= robot->destinationAlpha){
+            nextAlpha = robot->destinationAlpha;
+        }
+        if (currAlpha < robot->destinationAlpha and nextAlpha >= robot->destinationAlpha){
+            nextAlpha = robot->destinationAlpha;
+        }
+        if (currBeta > robot->destinationBeta and nextBeta <= robot->destinationBeta){
+            nextBeta = robot->destinationBeta;
+        }
+        if (currBeta < robot->destinationBeta and nextBeta >= robot->destinationBeta){
+            nextBeta = robot->destinationBeta;
+        }
+        // handle limits of travel
+        if (nextAlpha > 360){
+            nextAlpha = 360;
+        }
+        if (nextAlpha < 0){
+            nextAlpha = 0;
+        }
+        if (nextBeta > 180){
+            nextBeta = 180;
+        }
+        if (nextBeta < 0){
+            nextBeta = 0;
+        }
 
-                localEnergy += 1/dist2;
-                dist = sqrt(dist2);
-                if (dist < closestNeighbor){
-                    closestNeighbor = dist;
-                }
-            }
+        robot->setAlphaBeta(nextAlpha, nextBeta);
+        // score is min possible steps till goal
+        localEnergy = 0;
+        bool isCollided = false;
 
-            if (closestNeighbor < (2*collisionBuffer + maxDisplacement)){
+        // compute robot's local energy, and check for collision
+        for (auto otherRobotID : robot->robotNeighbors){
+            auto otherRobot = robotDict[otherRobotID];
+            dist2 = dist3D_Segment_to_Segment(
+                otherRobot->betaCollisionSegment[0], otherRobot->betaCollisionSegment[1],
+                robot->betaCollisionSegment[0], robot->betaCollisionSegment[1]
+            );
+
+            localEnergy += 1/dist2;
+
+            if (dist2 < (2*collisionBuffer+maxDisplacement)*(2*collisionBuffer+maxDisplacement)){
                 // this is not a viable move option
                 // go on to next try
-                continue;
+                isCollided = true;
+                if (otherRobot->score() < robot->score()){
+                    otherRobot->nudge = true;
+                }
             }
-            stateOptions.push_back({nextAlpha, nextBeta, localEnergy, score});
-
-            // double encroachment = 0;
         }
-    } // end loop over perturbations
 
+        if (isCollided){
+            // don't consider this a viable option
+            // move to next option
+            break;
+        }
 
-    // pick the best move, first shuffle the possiblity array
-    std::random_shuffle(stateOptions.begin(), stateOptions.end());
-    // figure out probabilities of transistioning based on score
-    // score is distance left to move
+        if (doPhobia){
+            score = localEnergy;
+        }
+        else {
+            score = robot->score();
+        }
 
-    // determine whether to rank on score, or energy
-    int ind;
-    if (randomSample() < phobia) { //} (0.75 + stepNum / (0.25*maxPathSteps))){
-        ind = 2; // increase distance to neighbors
-    }
-    else{
-        ind = 3; // reduce score
-    }
-
-    for (auto stateOption : stateOptions){
-        score = stateOption[ind];
         if (score < bestScore and randomSample() < greed){
-            // almost always pick a better score
+        // almost always pick a better score
             bestScore = score;
-            bestAlpha = stateOption[0];
-            bestBeta = stateOption[1];
+            bestAlpha = nextAlpha;
+            bestBeta = nextBeta;
         }
         else if (score == bestScore and randomSample() > 0.5){
+            // if score is same switch to new
+            // state with 0.5 probability
             bestScore = score;
-            bestAlpha = stateOption[0];
-            bestBeta = stateOption[1];
+            bestAlpha = nextAlpha;
+            bestBeta = nextBeta;
         }
-
-    }
-
+    } // end loop over perturbations
 
     // set alpha beta to best found option
     robot->setAlphaBeta(bestAlpha, bestBeta);
@@ -1088,9 +924,114 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
     robot->roughBetaX.push_back(temp);
     temp(1) = robot->betaCollisionSegment.back()(1); // yBetaEnd
     robot->roughBetaY.push_back(temp);
-
-
+    robot->nudge = false;
 }
+
+
+
+
+
+    // // check all move combinations for each axis
+    // for (int betaDir=-1; betaDir<2; betaDir++){
+    //     for (int alphaDir=-1; alphaDir<2; alphaDir++){
+
+    //         double nextAlpha = currAlpha + alphaDir * angStep;
+    //         double nextBeta = currBeta + betaDir * angStep;
+    //         // careful not to overshoot
+    //         if (currAlpha > robot->destinationAlpha and nextAlpha <= robot->destinationAlpha){
+    //             nextAlpha = robot->destinationAlpha;
+    //         }
+    //         if (currAlpha < robot->destinationAlpha and nextAlpha >= robot->destinationAlpha){
+    //             nextAlpha = robot->destinationAlpha;
+    //         }
+    //         if (currBeta > robot->destinationBeta and nextBeta <= robot->destinationBeta){
+    //             nextBeta = robot->destinationBeta;
+    //         }
+    //         if (currBeta < robot->destinationBeta and nextBeta >= robot->destinationBeta){
+    //             nextBeta = robot->destinationBeta;
+    //         }
+    //         // handle limits of travel
+    //         // can probably ditch this as target
+    //         // must be in range anyways
+    //         if (nextAlpha > 360){
+    //             nextAlpha = 360;
+    //         }
+    //         if (nextAlpha < 0){
+    //             nextAlpha = 0;
+    //         }
+    //         if (nextBeta > 180){
+    //             nextBeta = 180;
+    //         }
+    //         if (nextBeta < 0){
+    //             nextBeta = 0;
+    //         }
+
+    //         robot->setAlphaBeta(nextAlpha, nextBeta);
+    //         // score is min possible steps till goal
+    //         score = robot->score(); // std::max(robot->alphaScore(), robot->betaScore()); //robot->score(); //+ nextClosestApproach2;
+    //         localEnergy = 0;
+    //         closestNeighbor = 1e16; // to be minimized
+
+    //         // compute robot's local energy, and nearest neighbor
+    //         for (auto otherRobotID : robot->robotNeighbors){
+    //             auto otherRobot = robotDict[otherRobotID];
+    //             dist2 = dist3D_Segment_to_Segment(
+    //                 otherRobot->betaCollisionSegment[0], otherRobot->betaCollisionSegment[1],
+    //                 robot->betaCollisionSegment[0], robot->betaCollisionSegment[1]
+    //             );
+
+    //             localEnergy += 1/dist2;
+    //             dist = sqrt(dist2);
+    //             if (dist < closestNeighbor){
+    //                 closestNeighbor = dist;
+    //             }
+    //         }
+
+    //         if (closestNeighbor < (2*collisionBuffer + maxDisplacement)){
+    //             // this is not a viable move option
+    //             // go on to next try
+    //             continue;
+    //         }
+    //         stateOptions.push_back({nextAlpha, nextBeta, localEnergy, score});
+
+    //         // double encroachment = 0;
+    //     }
+    // } // end loop over perturbations
+
+
+    // // pick the best move, first shuffle the possiblity array
+    // std::random_shuffle(stateOptions.begin(), stateOptions.end());
+    // // figure out probabilities of transistioning based on score
+    // // score is distance left to move
+
+    // // determine whether to rank on score, or energy
+    // // double myPhobia = -0.3/1080*robot->score() + 0.4;
+    // int ind;
+    // if (randomSample() < phobia) { //} (0.75 + stepNum / (0.25*maxPathSteps))){
+    //     ind = 2; // increase distance to neighbors
+    // }
+    // else{
+    //     ind = 3; // reduce score
+    // }
+
+    // for (auto stateOption : stateOptions){
+    //     score = stateOption[ind];
+    //     if (score < bestScore and randomSample() < greed){
+    //         // almost always pick a better score
+    //         bestScore = score;
+    //         bestAlpha = stateOption[0];
+    //         bestBeta = stateOption[1];
+    //     }
+    //     else if (score == bestScore and randomSample() > 0.5){
+    //         bestScore = score;
+    //         bestAlpha = stateOption[0];
+    //         bestBeta = stateOption[1];
+    //     }
+
+    // }
+
+
+
 
 void RobotGrid::stepTowardFold(std::shared_ptr<Robot> robot, int stepNum){
     double currAlpha = robot->alpha;

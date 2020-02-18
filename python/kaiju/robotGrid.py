@@ -343,14 +343,15 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
             # find the step at which this
             # guy found its target
             otv = np.array(robot.onTargetVec)
+            r["onTargetVec"] = robot.onTargetVec[-1]
             # find last False (after which must be true)
             # +1 because step numbers start from 1 and indices start from 0
             lastFalse = np.argwhere(otv==False).flatten()[-1] + 1
             if lastFalse == len(otv):
                 # last step was false robot never got there
-                r["onTargetVec"] = -1 # -1 incicates never got to target
+                r["stepConverged"] = -1 # -1 incicates never got to target
             else:
-                r["onTargetVec"] = lastFalse
+                r["stepConverged"] = lastFalse
 
         rgd["robotDict"] = robotDict
         return rgd

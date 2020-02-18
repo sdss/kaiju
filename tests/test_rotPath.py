@@ -9,7 +9,7 @@ import pickle
 
 nDia = 15
 angStep = 3
-collisionBuffer = 2.25
+collisionBuffer = 3
 epsilon = angStep * 2
 hasApogee = True
 
@@ -198,11 +198,11 @@ def test_initialConfigs(plot=True):
         utils.plotPaths(rg, downsample=downsample, filename="init.mp4")
 
 def test_tofile(plot=False):
-    xPos, yPos = utils.hexFromDia(27, pitch=22.4)
+    xPos, yPos = utils.hexFromDia(37, pitch=22.4, rotAngle=90)
     print("n robots", len(xPos))
-    angStep = 0.5
+    angStep = 1
     greed = 0.8
-    phobia = 0.4
+    phobia = 0.2
     downsample = int(numpy.floor(3 / angStep))
     rg = RobotGrid(
         stepSize=angStep, collisionBuffer=collisionBuffer,
@@ -219,28 +219,63 @@ def test_tofile(plot=False):
 
     rg.decollideGrid()
     for robot in rg.robotDict.values():
-        robot.setDestinationAlphaBeta(125, 70)
+        robot.setDestinationAlphaBeta(10, 170)
     rg.pathGenMDP(greed, phobia)
     # rg.smoothPaths(3)
     # rg.simplifyPaths()
     # rg.verifySmoothed()
-    t1 = time.time()
-    rg.summaryJSON("json.txt")
-    print("json took", (time.time()-t1))
+    # t1 = time.time()
+    # rg.summaryJSON("json.txt")
+    # print("json took", (time.time()-t1))
 
-    t1 = time.time()
-    rg.summaryPickle("rg.pkl")
-    print("pickle took", (time.time()-t1))
+    # t1 = time.time()
+    # rg.summaryPickle("rg.pkl")
+    # print("pickle took", (time.time()-t1))
 
-    t1 = time.time()
-    g = json.load(open("json.txt", "r"))
-    print("json load took", (time.time()-t1))
+    # t1 = time.time()
+    # g = json.load(open("json.txt", "r"))
+    # print("json load took", (time.time()-t1))
 
-    t1 = time.time()
-    g = pickle.load(open("rg.pkl", "rb"))
-    print("pickle load took", (time.time()-t1))
+    # t1 = time.time()
+    # g = pickle.load(open("rg.pkl", "rb"))
+    # print("pickle load took", (time.time()-t1))
     if plot:
-        utils.plotPaths(rg, downsample=downsample, filename="tofile.mp4")
+        utils.plotOne(-1, rg, figname="tofile.png", isSequence=False)
+    # if plot:
+    #     utils.plotPaths(rg, downsample=downsample, filename="tofile.mp4")
+
+
+def test_fatty(plot=False):
+    xPos, yPos = utils.hexFromDia(11, pitch=22.4)
+    print("n robots", len(xPos))
+    angStep = 0.1
+    greed = 0.8
+    phobia = 0.2
+    collisionBuffer = 4
+    downsample = int(numpy.floor(3 / angStep))
+    rg = RobotGrid(
+        stepSize=angStep, collisionBuffer=collisionBuffer,
+        epsilon=epsilon, seed=1
+    )
+
+    for robotID, (x, y) in enumerate(zip(xPos, yPos)):
+        rg.addRobot(robotID, x, y, hasApogee)
+    rg.initGrid()
+    for rID in rg.robotDict:
+        robot = rg.getRobot(rID)
+        robot.setXYUniform()
+        robot.setDestinationAlphaBeta(90,180)
+    # assert rg.getNCollisions() > 10
+
+    rg.decollideGrid()
+
+    rg.pathGenMDP(greed, phobia)
+
+    # rg.smoothPaths(3)
+    # rg.simplifyPaths()
+    # rg.verifySmoothed()
+    if plot:
+        utils.plotPaths(rg, downsample=downsample, filename="fatty.mp4")
 
 if __name__ == "__main__":
     # test_forwardGreedy(plot=True)
