@@ -284,7 +284,7 @@ void RobotGrid::pathGenMDP(double setGreed, double setPhobia){
         }
 
         if (allAtTarget){
-            std::cout << "all at target" << std::endl;
+            // std::cout << "all at target" << std::endl;
             didFail = false;
             break;
         }

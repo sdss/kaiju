@@ -5,11 +5,12 @@ import time
 from multiprocessing import Pool, cpu_count
 from functools import partial
 import numpy
+import itertools
 
 
 saveDir = "/home/csayres/kaijuRun"
 
-nProcs = 26
+nProcs = 23
 
 nTrials = 100
 cbuff = [1.5, 2, 2.5, 3, 3.5]
@@ -32,7 +33,7 @@ def getGrid(angStep, cbuff, seed, replace=None):
     for robotID, (x,y) in enumerate(zip(xPos,yPos)):
         rg.addRobot(robotID, x, y, hasApogee)
     rg.initGrid()
-    for robot in rg.robotDict.items():
+    for robot in rg.robotDict.values():
         robot.setXYUniform()
         robot.setDestinationAlphaBeta(10,170)
     try:
@@ -44,7 +45,7 @@ def getGrid(angStep, cbuff, seed, replace=None):
         robot = rg.robotDict[replace]
         while True:
             robot.setXYUniform()
-            if not rg.isCollided():
+            if not rg.isCollided(replace):
                 replaceFailed = False
                 break
         if replaceFailed:
@@ -53,7 +54,8 @@ def getGrid(angStep, cbuff, seed, replace=None):
 
 
 
-def doOne(seed, cbuff, angStep, greed, phobia):
+def doOne(inputList):
+    seed, angStep, cbuff, greed, phobia = inputList
     outList = []
     filename = "summary_%i_%.2f_%.2f_%.2f_%.2f.json"%(seed, cbuff, angStep, greed, phobia)
     filepath = os.path.join(saveDir, filename)
@@ -73,19 +75,16 @@ def doOne(seed, cbuff, angStep, greed, phobia):
         outList.append([runtime, rg.robotGridSummaryDict()])
         if not rg.didFail:
             break
-        replaceRobot = int(numpy.random.choice(rg.deadLockedRobots()))
+        replaceRobot = int(numpy.random.choice(rg.deadlockedRobots()))
 
     with open(filepath, "w") as f:
         json.dump(outList, f, separators=(',', ':'))
 
 
-for a in angStep:
-    for c in cbuff:
-        for g in greed:
-            for p in phobia:
-                print("a %.2f, c %.2f, g %.2f, p %.2f"%(a,c,g,p))
-                doOnePartial = partial(doOne, angStep=a, cbuff=c, greed=g, phobia=p)
-                p = Pool(nProcs)
-                p.map(doOnePartial, range(nTrials))
-                p.close()
+# use itertools for better load balancing
+seeds = range(nTrials)
+gridIter = itertools.product(seeds,angStep,cbuff,greed,phobia)
+p = Pool(nProcs)
+p.map(doOne, gridIter)
+p.close()
 
