@@ -27,6 +27,7 @@ public:
     double phobia;
     bool didFail;
     int nSteps;
+    int seed;
     int maxPathSteps;
     int smoothCollisions;
     bool initialized = false;

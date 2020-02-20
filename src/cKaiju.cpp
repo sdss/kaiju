@@ -105,6 +105,7 @@ PYBIND11_MODULE(cKaiju, m) {
         )pbdoc")
         .def(py::init<double, double, double, int>(),
             "angStep"_a=1, "collisionBuffer"_a = 2, "epsilon"_a = 2, "seed"_a = 0)
+        .def_readwrite("seed", &RobotGrid::seed)
         .def_readwrite("robotDict", &RobotGrid::robotDict)
         .def_readwrite("greed", &RobotGrid::greed)
         .def_readwrite("phobia", &RobotGrid::phobia)

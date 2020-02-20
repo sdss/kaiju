@@ -390,6 +390,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         r["deadlockedRobots"] = self.deadlockedRobots()
         r["greed"] = self.greed
         r["phobia"] = self.phobia
+        r["seed"] = self.seed
         if incRobotDict:
             robotDict = {}
             for rid, robot in self.robotDict.items():

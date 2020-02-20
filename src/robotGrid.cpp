@@ -36,7 +36,7 @@ const double pitch = 22.4; // distance to next nearest neighbor
 // }
 
 RobotGrid::RobotGrid(double angStep, double collisionBuffer, double epsilon, int seed)
-    : angStep(angStep), collisionBuffer(collisionBuffer), epsilon(epsilon)
+    : angStep(angStep), collisionBuffer(collisionBuffer), epsilon(epsilon), seed(seed)
 {
     // nDia is number of robots along equator of grid
     srand(seed);
