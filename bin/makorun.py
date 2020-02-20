@@ -10,9 +10,9 @@ import itertools
 
 saveDir = "/home/csayres/kaijuRun"
 
-nProcs = 23
+nProcs = 26
 
-nTrials = 100
+nTrials = 20
 cbuff = [1.5, 2, 2.5, 3, 3.5]
 angStep = [0.05, 0.1, 0.5, 1, 1.5]
 greed = [1, 0.95, 0.9, 0.8, 0.7]
