@@ -19,7 +19,7 @@ greed = [1, 0.95, 0.9, 0.8, 0.7]
 phobia = [0, 0.1, 0.2, 0.3]
 maxReplacements = 40
 hasApogee = True
-nDia = 17 # 27 is full run
+nDia = 27 #is full run
 
 alphaDest = 10
 betaDest = 170
@@ -38,6 +38,7 @@ def getGrid(angStep, cbuff, seed):
         robot.setDestinationAlphaBeta(10,170)
 
     rg.decollideGrid()
+    print("nCollisions in getGrid", rg.getNCollisions())
     return rg
 
 
@@ -61,8 +62,8 @@ def doOne(inputList):
     for i in range(maxReplacements):
         for rID, robot in rg.robotDict.items():
             initAlpha, initBeta = rbInit[rID]
-            rg.setAlphaBeta(initAlpha, initBeta)
-        assert not rg.isCollided
+            robot.setAlphaBeta(initAlpha, initBeta)
+        print("nCollisions at loop top", rg.getNCollisions())
 
         t1 = time.time()
         rg.pathGenMDP(greed, phobia)
@@ -71,21 +72,22 @@ def doOne(inputList):
         if not rg.didFail:
             break # done!
 
-        deadlockedRobots = numpy.random.shuffle(rg.deadlockedRobots())
+        deadlockedRobots = numpy.array(rg.deadlockedRobots())
+        numpy.random.shuffle(deadlockedRobots)
         print("deadlockedRobots", deadlockedRobots)
         # if we're here pathGen failed.  try to replace a deadlocked
         # robot
         for rID, robot in rg.robotDict.items():
             initAlpha, initBeta = rbInit[rID]
-            rg.setAlphaBeta(initAlpha, initBeta)
-        assert not rg.isCollided
+            robot.setAlphaBeta(initAlpha, initBeta)
+        print("nCollisions after deadlock", rg.getNCollisions())
         foundNewSpot = False
         for rID in deadlockedRobots:
             # try 300 times to find a new spot for this guy
             for jj in range(300):
                 robot = rg.robotDict[rID]
                 robot.setXYUniform()
-                if not rg.isCollided:
+                if rg.getNCollisions()==0:
                     foundNewSpot = True
                     rbInit[rID] = [robot.alpha, robot.beta]
                     break
@@ -93,8 +95,7 @@ def doOne(inputList):
                 break
         if not foundNewSpot:
             outList.append("failed to find valid replacement")
-            json.dump(outList, open(filepath, "w", separators=(',', ':')))
-            return
+            break
 
     with open(filepath, "w") as f:
         json.dump(outList, f, separators=(',', ':'))
