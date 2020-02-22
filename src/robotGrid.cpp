@@ -44,7 +44,7 @@ RobotGrid::RobotGrid(double angStep, double collisionBuffer, double epsilon, int
     // collisionBuffer = myCollisionBuffer;
     // angStep = myAngStep;
     smoothCollisions = 0;
-    maxPathSteps = (int)(ceil(1700.0/angStep));
+    maxPathSteps = (int)(ceil(1000.0/angStep));
     maxDisplacement = 2*sin(angStep*M_PI/180)*(alphaLen+betaLen);
 
     // construct the perturbation list

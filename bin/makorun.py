@@ -12,14 +12,15 @@ saveDir = "/home/csayres/kaijuRun"
 
 nProcs = 26
 
-nTrials = 20
-cbuff = [1.5, 2, 2.5, 3, 3.5]
-angStep = [0.05, 0.1, 0.5, 1, 1.5]
-greed = [1, 0.95, 0.9, 0.8, 0.7]
-phobia = [0, 0.1, 0.2, 0.3]
-maxReplacements = 40
+# nTrials = 15
+seeds = range(15, 100)
+cbuff = [1.5, 1.75, 2, 2.25, 2.5, 2.75, 3]
+angStep = [0.01]
+greed = [0.9]
+phobia = [0.2]
+maxReplacements = 60
 hasApogee = True
-nDia = 27 #is full run
+nDia = 17 #27 #is full run
 
 alphaDest = 10
 betaDest = 170
@@ -38,7 +39,7 @@ def getGrid(angStep, cbuff, seed):
         robot.setDestinationAlphaBeta(10,170)
 
     rg.decollideGrid()
-    print("nCollisions in getGrid", rg.getNCollisions())
+    # print("nCollisions in getGrid", rg.getNCollisions())
     return rg
 
 
@@ -63,7 +64,7 @@ def doOne(inputList):
         for rID, robot in rg.robotDict.items():
             initAlpha, initBeta = rbInit[rID]
             robot.setAlphaBeta(initAlpha, initBeta)
-        print("nCollisions at loop top", rg.getNCollisions())
+        # print("nCollisions at loop top", rg.getNCollisions())
 
         t1 = time.time()
         rg.pathGenMDP(greed, phobia)
@@ -74,13 +75,13 @@ def doOne(inputList):
 
         deadlockedRobots = numpy.array(rg.deadlockedRobots())
         numpy.random.shuffle(deadlockedRobots)
-        print("deadlockedRobots", deadlockedRobots)
+        # print("deadlockedRobots", deadlockedRobots)
         # if we're here pathGen failed.  try to replace a deadlocked
         # robot
         for rID, robot in rg.robotDict.items():
             initAlpha, initBeta = rbInit[rID]
             robot.setAlphaBeta(initAlpha, initBeta)
-        print("nCollisions after deadlock", rg.getNCollisions())
+        # print("nCollisions after deadlock", rg.getNCollisions())
         foundNewSpot = False
         for rID in deadlockedRobots:
             # try 300 times to find a new spot for this guy
@@ -102,19 +103,21 @@ def doOne(inputList):
 
 
 if __name__ == "__main__":
-    seed=19
-    cbuff=1.5
-    angStep=1.5
-    greed=0.9
-    phobia=0.2
-    inputList = [seed, angStep, cbuff, greed, phobia]
-    doOne(inputList)
+
+    # this deadlocks with nDia = 27
+    # seed=19
+    # cbuff=1.5
+    # angStep=1.5
+    # greed=0.9
+    # phobia=0.2
+    # inputList = [seed, angStep, cbuff, greed, phobia]
+    # doOne(inputList)
 
 
 # use itertools for better load balancing
-# seeds = range(nTrials)
-# gridIter = itertools.product(seeds,angStep,cbuff,greed,phobia)
-# p = Pool(nProcs)
-# p.map(doOne, gridIter)
-# p.close()
+    # seeds = range(nTrials)
+    gridIter = itertools.product(seeds,angStep,cbuff,greed,phobia)
+    p = Pool(nProcs)
+    p.map(doOne, gridIter)
+    p.close()
 
