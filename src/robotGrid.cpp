@@ -633,7 +633,7 @@ void RobotGrid::stepGreedy(std::shared_ptr<Robot> robot, int stepNum){
     double score;
     double currAlpha = robot->alpha;
     double currBeta = robot->beta;
-    double bestAlpha, bestBeta, bestScore;
+    double bestAlpha, bestBeta, bestScore, nextAlpha, nextBeta;
     bestAlpha = currAlpha;
     bestBeta = currBeta;
     bestScore = 1e16; // to be minimized
