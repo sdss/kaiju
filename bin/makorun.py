@@ -16,8 +16,8 @@ nProcs = 26
 seeds = range(15, 100)
 cbuff = [1.5, 1.75, 2, 2.25, 2.5, 2.75, 3]
 angStep = [0.01]
-greed = [0.9]
-phobia = [0.2]
+greed = [1]
+phobia = [0]
 maxReplacements = 60
 hasApogee = True
 nDia = 17 #27 #is full run
@@ -67,7 +67,10 @@ def doOne(inputList):
         # print("nCollisions at loop top", rg.getNCollisions())
 
         t1 = time.time()
-        rg.pathGenMDP(greed, phobia)
+        if greed == 1 and phobia == 0:
+            rg.pathGenGreedy()
+        else:
+            rg.pathGenMDP(greed, phobia)
         runtime = time.time()-t1
         outList.append([runtime, rg.robotGridSummaryDict()])
         if not rg.didFail:

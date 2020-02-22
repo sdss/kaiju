@@ -297,6 +297,8 @@ void RobotGrid::pathGenGreedy(){
     // path gen 2 steps towards alpha beta target
     clearPaths();
     didFail = true;
+    greed = 1;
+    phobia = 0;
     int ii;
     for (ii=0; ii<maxPathSteps; ii++){
 
@@ -316,7 +318,7 @@ void RobotGrid::pathGenGreedy(){
         }
 
         if (allAtTarget){
-            std::cout << "all at target" << std::endl;
+            // std::cout << "all at target" << std::endl;
             didFail = false;
             break;
         }
@@ -672,61 +674,58 @@ void RobotGrid::stepGreedy(std::shared_ptr<Robot> robot, int stepNum){
     robot->lastStepNum = stepNum;
 
     // check all move combinations for each axis
-    for (int betaDir=-1; betaDir<2; betaDir++){
-        for (int alphaDir=-1; alphaDir<2; alphaDir++){
+    for (auto dAlphaBeta : perturbArray){
+        nextAlpha = currAlpha + dAlphaBeta[0];
+        nextBeta = currBeta + dAlphaBeta[1];
+        // careful not to overshoot
+        if (currAlpha > robot->destinationAlpha and nextAlpha <= robot->destinationAlpha){
+            nextAlpha = robot->destinationAlpha;
+        }
+        if (currAlpha < robot->destinationAlpha and nextAlpha >= robot->destinationAlpha){
+            nextAlpha = robot->destinationAlpha;
+        }
+        if (currBeta > robot->destinationBeta and nextBeta <= robot->destinationBeta){
+            nextBeta = robot->destinationBeta;
+        }
+        if (currBeta < robot->destinationBeta and nextBeta >= robot->destinationBeta){
+            nextBeta = robot->destinationBeta;
+        }
+        // handle limits of travel
+        // can probably ditch this as target
+        // must be in range anyways
+        if (nextAlpha > 360){
+            nextAlpha = 360;
+        }
+        if (nextAlpha < 0){
+            nextAlpha = 0;
+        }
+        if (nextBeta > 360){
+            nextBeta = 360;
+        }
+        if (nextBeta < 0){
+            nextBeta = 0;
+        }
 
-            double nextAlpha = currAlpha + alphaDir * angStep;
-            double nextBeta = currBeta + betaDir * angStep;
-            // careful not to overshoot
-            if (currAlpha > robot->destinationAlpha and nextAlpha <= robot->destinationAlpha){
-                nextAlpha = robot->destinationAlpha;
-            }
-            if (currAlpha < robot->destinationAlpha and nextAlpha >= robot->destinationAlpha){
-                nextAlpha = robot->destinationAlpha;
-            }
-            if (currBeta > robot->destinationBeta and nextBeta <= robot->destinationBeta){
-                nextBeta = robot->destinationBeta;
-            }
-            if (currBeta < robot->destinationBeta and nextBeta >= robot->destinationBeta){
-                nextBeta = robot->destinationBeta;
-            }
-            // handle limits of travel
-            // can probably ditch this as target
-            // must be in range anyways
-            if (nextAlpha > 360){
-                nextAlpha = 360;
-            }
-            if (nextAlpha < 0){
-                nextAlpha = 0;
-            }
-            if (nextBeta > 360){
-                nextBeta = 360;
-            }
-            if (nextBeta < 0){
-                nextBeta = 0;
+        robot->setAlphaBeta(nextAlpha, nextBeta);
+        score = robot->score();
+        // double encroachment = 0;
+
+        if (!isCollided(robot->id)){
+            if (score < bestScore){
+                bestScore = score;
+                bestAlpha = nextAlpha;
+                bestBeta = nextBeta;
+
             }
 
-            robot->setAlphaBeta(nextAlpha, nextBeta);
-            score = robot->score();
-            // double encroachment = 0;
-
-            if (!isCollided(robot->id)){
-                if (score < bestScore){
-                    bestScore = score;
-                    bestAlpha = nextAlpha;
-                    bestBeta = nextBeta;
-
-                }
-
-                else if (score == bestScore and randomSample() >= 0.5){
-                    // flip a coin to see whether to accept
-                    bestScore = score;
-                    bestAlpha = nextAlpha;
-                    bestBeta = nextBeta;
-                }
+            else if (score == bestScore and randomSample() >= 0.5){
+                // flip a coin to see whether to accept
+                bestScore = score;
+                bestAlpha = nextAlpha;
+                bestBeta = nextBeta;
             }
         }
-    }  // end loop over perturbations
+    } // end loop over perturbations
 
     // set alpha beta to best found option
     robot->setAlphaBeta(bestAlpha, bestBeta);
