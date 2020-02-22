@@ -335,6 +335,8 @@ void RobotGrid::pathGen(){
     // int pathPad = 20 / (float)angStep;
     clearPaths();
     didFail = true;
+    greed = -1;
+    phobia = -1;
     int ii;
     for (ii=0; ii<maxPathSteps; ii++){
         bool allFolded = true;
@@ -673,6 +675,7 @@ void RobotGrid::stepGreedy(std::shared_ptr<Robot> robot, int stepNum){
 
     robot->lastStepNum = stepNum;
 
+    std::random_shuffle(perturbArray.begin(), perturbArray.end());
     // check all move combinations for each axis
     for (auto dAlphaBeta : perturbArray){
         nextAlpha = currAlpha + dAlphaBeta[0];
