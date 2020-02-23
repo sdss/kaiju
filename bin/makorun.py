@@ -13,7 +13,7 @@ saveDir = "/home/csayres/kaijuRun"
 nProcs = 26
 
 # nTrials = 15
-seeds = range(15, 100)
+seeds = range(0, 100)
 cbuff = [1.5, 1.75, 2, 2.25, 2.5, 2.75, 3]
 angStep = [0.01]
 greed = [-1]
@@ -120,7 +120,7 @@ if __name__ == "__main__":
 
 
 # use itertools for better load balancing
-    seeds = range(nTrials)
+   # seeds = range(nTrials)
     gridIter = itertools.product(seeds,angStep,cbuff,greed,phobia)
     p = Pool(nProcs)
     p.map(doOne, gridIter)
