@@ -316,41 +316,50 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         rgd = self.robotGridDict(incRobotDict=False)
         robotDict = {}
         for rid, robot in self.robotDict.items():
-            robotDict["id"] = robot.id
-            robotDict["nDecollide"] = robot.nDecollide
-            robotDict["lastStepNum"] = robot.lastStepNum
-            robotDict["assignedTargetID"] = robot.assignedTargetID
-            robotDict["hasApogee"] = robot.hasApogee
-            robotDict["hasBoss"] = robot.hasBoss
-            robotDict["xPos"] = robot.xPos
-            robotDict["yPos"] = robot.yPos
-            robotDict["alpha"] = robot.alpha
-            robotDict["beta"] = robot.beta
-            robotDict["destinationAlpha"] = robot.destinationAlpha
-            robotDict["desstinationBeta"] = robot.destinationBeta
-            robotDict["angStep"] = robot.angStep
-            robotDict["collisionBuffer"] = robot.collisionBuffer
+            r = {}
+            print("rid", robot.id, robot.alpha, robot.beta)
+            r["id"] = robot.id
+            r["nDecollide"] = robot.nDecollide
+            r["lastStepNum"] = robot.lastStepNum
+            r["assignedTargetID"] = robot.assignedTargetID
+            r["hasApogee"] = robot.hasApogee
+            r["hasBoss"] = robot.hasBoss
+            r["xPos"] = robot.xPos
+            r["yPos"] = robot.yPos
+            r["alpha"] = robot.alpha
+            r["beta"] = robot.beta
+            r["destinationAlpha"] = robot.destinationAlpha
+            r["desstinationBeta"] = robot.destinationBeta
+            r["angStep"] = robot.angStep
+            r["collisionBuffer"] = robot.collisionBuffer
 
             # convert from numpy arrays to lists
-            robotDict["metFiberPos"] = list(robot.metFiberPos)
-            robotDict["bossFiberPos"] = list(robot.bossFiberPos)
-            robotDict["apFiberPos"] = list(robot.apFiberPos)
-            robotDict["roughAlphaX"] = robot.roughAlphaX[-1][-1]
-            robotDict["roughAlphaY"] = robot.roughAlphaY[-1][-1]
-            robotDict["roughBetaX"] = robot.roughBetaX[-1][-1]
-            robotDict["roughBetaY"] = robot.roughBetaY[-1][-1]
+            r["metFiberPos"] = list(robot.metFiberPos)
+            r["bossFiberPos"] = list(robot.bossFiberPos)
+            r["apFiberPos"] = list(robot.apFiberPos)
+            r["roughAlphaX"] = robot.roughAlphaX[-1][-1]
+            r["roughAlphaY"] = robot.roughAlphaY[-1][-1]
+            r["roughBetaX"] = robot.roughBetaX[-1][-1]
+            r["roughBetaY"] = robot.roughBetaY[-1][-1]
             # find the step at which this
             # guy found its target
             otv = np.array(robot.onTargetVec)
-            robotDict["onTargetVec"] = robot.onTargetVec[-1]
+            print("otargvec", otv)
+            r["onTargetVec"] = robot.onTargetVec[-1]
             # find last False (after which must be true)
             # +1 because step numbers start from 1 and indices start from 0
-            lastFalse = int(np.argwhere(otv==False).flatten()[-1]) + 1
+            whereFalse = np.argwhere(otv==False).flatten()
+            if not whereFalse:
+                # empty list started on target? thats crazy
+                lastFalse = 0
+            else:
+                lastFalse = int(whereFalse[-1] + 1)
             if lastFalse == len(otv):
                 # last step was false robot never got there
-                robotDict["stepConverged"] = str(-1 )# -1 incicates never got to target
+                r["stepConverged"] = str(-1 )# -1 incicates never got to target
             else:
-                robotDict["stepConverged"] = str(lastFalse)
+                r["stepConverged"] = str(lastFalse)
+            robotDict[robot.id] = r
 
         rgd["robotDict"] = robotDict
         return rgd

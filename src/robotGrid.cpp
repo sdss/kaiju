@@ -1043,6 +1043,7 @@ void RobotGrid::stepTowardFold(std::shared_ptr<Robot> robot, int stepNum){
     Eigen::Vector2d temp;
     alphaPathPoint(0) = stepNum;
     betaPathPoint(0) = stepNum;
+
     if (currBeta==180 and currAlpha==0){
         // done folding don't move
         alphaPathPoint(1) = currAlpha;
@@ -1059,6 +1060,7 @@ void RobotGrid::stepTowardFold(std::shared_ptr<Robot> robot, int stepNum){
         robot->roughBetaX.push_back(temp);
         temp(1) = robot->betaCollisionSegment.back()(1); // yBetaEnd
         robot->roughBetaY.push_back(temp);
+        robot->onTargetVec.push_back(true);
 
         return;
     }
@@ -1133,6 +1135,14 @@ void RobotGrid::stepTowardFold(std::shared_ptr<Robot> robot, int stepNum){
     robot->roughBetaX.push_back(temp);
     temp(1) = robot->betaCollisionSegment.back()(1); // yBetaEnd
     robot->roughBetaY.push_back(temp);
+
+    if (robot->alpha == 0 and robot->beta == 180){
+        robot->onTargetVec.push_back(true);
+    }
+    else {
+	std::cout << "not on target" << std::endl;
+        robot->onTargetVec.push_back(false);
+    }
 }
 
 
