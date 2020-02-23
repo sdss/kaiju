@@ -70,7 +70,6 @@ def doOne(inputList):
         if greed == 1 and phobia == 0:
             rg.pathGenGreedy()
         elif greed == -1 and phobia == -1:
-            print("running oldie")
             rg.pathGen()
         else:
             rg.pathGenMDP(greed, phobia)
@@ -121,12 +120,12 @@ if __name__ == "__main__":
 
 
 # use itertools for better load balancing
-    # seeds = range(nTrials)
+    seeds = range(nTrials)
     gridIter = itertools.product(seeds,angStep,cbuff,greed,phobia)
-    # p = Pool(nProcs)
-    # p.map(doOne, gridIter)
-    # p.close()
+    p = Pool(nProcs)
+    p.map(doOne, gridIter)
+    p.close()
 
-    first = list(gridIter)[0]
-    doOne(first)
+    # first = list(gridIter)[0]
+    # doOne(first)
 

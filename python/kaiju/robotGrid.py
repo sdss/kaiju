@@ -317,7 +317,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         robotDict = {}
         for rid, robot in self.robotDict.items():
             r = {}
-            print("rid", robot.id, robot.alpha, robot.beta)
+            # print("rid", robot.id, robot.alpha, robot.beta)
             r["id"] = robot.id
             r["nDecollide"] = robot.nDecollide
             r["lastStepNum"] = robot.lastStepNum
