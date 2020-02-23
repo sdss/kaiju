@@ -16,6 +16,12 @@ PYBIND11_MODULE(cKaiju, m) {
         .value("BossFiber", BossFiber)
         .export_values();
 
+    py::enum_<AlgType>(m, "AlgType", py::arithmetic())
+        .value("Greedy", Greedy)
+        .value("MDP", MDP)
+        .value("Fold", Fold)
+        .export_values();
+
     py::class_<Fiducial, std::shared_ptr<Fiducial>>(m, "Fiducial", py::dynamic_attr())
         .def_readwrite("x", &Fiducial::x)
         .def_readwrite("y", &Fiducial::y)
@@ -105,6 +111,7 @@ PYBIND11_MODULE(cKaiju, m) {
         )pbdoc")
         .def(py::init<double, double, double, int>(),
             "angStep"_a=1, "collisionBuffer"_a = 2, "epsilon"_a = 2, "seed"_a = 0)
+        .def_readwrite("algType", &RobotGrid::algType)
         .def_readwrite("seed", &RobotGrid::seed)
         .def_readwrite("robotDict", &RobotGrid::robotDict)
         .def_readwrite("greed", &RobotGrid::greed)

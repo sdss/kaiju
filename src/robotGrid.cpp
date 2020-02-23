@@ -258,6 +258,7 @@ void RobotGrid::pathGenMDP(double setGreed, double setPhobia){
     // move greed and phobia to constructor?
     greed = setGreed;
     phobia = setPhobia;
+    algType = MDP;
     clearPaths();
     didFail = true;
     int ii;
@@ -299,6 +300,7 @@ void RobotGrid::pathGenGreedy(){
     didFail = true;
     greed = 1;
     phobia = 0;
+    algType = Greedy;
     int ii;
     for (ii=0; ii<maxPathSteps; ii++){
 
@@ -334,6 +336,7 @@ void RobotGrid::pathGen(){
     // betas for getting locked, so try to move those first
     // int pathPad = 20 / (float)angStep;
     clearPaths();
+    algType = Fold;
     didFail = true;
     greed = -1;
     phobia = -1;
@@ -623,8 +626,15 @@ std::vector<int> RobotGrid::deadlockedRobots(){
     std::vector<int> deadlockedRobotIDs;
     for (auto rPair : robotDict){
         auto robot = rPair.second;
-        if (robot->score() != 0){
-            deadlockedRobotIDs.push_back(robot->id);
+        if (algType == Fold){
+            if (robot->alpha != 0 or robot->beta != 180){
+                deadlockedRobotIDs.push_back(robot->id);
+            }
+        }
+        else {
+            if (robot->score() != 0){
+                deadlockedRobotIDs.push_back(robot->id);
+            }
         }
     }
     return deadlockedRobotIDs;

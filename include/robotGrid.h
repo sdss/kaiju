@@ -15,10 +15,11 @@ extern const double radius_buffer;
 // extern const double epsilon;
 extern const double min_targ_sep;
 
-
+enum AlgType {Greedy, MDP, Fold}; // order is important
 
 class RobotGrid {
 public:
+    AlgType algType;
     int nRobots;
     double epsilon;
     double collisionBuffer;

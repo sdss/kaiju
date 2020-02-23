@@ -1,7 +1,7 @@
 import pytest
 import numpy
 
-from kaiju.cKaiju import RobotGrid
+from kaiju import RobotGrid
 from kaiju import utils
 
 nDia = 15
@@ -39,7 +39,7 @@ def test_pathGen(plot=False):
     seed = 1
     smoothPts = 5
     collisionShrink = 0.3
-    angStep = 0.01
+    angStep = 3
     downsample = int(numpy.floor(3 / angStep))
     rg = RobotGrid(angStep, collisionBuffer, epsilon, seed)
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
@@ -57,6 +57,11 @@ def test_pathGen(plot=False):
     if plot:
         utils.plotOne(0, rg, figname="pathGenDecollided.png", isSequence=False)
     rg.pathGen()
+    # print("rg alg type", rg.algType, type(rg.algType), str(rg.algType))
+    # sd = rg.robotGridSummaryDict()
+    # for d in sd["robotDict"].values():
+    #     print(d["id"], d["alpha"], d["beta"])
+    # print("deadlocks", rg.deadlockedRobots())
     #assert not rg.didFail
     rg.smoothPaths(smoothPts)
     rg.simplifyPaths()
