@@ -16,8 +16,8 @@ nProcs = 26
 seeds = range(15, 100)
 cbuff = [1.5, 1.75, 2, 2.25, 2.5, 2.75, 3]
 angStep = [0.01]
-greed = [1]
-phobia = [0]
+greed = [-1]
+phobia = [-1]
 maxReplacements = 60
 hasApogee = True
 nDia = 17 #27 #is full run
@@ -69,6 +69,8 @@ def doOne(inputList):
         t1 = time.time()
         if greed == 1 and phobia == 0:
             rg.pathGenGreedy()
+        elif greed == -1 and phobia == -1:
+            rg.pathGen()
         else:
             rg.pathGenMDP(greed, phobia)
         runtime = time.time()-t1
