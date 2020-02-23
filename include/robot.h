@@ -50,7 +50,7 @@ public:
     std::array<Eigen::Vector3d, 2> betaCollisionSegment;
     std::vector<Eigen::Vector2d> alphaPath, betaPath;
     std::vector<Eigen::Vector2d> roughAlphaX, roughAlphaY, roughBetaX, roughBetaY; // jiggly
-    std::vector<bool> onTargetVec;
+    // std::vector<bool> onTargetVec;
     std::vector<Eigen::Vector2d> smoothedAlphaPath, smoothedBetaPath;
     std::vector<Eigen::Vector2d> simplifiedAlphaPath, simplifiedBetaPath; // sparse
     std::vector<Eigen::Vector2d> interpSimplifiedAlphaPath, interpSimplifiedBetaPath; // dense

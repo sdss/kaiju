@@ -254,7 +254,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         r["metFiberPos"] = list(robot.metFiberPos)
         r["bossFiberPos"] = list(robot.bossFiberPos)
         r["apFiberPos"] = list(robot.apFiberPos)
-        r["onTargetVec"] = robot.onTargetVec
+        # r["onTargetVec"] = robot.onTargetVec
 
         # sequences
         # convert from numpy arrays to lists
@@ -343,22 +343,22 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
             r["roughBetaY"] = robot.roughBetaY[-1][-1]
             # find the step at which this
             # guy found its target
-            otv = np.array(robot.onTargetVec)
-            print("otargvec", otv)
-            r["onTargetVec"] = robot.onTargetVec[-1]
-            # find last False (after which must be true)
-            # +1 because step numbers start from 1 and indices start from 0
-            whereFalse = np.argwhere(otv==False).flatten()
-            if not whereFalse:
-                # empty list started on target? thats crazy
-                lastFalse = 0
-            else:
-                lastFalse = int(whereFalse[-1] + 1)
-            if lastFalse == len(otv):
-                # last step was false robot never got there
-                r["stepConverged"] = str(-1 )# -1 incicates never got to target
-            else:
-                r["stepConverged"] = str(lastFalse)
+            # otv = np.array(robot.onTargetVec)
+            # print("otargvec", otv)
+            # r["onTargetVec"] = robot.onTargetVec[-1]
+            # # find last False (after which must be true)
+            # # +1 because step numbers start from 1 and indices start from 0
+            # whereFalse = np.argwhere(otv==False).flatten()
+            # if not whereFalse:
+            #     # empty list started on target? thats crazy
+            #     lastFalse = 0
+            # else:
+            #     lastFalse = int(whereFalse[-1] + 1)
+            # if lastFalse == len(otv):
+            #     # last step was false robot never got there
+            #     r["stepConverged"] = str(-1 )# -1 incicates never got to target
+            # else:
+            #     r["stepConverged"] = str(lastFalse)
             robotDict[robot.id] = r
 
         rgd["robotDict"] = robotDict

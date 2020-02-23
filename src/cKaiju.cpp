@@ -67,7 +67,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("assignedTargetID", &Robot::assignedTargetID)
         .def_readwrite("alphaPath", &Robot::alphaPath)
         .def_readwrite("betaPath", &Robot::betaPath)
-        .def_readwrite("onTargetVec", &Robot::onTargetVec)
+        // .def_readwrite("onTargetVec", &Robot::onTargetVec)
         .def_readwrite("smoothedAlphaPath", &Robot::smoothedAlphaPath)
         .def_readwrite("smoothedBetaPath", &Robot::smoothedBetaPath)
         .def_readwrite("simplifiedAlphaPath", &Robot::simplifiedAlphaPath)

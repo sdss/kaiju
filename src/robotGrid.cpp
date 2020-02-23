@@ -248,7 +248,7 @@ void RobotGrid::clearPaths(){
         r->roughAlphaY.clear();
         r->roughBetaX.clear();
         r->roughBetaY.clear();
-        r->onTargetVec.clear();
+        // r->onTargetVec.clear();
     }
 
 }
@@ -656,7 +656,7 @@ void RobotGrid::stepGreedy(std::shared_ptr<Robot> robot, int stepNum){
         betaPathPoint(1) = currBeta;
         robot->alphaPath.push_back(alphaPathPoint);
         robot->betaPath.push_back(betaPathPoint);
-        robot->onTargetVec.push_back(true);
+        // robot->onTargetVec.push_back(true);
 
         // note make collision segment just two points
 
@@ -736,12 +736,12 @@ void RobotGrid::stepGreedy(std::shared_ptr<Robot> robot, int stepNum){
     betaPathPoint(1) = bestBeta;
     robot->alphaPath.push_back(alphaPathPoint);
     robot->betaPath.push_back(betaPathPoint);
-    if (robot->score()==0){
-        robot->onTargetVec.push_back(true);
-    }
-    else {
-        robot->onTargetVec.push_back(false);
-    }
+    // if (robot->score()==0){
+    //     robot->onTargetVec.push_back(true);
+    // }
+    // else {
+    //     robot->onTargetVec.push_back(false);
+    // }
 
     // add alpha/beta xy points
     // Eigen::Vector2d temp;
@@ -790,7 +790,7 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
         betaPathPoint(1) = currBeta;
         robot->alphaPath.push_back(alphaPathPoint);
         robot->betaPath.push_back(betaPathPoint);
-        robot->onTargetVec.push_back(true);
+        // robot->onTargetVec.push_back(true);
 
         // note make collision segment just two points
 
@@ -908,12 +908,12 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
     betaPathPoint(1) = bestBeta;
     robot->alphaPath.push_back(alphaPathPoint);
     robot->betaPath.push_back(betaPathPoint);
-    if (robot->score()==0){
-        robot->onTargetVec.push_back(true);
-    }
-    else {
-        robot->onTargetVec.push_back(false);
-    }
+    // if (robot->score()==0){
+    //     robot->onTargetVec.push_back(true);
+    // }
+    // else {
+    //     robot->onTargetVec.push_back(false);
+    // }
 
     // add alpha/beta xy points
     // Eigen::Vector2d temp;
@@ -1060,7 +1060,7 @@ void RobotGrid::stepTowardFold(std::shared_ptr<Robot> robot, int stepNum){
         robot->roughBetaX.push_back(temp);
         temp(1) = robot->betaCollisionSegment.back()(1); // yBetaEnd
         robot->roughBetaY.push_back(temp);
-        robot->onTargetVec.push_back(true);
+        // robot->onTargetVec.push_back(true);
 
         return;
     }
@@ -1136,13 +1136,13 @@ void RobotGrid::stepTowardFold(std::shared_ptr<Robot> robot, int stepNum){
     temp(1) = robot->betaCollisionSegment.back()(1); // yBetaEnd
     robot->roughBetaY.push_back(temp);
 
-    if (robot->alpha == 0 and robot->beta == 180){
-        robot->onTargetVec.push_back(true);
-    }
-    else {
-	std::cout << "not on target" << std::endl;
-        robot->onTargetVec.push_back(false);
-    }
+ //    if (robot->alpha == 0 and robot->beta == 180){
+ //        robot->onTargetVec.push_back(true);
+ //    }
+ //    else {
+	// std::cout << "not on target" << std::endl;
+ //        robot->onTargetVec.push_back(false);
+ //    }
 }
 
 

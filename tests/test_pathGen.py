@@ -1,4 +1,5 @@
 import pytest
+import numpy
 
 from kaiju.cKaiju import RobotGrid
 from kaiju import utils
@@ -38,6 +39,8 @@ def test_pathGen(plot=False):
     seed = 1
     smoothPts = 5
     collisionShrink = 0.3
+    angStep = 0.01
+    downsample = int(numpy.floor(3 / angStep))
     rg = RobotGrid(angStep, collisionBuffer, epsilon, seed)
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
         rg.addRobot(robotID, x, y, hasApogee)
@@ -64,7 +67,7 @@ def test_pathGen(plot=False):
     #assert rg.smoothCollisions == 0
     if plot:
         utils.plotOne(0, rg, figname="donepaht.png", isSequence=False)
-        utils.plotPaths(rg, filename="pathGen.mp4")
+        utils.plotPaths(rg, downsample=downsample, filename="pathGen.mp4")
 
 
 def test_filledHexDeadlockedPath(plot=False):

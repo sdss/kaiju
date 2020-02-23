@@ -39,7 +39,8 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
             alphaY = robot.roughAlphaY[step][1]
             betaX = robot.roughBetaX[step][1]
             betaY = robot.roughBetaY[step][1]
-            onTarget = robot.onTargetVec[step]
+            onTarget = False
+            # onTarget = robot.onTargetVec[step]
         else:
             # step input is ignored!!
             alphaPoint = robot.betaCollisionSegment[0]
