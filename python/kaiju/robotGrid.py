@@ -323,8 +323,8 @@ class RobotGridFilledHex(kaiju.cKaiju.RobotGrid):
     def target_array(self):
         """Return ndarray with target information"""
         target_dtype = np.dtype([('targetID', np.int32),
-                                 ('x', np.float32),
-                                 ('y', np.float32),
+                                 ('x', np.float64),
+                                 ('y', np.float64),
                                  ('priority', np.int32),
                                  ('fiberType', np.string_, 30)])
 
