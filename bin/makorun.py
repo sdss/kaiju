@@ -10,17 +10,17 @@ import itertools
 
 saveDir = "/home/csayres/kaijuRun"
 
-nProcs = 26
+nProcs = 12
 
 # nTrials = 15
 seeds = range(0, 100)
 cbuff = [1.5, 1.75, 2, 2.25, 2.5, 2.75, 3]
 angStep = [0.01]
-greed = [-1]
-phobia = [-1]
+# greed = [-1]
+# phobia = [-1]
 maxReplacements = 60
 hasApogee = True
-nDia = 17 #27 #is full run
+nDia = 27 #is full run
 
 alphaDest = 10
 betaDest = 170
@@ -121,10 +121,16 @@ if __name__ == "__main__":
 
 # use itertools for better load balancing
    # seeds = range(nTrials)
-    gridIter = itertools.product(seeds,angStep,cbuff,greed,phobia)
-    p = Pool(nProcs)
-    p.map(doOne, gridIter)
-    p.close()
+   # MDP, Greedy, Fold algs
+    greedPhob = [[0.95, 0.2], [1, 0], [-1, -1]]
+    for g, p in greedPhob:
+        print("on greed/phob", g, p)
+        greed = [g]
+        phobia = [p]
+        gridIter = itertools.product(seeds,angStep,cbuff,greed,phobia)
+        p = Pool(nProcs)
+        p.map(doOne, gridIter)
+        p.close()
 
     # first = list(gridIter)[0]
     # doOne(first)
