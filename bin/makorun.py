@@ -90,7 +90,7 @@ def doOne(inputList):
         foundNewSpot = False
         for rID in deadlockedRobots:
             # try 300 times to find a new spot for this guy
-            for jj in range(300):
+            for jj in range(2000):
                 robot = rg.robotDict[rID]
                 robot.setXYUniform()
                 if rg.getNCollisions()==0:
