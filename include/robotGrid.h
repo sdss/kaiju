@@ -61,6 +61,7 @@ public:
     std::vector<int> targetlessRobots(); // returns robotIDs
     std::vector<int> unreachableTargets(); // returns targetIDs
     std::vector<int> assignedTargets(); // returns targetIDs
+    bool throwAway(int robotID);
     // void pairwiseSwap();
     // void swapTargets(int r1ind, int r2ind);
     // void greedyAssign();

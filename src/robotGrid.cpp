@@ -602,6 +602,33 @@ std::vector<int> RobotGrid::fiducialColliders(int robotID){
 
 }
 
+bool RobotGrid::throwAway(int robotID){
+    // return true if worked
+    // robot gets new alpha beta position
+    // if return is false robot is unchanged
+    auto robot = robotDict[robotID];
+    auto currAlpha = robot->alpha;
+    auto currBeta = robot->beta;
+    // attempt to keep beta as small as possible
+    // loop over it first
+    double betaProbe = 180;
+    double stepSize = 0.05;
+    while (betaProbe > 0){
+        double alphaProbe = 0;
+        while (alphaProbe < 360){
+            robot->setAlphaBeta(alphaProbe, betaProbe);
+            if (!isCollided(robotID)){
+                return true;
+            }
+            alphaProbe = alphaProbe + stepSize;
+        }
+        betaProbe = betaProbe - stepSize;
+    }
+    // couldn't find shit!
+    robot->setAlphaBeta(currAlpha, currBeta);
+    return false;
+}
+
 
 void RobotGrid::decollideRobot(int robotID){
     // remove assigned target if present

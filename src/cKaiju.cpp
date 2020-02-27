@@ -126,6 +126,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("targetDict", &RobotGrid::targetDict)
         .def_readwrite("maxPathSteps", &RobotGrid::maxPathSteps)
         .def_readwrite("maxDisplacement", &RobotGrid::maxDisplacement)
+        .def("throwAway", &RobotGrid::throwAway)
         .def("getNCollisions", &RobotGrid::getNCollisions)
         .def("deadlockedRobots", &RobotGrid::deadlockedRobots)
         .def("addRobot", &RobotGrid::addRobot,
