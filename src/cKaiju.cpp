@@ -101,6 +101,7 @@ PYBIND11_MODULE(cKaiju, m) {
         // .def("setAlphaBetaRand", &Robot::setAlphaBetaRand)
         // .def("isCollided", &Robot::isCollided)
         .def("setFiberXY", &Robot::setFiberXY)
+        .def("score", &Robot::score)
         // .def("decollide", &Robot::decollide)
         .def("isAssigned", &Robot::isAssigned);
 
