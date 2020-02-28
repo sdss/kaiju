@@ -49,7 +49,7 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
             alphaY = alphaPoint[1]
             betaX = betaPoint[0]
             betaY = betaPoint[1]
-            onTarget = False
+            onTarget = robot.score() == 0
         plt.plot([robot.xPos, alphaX], [robot.yPos, alphaY], color='black', linewidth=2, alpha=0.5)
 
         topCollideLine = LineString(
