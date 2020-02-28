@@ -5,17 +5,20 @@ import time
 from multiprocessing import Pool, cpu_count
 from functools import partial
 import numpy
+numpy.random.seed(0)
+import networkx as nx
 import itertools
 
 
 saveDir = "/home/csayres/kaijuRun"
 
-nProcs = 12
+nProcs = 24
 
 # nTrials = 15
-seeds = range(0, 100)
+seeds = range(0, 20)
 cbuff = [1.5, 1.75, 2, 2.25, 2.5, 2.75, 3]
-angStep = [0.01]
+angStep = [0.1]
+greedPhob = [(0.9, 0.3),(1, 0)]
 # greed = [-1]
 # phobia = [-1]
 maxReplacements = 60
@@ -42,44 +45,66 @@ def getGrid(angStep, cbuff, seed):
     # print("nCollisions in getGrid", rg.getNCollisions())
     return rg
 
+def findReplacementIDs(rg):
+    G = nx.Graph()
+    deadlockedRobots = rg.deadlockedRobots()
+    print("deadlockedRobots", deadlockedRobots)
+    G.add_nodes_from(deadlockedRobots)
+
+    for dlr in deadlockedRobots:
+        neighbors = rg.robotDict[dlr].robotNeighbors
+        for nID in neighbors:
+            if nID in deadlockedRobots:
+                G.add_edge(dlr, nID)
+    subGraphs = nx.connected_components(G)
+    # this picks one out of each connected
+    # deadlock pileup
+    return [numpy.random.choice(list(x)) for x in subGraphs]
 
 def doOne(inputList):
-    seed, angStep, cbuff, greed, phobia = inputList
+    seed, angStep, cbuff, (greed, phobia) = inputList
     outList = []
-    filename = "summary_%i_%.2f_%.2f_%.2f_%.2f.json"%(seed, cbuff, angStep, greed, phobia)
+    basename = "%i_%.2f_%.2f_%.2f_%.2f"%(seed, cbuff, angStep, greed, phobia)
+    filename = "summary_" + basename + ".json"
+    errname = "error_" + basename + ".err"
+    errpath = os.path.join(saveDir, errname)
     filepath = os.path.join(saveDir, filename)
     try:
         rg = getGrid(angStep, cbuff, seed)
     except:
-        outList.append("decollide failed")
-        json.dump(outList, open(filepath, "w", separators=(',', ':')))
+        with open(errpath, "a") as f:
+            f.write("decollide failed\n")
         return
 
+    totalReplaced = 0
     # record initial alpha beta positions for all robots
     rbInit = {}
     for rID, robot in rg.robotDict.items():
         rbInit[rID] = [robot.alpha, robot.beta]
 
     for i in range(maxReplacements):
+        # get a fresh grid each time
+        rg = getGrid(angStep, cbuff, seed)
+        rg.totalReplaced = totalReplaced
+        # initialize robots to starting place
         for rID, robot in rg.robotDict.items():
             initAlpha, initBeta = rbInit[rID]
             robot.setAlphaBeta(initAlpha, initBeta)
         # print("nCollisions at loop top", rg.getNCollisions())
 
-        t1 = time.time()
         if greed == 1 and phobia == 0:
             rg.pathGenGreedy()
-        elif greed == -1 and phobia == -1:
-            rg.pathGen()
+        # elif greed == -1 and phobia == -1:
+        #     rg.pathGen()
         else:
             rg.pathGenMDP(greed, phobia)
-        runtime = time.time()-t1
-        outList.append([runtime, rg.robotGridSummaryDict()])
+        outList.append(rg.robotGridSummaryDict())
         if not rg.didFail:
             break # done!
 
-        deadlockedRobots = numpy.array(rg.deadlockedRobots())
-        numpy.random.shuffle(deadlockedRobots)
+        # deadlockedRobots = numpy.array(rg.deadlockedRobots())
+        # numpy.random.shuffle(deadlockedRobots)
+        replacementIDs = findReplacementIDs(rg)
         # print("deadlockedRobots", deadlockedRobots)
         # if we're here pathGen failed.  try to replace a deadlocked
         # robot
@@ -87,21 +112,20 @@ def doOne(inputList):
             initAlpha, initBeta = rbInit[rID]
             robot.setAlphaBeta(initAlpha, initBeta)
         # print("nCollisions after deadlock", rg.getNCollisions())
-        foundNewSpot = False
-        for rID in deadlockedRobots:
-            # try 300 times to find a new spot for this guy
-            for jj in range(2000):
-                robot = rg.robotDict[rID]
-                robot.setXYUniform()
-                if rg.getNCollisions()==0:
-                    foundNewSpot = True
-                    rbInit[rID] = [robot.alpha, robot.beta]
-                    break
-            if foundNewSpot:
-                break
-        if not foundNewSpot:
-            outList.append("failed to find valid replacement")
-            break
+
+        for rID in replacementIDs:
+            # throwAway will update the grid with new positions
+            # if successful. returns true/false to indicate success
+            robot = rg.robotDict[rID]
+            foundNewSpot = rg.throwAway(rID)
+            if foundNewSpot == False:
+                with open(errpath, "a") as f:
+                    f.write("failed to find replacement for robot %i replacement iter %i\n"%(rID, i))
+            else:
+                # indicate this robots new spot in the init dict
+                rbInit[rID] = [robot.alpha, robot.beta]
+                totalReplaced += 1
+
 
     with open(filepath, "w") as f:
         json.dump(outList, f, separators=(',', ':'))
@@ -117,20 +141,23 @@ if __name__ == "__main__":
     # phobia=0.2
     # inputList = [seed, angStep, cbuff, greed, phobia]
     # doOne(inputList)
-
+    gridIter = itertools.product(seeds,angStep,cbuff,greedPhob)
+    p = Pool(nProcs)
+    p.map(doOne, gridIter)
+    p.close()
 
 # use itertools for better load balancing
    # seeds = range(nTrials)
    # MDP, Greedy, Fold algs
-    greedPhob = [[0.95, 0.2], [1, 0], [-1, -1]]
-    for g, p in greedPhob:
-        print("on greed/phob", g, p)
-        greed = [g]
-        phobia = [p]
-        gridIter = itertools.product(seeds,angStep,cbuff,greed,phobia)
-        p = Pool(nProcs)
-        p.map(doOne, gridIter)
-        p.close()
+    # greedPhob = [[0.95, 0.2], [1, 0], [-1, -1]]
+    # for g, p in greedPhob:
+    #     print("on greed/phob", g, p)
+    #     greed = [g]
+    #     phobia = [p]
+    #     gridIter = itertools.product(seeds,angStep,cbuff,greed,phobia)
+    #     p = Pool(nProcs)
+    #     p.map(doOne, gridIter)
+    #     p.close()
 
     # first = list(gridIter)[0]
     # doOne(first)
