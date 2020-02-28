@@ -401,6 +401,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         r["phobia"] = self.phobia
         r["seed"] = self.seed
         r["algType"] = str(self.algType)
+        r["totalReplaced"] = self.totalReplaced
         if incRobotDict:
             robotDict = {}
             for rid, robot in self.robotDict.items():
