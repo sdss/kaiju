@@ -15,8 +15,8 @@ saveDir = "/home/csayres/kaijuRun"
 nProcs = 24
 
 # nTrials = 15
-seeds = range(0, 20)
-cbuff = [1.5, 1.75, 2, 2.25, 2.5, 2.75, 3]
+seeds = range(0, 2000)
+cbuff = [1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5]
 angStep = [0.1]
 greedPhob = [(0.9, 0.3),(1, 0)]
 # greed = [-1]
