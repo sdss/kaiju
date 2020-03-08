@@ -48,6 +48,7 @@ PYBIND11_MODULE(cKaiju, m) {
             Robot's alpha position (degrees).
             )pbdoc")
         .def_readwrite("robotNeighbors", &Robot::robotNeighbors)
+        .def_readwrite("scoreVec", &Robot::scoreVec)
         .def_readwrite("fiducialNeighbors", &Robot::fiducialNeighbors)
         .def_readwrite("angStep", &Robot::angStep)
         .def_readwrite("collisionBuffer", &Robot::collisionBuffer)

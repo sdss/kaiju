@@ -40,6 +40,7 @@ public:
     std::vector<double> betaVel;
     std::vector<double> smoothAlphaVel;
     std::vector<double> smoothBetaVel;
+    std::vector<double> scoreVec;
     Eigen::Array<double, 8, 2> alphaBetaArr; // delete this soon
     Eigen::Affine3d betaRot, alphaRot;
     Eigen::Vector3d metFiberPos;

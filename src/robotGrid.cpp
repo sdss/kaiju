@@ -248,6 +248,7 @@ void RobotGrid::clearPaths(){
         r->roughAlphaY.clear();
         r->roughBetaX.clear();
         r->roughBetaY.clear();
+        r->scoreVec.clear();
         // r->onTargetVec.clear();
     }
 
@@ -276,7 +277,7 @@ void RobotGrid::pathGenMDP(double setGreed, double setPhobia){
             // std::cout << "path gen " << r.betaOrientation.size() << " " << r.betaModel.size() << std::endl;
             // std::cout << "alpha beta " << r.alpha << " " << r.beta << std::endl;
             stepMDP(r, ii);
-
+            r->scoreVec.push_back(r->score());
             if (r->score()!=0) {
                 // could just check the last elemet in onTargetVec? same thing.
                 // or use robot->score
@@ -311,7 +312,7 @@ void RobotGrid::pathGenGreedy(){
             // std::cout << "path gen " << r.betaOrientation.size() << " " << r.betaModel.size() << std::endl;
             // std::cout << "alpha beta " << r.alpha << " " << r.beta << std::endl;
             stepGreedy(r, ii);
-
+            r->scoreVec.push_back(r->score());
             if (r->score()!=0) {
                 // could just check the last elemet in onTargetVec? same thing.
                 // or use robot->score

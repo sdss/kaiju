@@ -87,6 +87,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         else:
             self.epsilon = epsilon
         self.seed = seed
+        self.totalReplaced = 0 # hack for now until it goes into the C++
         super().__init__(self.stepSize, self.collisionBuffer,
                          self.epsilon, self.seed)
         # self._load_grid()
