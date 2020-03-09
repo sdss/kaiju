@@ -88,6 +88,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
             self.epsilon = epsilon
         self.seed = seed
         self.totalReplaced = 0 # hack for now until it goes into the C++
+        self.runtime = 0 # hack for now until
         super().__init__(self.stepSize, self.collisionBuffer,
                          self.epsilon, self.seed)
         # self._load_grid()
@@ -403,6 +404,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         r["seed"] = self.seed
         r["algType"] = str(self.algType)
         r["totalReplaced"] = self.totalReplaced
+        r["runtime"] = self.runtime
         if incRobotDict:
             robotDict = {}
             for rid, robot in self.robotDict.items():
