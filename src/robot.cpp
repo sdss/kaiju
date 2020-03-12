@@ -153,6 +153,10 @@ void Robot::setFiberXY(double xFiberGlobal, double yFiberGlobal, FiberType fiber
 }
 
 
+double Robot::getMaxReach() {
+	return(maxReach);
+}
+
 void Robot::addRobotNeighbor(int robotID){
     robotNeighbors.push_back(robotID);
 }
