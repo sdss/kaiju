@@ -77,6 +77,7 @@ public:
     // bool isValidTarget(double x, double y, int fiberID);
     void assignTarget(int targetID);
     void clearAssignment();
+    double getMaxReach();
     bool isAssigned();
     // bool canSwapTarget(std::shared_ptr<Robot> robot);
 };
