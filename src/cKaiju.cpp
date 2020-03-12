@@ -87,6 +87,7 @@ PYBIND11_MODULE(cKaiju, m) {
         // .def("isCollided", &Robot::isCollided)
         .def("setFiberXY", &Robot::setFiberXY)
         // .def("decollide", &Robot::decollide)
+        .def("getMaxReach", &Robot::getMaxReach)
         .def("isAssigned", &Robot::isAssigned);
 
     py::class_<RobotGrid, std::shared_ptr<RobotGrid>>(m, "RobotGrid", R"pbdoc(
