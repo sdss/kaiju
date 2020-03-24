@@ -9,6 +9,7 @@ numpy.random.seed(0)
 import networkx as nx
 import itertools
 import glob
+import pandas as pd
 
 
 saveDir = "/home/csayres/kaijuRunVarStep"
@@ -16,9 +17,9 @@ saveDir = "/home/csayres/kaijuRunVarStep"
 nProcs = 14
 
 # nTrials = 15
-seeds = range(0, 2000)
+seeds = range(0, 500)
 cbuff = [1.5, 2, 2.5, 3, 3.5]
-angStep = [0.01, 0.1, 0.5, 1]
+angStep = [0.01, 0.05, 0.1, .25, 0.5, 0.75, 1]#, 1]
 greedPhob = [(0.9, 0.3),(1, 0)]
 # greed = [-1]
 # phobia = [-1]
@@ -70,6 +71,9 @@ def doOne(inputList):
     errname = "error_" + basename + ".err"
     errpath = os.path.join(saveDir, errname)
     filepath = os.path.join(saveDir, filename)
+    if os.path.exists(filepath) and seed < 400:
+        print("skipping, already done")
+        return
     try:
         rg = getGrid(angStep, cbuff, seed)
     except:
@@ -85,6 +89,13 @@ def doOne(inputList):
 
     for i in range(maxReplacements):
         # get a fresh grid each time
+        if totalReplaced > rg.nRobots:
+            rg.totalReplaced = rg.nRobots
+            # don't start a new grid
+            # don't try further
+            # break here
+            outList.append(rg.robotGridSummaryDict())
+            break
         rg = getGrid(angStep, cbuff, seed)
         rg.totalReplaced = totalReplaced
         # initialize robots to starting place
@@ -140,72 +151,72 @@ def compileResults():
     maxReplacements = 40
 
 
-    def parseOutput():
-        pandasDict = {
-            "seed" : [],
-            "convergence" : [],
-            "replacements" : [],
-            "collisionBuffer" : [],
-            "greed" : [],
-            "phobia" : [],
-            "angStep" : [],
-            "nSteps" : [],
-            "foldtime" : [],
-            "nRobots" : [],
-            "foldDeg" : [],
-            "algorithm": [],
-            "runtime": [],
-        }
+    pandasDict = {
+        "seed" : [],
+        "efficiency" : [],
+        "replacements" : [],
+        "collisionBuffer" : [],
+        "greed" : [],
+        "phobia" : [],
+        "angStep" : [],
+        "nSteps" : [],
+        "foldtime" : [],
+        "nRobots" : [],
+        "foldDeg" : [],
+        "algorithm": [],
+        "totalRuntime": [],
+        "lastRuntime": []
+    }
 
 
-        files = glob.glob(os.path.join(saveDir, "*.json"))
-        t1 = time.time()
-        for file in files:
-            f = json.load(open(file, "r"))
-            file = file.strip(".json")
-            # all strings
-            nRobots = f[0]["nRobots"]
-            seed = f[0]["seed"]
-            angStep = f[0]["angStep"]
-            collisionBuffer = f[0]["collisionBuffer"]
-            greed = f[0]["greed"]
-            phobia = f[0]["phobia"]
-            totalReplaced = f[-1]["totalReplaced"]
-            runtime = numpy.sum(x["runtime"] for x in f) # sum runtime including replacements
-            pandasDict["runtime"].append(runtime)
-            if greed == -1:
-                pandasDict["algorithm"].append("fold")
-            elif greed == 1:
-                pandasDict["algorithm"].append("GC")
-            else:
-                pandasDict["algorithm"].append("MDP")
-            pandasDict["nRobots"].append(nRobots)
-            pandasDict["seed"].append(seed)
-            pandasDict["collisionBuffer"].append(collisionBuffer)
-            pandasDict["greed"].append(greed)
-            pandasDict["phobia"].append(phobia)
-            pandasDict["angStep"].append(angStep)
-            replacementTries = len(f) # remember multiple replacements done at once
-            if replacementTries == maxReplacements:
-                print("max replacements tried", greed, collisionBuffer)
-                print("max replacements for file", file)
-                pandasDict["convergence"].append(0)
-                pandasDict["replacements"].append(-3)
-                pandasDict["foldtime"].append(numpy.nan)
-                pandasDict["nSteps"].append(numpy.nan)
-                pandasDict["foldDeg"].append(numpy.nan)
-            else:
-                nSteps = f[-1]["nSteps"] # take the number of steps at last iter
-                # print("nReplaced for file", file, replacements)
-                pandasDict["convergence"].append(1-totalReplaced/nRobots)
-                pandasDict["replacements"].append(totalReplaced)
-                pandasDict["foldtime"].append(nSteps*angStep/speed)
-                pandasDict["nSteps"].append(nSteps)
-                pandasDict["foldDeg"].append(nSteps*angStep)
+    files = glob.glob(os.path.join(saveDir, "*.json"))
+    t1 = time.time()
+    for file in files:
+        f = json.load(open(file, "r"))
+        file = file.strip(".json")
+        # all strings
+        nRobots = f[0]["nRobots"]
+        seed = f[0]["seed"]
+        angStep = f[0]["angStep"]
+        collisionBuffer = f[0]["collisionBuffer"]
+        greed = f[0]["greed"]
+        phobia = f[0]["phobia"]
+        totalReplaced = f[-1]["totalReplaced"]
+        totalRuntime = numpy.sum(x["runtime"] for x in f) # sum runtime including replacements
+        pandasDict["totalRuntime"].append(totalRuntime)
+        pandasDict["lastRuntime"].append(f[-1]["runtime"])
+        if greed == -1:
+            pandasDict["algorithm"].append("fold")
+        elif greed == 1:
+            pandasDict["algorithm"].append("GC")
+        else:
+            pandasDict["algorithm"].append("MDP")
+        pandasDict["nRobots"].append(nRobots)
+        pandasDict["seed"].append(seed)
+        pandasDict["collisionBuffer"].append(collisionBuffer)
+        pandasDict["greed"].append(greed)
+        pandasDict["phobia"].append(phobia)
+        pandasDict["angStep"].append(angStep)
+        replacementTries = len(f) # remember multiple replacements done at once
+        pandasDict["replacements"] = replacementTries
+        if totalReplaced >= nRobots:
+            totalReplaced = nRobots
+        pandasDict["efficiency"].append(1-totalReplaced/nRobots)
+        if totalReplaced == nRobots:
+            pandasDict["foldtime"].append(numpy.nan)
+            pandasDict["nSteps"].append(numpy.nan)
+            pandasDict["foldDeg"].append(numpy.nan)
+        else:
+            nSteps = f[-1]["nSteps"] # take the number of steps at last iter
+            # print("nReplaced for file", file, replacements)
+            pandasDict["foldtime"].append(nSteps*angStep/speed)
+            pandasDict["nSteps"].append(nSteps)
+            pandasDict["foldDeg"].append(nSteps*angStep)
 
-            # print("read seed", seed)
-        print("took", time.time()-t1)
-        df = pd.DataFrame(pandasDict)
+        # print("read seed", seed)
+    print("took", time.time()-t1)
+    df = pd.DataFrame(pandasDict)
+    df.to_csv(os.path.join(saveDir, "allSeedsVarStep.csv"), index=False)
 
 
 if __name__ == "__main__":
@@ -222,6 +233,7 @@ if __name__ == "__main__":
     p = Pool(nProcs)
     p.map(doOne, gridIter)
     p.close()
+    compileResults()
 
 # use itertools for better load balancing
    # seeds = range(nTrials)
