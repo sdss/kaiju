@@ -62,6 +62,7 @@ public:
     std::vector<int> unreachableTargets(); // returns targetIDs
     std::vector<int> assignedTargets(); // returns targetIDs
     bool throwAway(int robotID);
+    bool replaceNearFold(int robotID);
     // void pairwiseSwap();
     // void swapTargets(int r1ind, int r2ind);
     // void greedyAssign();

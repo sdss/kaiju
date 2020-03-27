@@ -612,6 +612,26 @@ bool RobotGrid::throwAway(int robotID){
     auto currBeta = robot->beta;
     // attempt to keep beta as small as possible
     // loop over it first
+    for (ii=0; ii<10000; ii++){
+        robot->setXYUniform();
+        if (!isCollided(robotID)){
+            return true;
+        }
+    }
+    // couldn't find replacement!
+    robot->setAlphaBeta(currAlpha, currBeta);
+    return false;
+}
+
+bool RobotGrid::replaceNearFold(int robotID){
+    // return true if worked
+    // robot gets new alpha beta position
+    // if return is false robot is unchanged
+    auto robot = robotDict[robotID];
+    auto currAlpha = robot->alpha;
+    auto currBeta = robot->beta;
+    // attempt to keep beta as small as possible
+    // loop over it first
     double betaProbe = 180;
     double stepSize = 0.05;
     while (betaProbe > 0){
