@@ -17,14 +17,14 @@ saveDir = "/home/csayres/kaijuRunVarNum"
 nProcs = 14
 
 # nTrials = 15
-seeds = range(0, 10)
+seeds = range(0, 200)
 cbuff = 2.5
 angStep = 0.1
 
 # cbuff = [1.5, 2, 2.5, 3, 3.5]
 # angStep = [0.01, 0.05, 0.1, .25, 0.5, 0.75, 1]#, 1]
 greedPhob = [(0.9, 0.3),(1, 0)]
-nDias =  g = numpy.arange(7,67,4)
+nDias = numpy.arange(7,67,4)
 # greed = [-1]
 # phobia = [-1]
 maxReplacements = 60
@@ -71,7 +71,7 @@ def findReplacementIDs(rg):
 def doOne(inputList):
     seed, nDia, (greed, phobia) = inputList
     outList = []
-    basename = "%i_%.2f_%.2f_%.2f"%(seed, nDia, greed, phobia)
+    basename = "%i_%i_%.2f_%.2f"%(seed, nDia, greed, phobia)
     filename = "summary_" + basename + ".json"
     errname = "error_" + basename + ".err"
     errpath = os.path.join(saveDir, errname)
@@ -80,7 +80,7 @@ def doOne(inputList):
         print("skipping, already done")
         return
     try:
-        rg = getGrid(angStep, cbuff, seed)
+        rg = getGrid(angStep, cbuff, seed, nDia)
     except:
         with open(errpath, "a") as f:
             f.write("decollide failed\n")
