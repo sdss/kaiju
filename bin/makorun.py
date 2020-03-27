@@ -9,7 +9,7 @@ import numpy
 # import networkx as nx
 import itertools
 
-from .runSim import doOne, compileResults
+from runSim import doOne, compileResults
 
 
 # saveDir = "/home/csayres/kaijuRun"
