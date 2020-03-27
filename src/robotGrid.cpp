@@ -612,7 +612,7 @@ bool RobotGrid::throwAway(int robotID){
     auto currBeta = robot->beta;
     // attempt to keep beta as small as possible
     // loop over it first
-    for (ii=0; ii<10000; ii++){
+    for (int ii=0; ii<10000; ii++){
         robot->setXYUniform();
         if (!isCollided(robotID)){
             return true;
