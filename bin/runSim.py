@@ -177,7 +177,8 @@ def compileResults(saveDir, saveName):
         "foldDeg" : [],
         "algorithm": [],
         "totalRuntime": [],
-        "lastRuntime": []
+        "lastRuntime": [],
+        "totalReplaced": [],
     }
     files = glob.glob(os.path.join(saveDir, "*.json"))
     t1 = time.time()
@@ -192,6 +193,12 @@ def compileResults(saveDir, saveName):
         greed = f[0]["greed"]
         phobia = f[0]["phobia"]
         totalReplaced = f[-1]["totalReplaced"]
+        pandasDict["totalReplaced"].append(totalReplaced)
+
+
+
+
+
         print("total replaced", totalReplaced)
         totalRuntime = numpy.sum(x["runtime"] for x in f) # sum runtime including replacements
         pandasDict["totalRuntime"].append(totalRuntime)
@@ -210,7 +217,7 @@ def compileResults(saveDir, saveName):
         pandasDict["angStep"].append(angStep)
         replacementTries = len(f)# remember multiple replacements done at once
         print("replacement tries", replacementTries)
-        pandasDict["replacements"] = replacementTries
+        pandasDict["replacements"].append(replacementTries)
         if replacementTries == maxReplacements:
             print("got max replacements")
             totalReplaced = nRobots
