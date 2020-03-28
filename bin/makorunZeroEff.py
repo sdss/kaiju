@@ -82,9 +82,10 @@ zeroEff = [
 if __name__ == "__main__":
 
     saveDir = "/home/csayres/kaijuRunZeroEff"
-
+    ll = len(zeroEff)
     # nProcs = 24
-    for ze in zeroEff:
+    for ii, ze in enumerate(zeroEff):
+        print("working on %i of %i "%(ii,ll), ze)
         doOne(ze, saveDir)
     compileResults(saveDir, "allSeeds.csv")
 
