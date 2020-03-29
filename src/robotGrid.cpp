@@ -533,7 +533,9 @@ bool RobotGrid::neighborEncroachment(std::shared_ptr<Robot> robot1){
     // score, separation2
     // look ahead and see robots getting close
     double dist2;
-    double minDist = 3*collisionBuffer*2*maxDisplacement;
+    double minDist = 2*collisionBuffer + 3*maxDisplacement;
+
+    // std::cout << "check ne! " << std::endl;
 
     // check collisions with neighboring robots
     for (auto otherRobotID : robot1->robotNeighbors){
@@ -544,6 +546,9 @@ bool RobotGrid::neighborEncroachment(std::shared_ptr<Robot> robot1){
                 robot1->betaCollisionSegment[0], robot1->betaCollisionSegment[1]
             );
         if (dist2 < (minDist*minDist)){
+
+            // std::cout << "neighbor encroachment! " << std::endl;
+
             return true;
         }
     }
@@ -612,7 +617,7 @@ bool RobotGrid::throwAway(int robotID){
     auto currBeta = robot->beta;
     // attempt to keep beta as small as possible
     // loop over it first
-    for (int ii=0; ii<10000; ii++){
+    for (int ii=0; ii<100000; ii++){
         robot->setXYUniform();
         if (!isCollided(robotID)){
             return true;
@@ -672,6 +677,21 @@ void RobotGrid::decollideRobot(int robotID){
 
 std::vector<int> RobotGrid::deadlockedRobots(){
     std::vector<int> deadlockedRobotIDs;
+
+
+    // auto r362 = robotDict[362];
+    // double minDist = 4*collisionBuffer*4*maxDisplacement;
+    // std::cout << "minDist " << minDist << std::endl;
+    // for (auto otherRobotID : r362->robotNeighbors){
+    //     auto robot2 = robotDict[otherRobotID];
+    //     // squared distance returned
+    //     double dist2 = dist3D_Segment_to_Segment(
+    //             robot2->betaCollisionSegment[0], robot2->betaCollisionSegment[1],
+    //             r362->betaCollisionSegment[0], r362->betaCollisionSegment[1]
+    //         );
+    //     std::cout << otherRobotID <<": " << dist2 << std::endl;
+    // }
+
     for (auto rPair : robotDict){
         auto robot = rPair.second;
         if (algType == Fold){
