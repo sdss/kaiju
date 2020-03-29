@@ -683,6 +683,9 @@ std::vector<int> RobotGrid::deadlockedRobots(){
             if (robot->score() != 0){
                 deadlockedRobotIDs.push_back(robot->id);
             }
+            else if (neighborEncroachment(robot)){
+                deadlockedRobotIDs.push_back(robot->id);
+            }
         }
     }
     return deadlockedRobotIDs;
