@@ -1,7 +1,8 @@
 from multiprocessing import Pool, cpu_count
 from functools import partial
 import itertools
-
+import runSim
+runSim.maxReplacements = 20
 from runSim import doOne, compileResults
 
 zeroEff = [
@@ -86,7 +87,7 @@ if __name__ == "__main__":
     # nProcs = 24
     for ii, ze in enumerate(zeroEff):
         print("working on %i of %i "%(ii,ll), ze)
-        doOne(ze, saveDir)
+        doOne(ze, saveDir, plot=True)
     compileResults(saveDir, "allSeeds.csv")
 
 

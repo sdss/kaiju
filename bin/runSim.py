@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from subprocess import Popen
 from shapely.geometry import LineString
 from descartes import PolygonPatch
+import pickle
 
 
 
@@ -73,7 +74,7 @@ def findReplacementIDs(rg):
     return [numpy.random.choice(list(x)) for x in subGraphs]
 
 
-def doOne(inputList, saveDir):
+def doOne(inputList, saveDir, plot=False):
     seed, nDia, angStep, cbuff, (greed, phobia) = inputList
     outList = []
     basename = "%i_%i_%.2f_%.2f_%.2f_%.2f"%(seed, nDia, angStep, cbuff, greed, phobia)
@@ -108,14 +109,17 @@ def doOne(inputList, saveDir):
             # break here
             outList.append(rg.robotGridSummaryDict())
             break
-        rg = getGrid(angStep, cbuff, seed, nDia)
+        rg = getGrid(angStep, cbuff, i, nDia)
         rg.totalReplaced = totalReplaced
         # initialize robots to starting place
         for rID, robot in rg.robotDict.items():
             initAlpha, initBeta = rbInit[rID]
             robot.setAlphaBeta(initAlpha, initBeta)
-        # print("nCollisions at loop top", rg.getNCollisions())
 
+        # print("nCollisions at loop top", rg.getNCollisions())
+        if plot:
+            figname = os.path.join(saveDir, basename + "_%i_"%i)
+            utils.plotOne(1, robotGrid=rg, figname = figname+"_s.png", isSequence=False)
         tstart = time.time()
         if greed == 1 and phobia == 0:
             rg.pathGenGreedy()
@@ -125,6 +129,8 @@ def doOne(inputList, saveDir):
             rg.pathGenMDP(greed, phobia)
 
         tend = time.time()
+        if plot:
+            utils.plotOne(1, robotGrid=rg, figname = figname+"_e.png", isSequence=False)
         rg.runtime = tend-tstart
         outList.append(rg.robotGridSummaryDict())
         if not rg.didFail:
@@ -154,8 +160,22 @@ def doOne(inputList, saveDir):
                 # indicate this robots new spot in the init dict
                 replacementIDList.append(rID)
                 rbInit[rID] = [robot.alpha, robot.beta]
+                print("replacing robot", rID, "to", [robot.alpha, robot.beta])
                 # totalReplaced += 1
 
+    if plot:
+        # save last state
+        with open(os.path.join(saveDir, basename+".pkl"), "wb") as f:
+            dout = {}
+            seed, nDia, angStep, cbuff, (greed, phobia)
+            dout["seed"] = seed
+            dout["nDia"] = nDia
+            dout["angStep"] = angStep
+            dout["cbuff"] = cbuff
+            dout["greed"] = greed
+            dout["phobia"] = phobia
+            dout["rbInit"] = rbInit
+            pickle.dump(dout, f)
 
     with open(filepath, "w") as f:
         json.dump(outList, f, separators=(',', ':'))
