@@ -32,7 +32,7 @@ import pickle
 # greed = [-1]
 # phobia = [-1]
 
-maxReplacements = 60
+maxReplacements = 30
 hasApogee = True
 # nDia = 27 #is full run
 
