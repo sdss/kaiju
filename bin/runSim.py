@@ -185,6 +185,7 @@ def compileResults(saveDir, saveName):
 
     pandasDict = {
         "seed" : [],
+        "seedList" : [],
         "efficiency" : [],
         "replacements" : [],
         "collisionBuffer" : [],
@@ -203,11 +204,17 @@ def compileResults(saveDir, saveName):
     files = glob.glob(os.path.join(saveDir, "*.json"))
     t1 = time.time()
     for file in files:
+        # find the seed
+        head, tail = os.path.split(file)
+        seed = tail.split("_")[1]
+        seed = int(seed)
         f = json.load(open(file, "r"))
         file = file.strip(".json")
         # all strings
         nRobots = f[0]["nRobots"]
-        seed = f[0]["seed"]
+        # seed = f[0]["seed"]
+        seedList = [int(x["seed"]) for x in f]
+        pandasDict["seedList"].append(seedList)
         angStep = f[0]["angStep"]
         collisionBuffer = f[0]["collisionBuffer"]
         greed = f[0]["greed"]
