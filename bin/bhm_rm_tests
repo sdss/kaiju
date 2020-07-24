@@ -1,0 +1,247 @@
+#!/usr/bin/env python
+# encoding: utf-8
+#
+# @Author: Tom Dwelly
+# @Date: 09-07-2020
+# @Filename: bhm_targeting
+# @License: BSD 3-Clause
+
+
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
+import argparse
+import os
+import sys
+import pkg_resources
+import numpy as np
+
+import argparse
+from kaiju.field import Field
+
+__version__ = pkg_resources.require("sdss-kaiju")[0].version
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(
+        prog=os.path.basename(sys.argv[0]),
+        description='Performs FPS assignment for a field of targets using Kaiju.')
+
+#    parser.add_argument('-c', '--config', required=True,  default=None, help='Which config file to read?')
+##    parser.add_argument('-o', '--outdir', required=True,  default=None, help='Where to write outputs?')
+#    parser.add_argument('-t', '--todo', nargs='+', required=False,  default=[valid_todo[0]],
+#                        help=f'Which part(s) of the code to run (from: {", ".join(valid_todo)}) ')
+#    parser.add_argument('-s', '--subsurveys', nargs='+', required=True,   default=None,
+#                        help='Which BHM sub-survey(s) to process (or "all")', )
+    parser.add_argument('-b', '--buffer', type=float, default=2.0, help='Size of collision buffer in kaiju, mm')
+    parser.add_argument('-n', '--niters', type=int, default=1, help='Number of iterations to run')
+    parser.add_argument('-v', '--verbose', action='store_true', default=False,
+                        help='sets verbose mode')
+    parser.add_argument(      '--version', action='version',    version=f'%(prog)s {__version__}')
+
+    args = parser.parse_args()
+
+
+
+    fields = [
+        {'name':'COSMOS',   'racen': 150.0,    'deccen': 2.2,     'pa': 0.0, 'observatory':'apo'},
+        {'name':'XMM-LSS',  'racen': 35.70833, 'deccen': -5.05000, 'pa': 0.0, 'observatory':'apo'},
+        {'name':'SDSS-RM',  'racen': 213.7042, 'deccen': 53.08333, 'pa': 0.0, 'observatory':'apo'},
+    ]
+
+    indir = os.path.expanduser('~/scratch/kaiju')
+    outdir = os.path.expanduser('~/scratch/kaiju')
+    infile_stem = 'td_test_'
+    for f in fields:
+        fname = f['name']
+        targets_filename = os.path.join(indir, infile_stem+fname+'.fits')
+        for i in np.arange(args.niters):
+            itername = f"ITER{i+1:03d}"
+            outfile_gridfits= os.path.join(outdir, 'kaiju_grid_out_'+fname+'_'+itername+'.fits')
+            outfile_fits= os.path.join(outdir, 'kaiju_assignments_'+fname+'_'+itername+'.fits')
+            logfile = os.path.join(outdir, 'kaiju_'+fname+'_'+itername+'.log')
+            rs_f = Field(racen=f['racen'],
+                         deccen=f['deccen'],
+                         pa=f['pa'],
+                         observatory='apo',
+                         db=False,
+                         nsky_apogee=0,
+                         nsky_boss=0,
+                         nstandard_apogee=0,
+                         nstandard_boss=0,
+                         collisionBuffer=args.buffer,
+            )
+
+            rs_f.targets_fromfits(filename=targets_filename,add_to_mastergrid=True)
+            try:
+                assign_log = rs_f.assign(include_calibration=False, kaiju=True)
+            except:
+                print(assign_log)
+                print(f"Failure in FIELD {fname:8} {itername} !!!!!!!!!")
+                del rs_f
+                continue
+
+            # calc some stats
+            #print (rs_f.target_assigned)
+            nok = np.sum(rs_f.target_assigned)
+            print(f"FIELD {fname:8} {itername} STATS Nok= {nok}")
+
+
+            print(f"FIELD {fname:8} {itername} Writing assignments to {outfile_fits}")
+            rs_f.tofits(outfile_fits)
+
+            #f.tojs(outfile_js)
+            #f.html(outfile_html)
+            #f.plot()
+
+            print(f"FIELD {fname:8} {itername} Writing logfile to {logfile}", flush=True)
+            with open(logfile, 'wb') as lf:
+                lf.write(assign_log.encode('ascii'))
+
+            if i == 0:
+                print(f"Writing robot grids to {outfile_gridfits}")
+                rs_f.robotgrids[0].robot_dict()
+                rs_f.robotgrids[0].tofits(outfile_gridfits)
+
+
+            del rs_f
+
+
+
+
+
+
+    '''
+    stilts tmatch2 ifmt1=fits ifmt2=fits in1=~/scratch/targetdb_bhm_rm_unique_COSMOS.fits in2=~/scratch/targetdb_bhm_rm_unique_COSMOS_out.fits matcher=exact values1=targetid values2=targetid out=~/scratch/targetdb_bhm_rm_unique_COSMOS_out2.fits find=all suffix2=_rs suffix1= fixcols=all ofmt=fits-basic
+    egrep INCONSISTENCY ~/scratch/kaiju/kaiju.log
+    gawk '$19 > 0 {a[$3]=$0} $19==0 {ibad[$3]=$3; print $0} END {print _; for (i in ibad){print i,a[i]}} ' ~/scratch/kaiju/kaiju.log
+
+    gawk '$19 > 0 {Nok++} $19==0 {Nbad1++} $13==0 {Nbad2++} $7 == 0 {Nbad3++} /UH OH DID NOT ASSIGN ROBOT\(c\)/ {Nunc++}  /UH OH DID NOT ASSIGN ROBOT\(b\)/ {Nunb++} END{printf("Nunb  = %3d\nNunc  = %3d\nNok   = %3d\nNbad1 = %3d\nNbad2 = %3d\nNbad3 = %3d\nNtot  = %3d\n",Nunb,Nunc,Nok,Nbad1,Nbad2,Nbad3,Nok+Nbad1+Nbad2+Nbad3)}' ~/scratch/kaiju/kaiju.log
+
+    '''
+
+
+
+
+
+
+
+'''
+
+    # ftcopy '~/scratch/targetdb/bhm_rm_unique.fits[1][rm_field=="COSMOS"][col *,ra(D)=rm_ra,dec(D)=rm_dec,targetid(K)=#row,pk(K)=#row,priority(J)=priority+5*floor((magnitude_i-15.)/0.5)]' ~/scratch/targetdb_bhm_rm_unique_COSMOS.fits clobber=yes mode=q
+    # ftcopy '~/scratch/targetdb/bhm_rm_unique.fits[1][rm_field=="XMM-LSS"][col *,ra(D)=rm_ra,dec(D)=rm_dec,targetid(K)=#row,pk(K)=#row,priority(J)=priority+5*floor((magnitude_i-15.)/0.5)]' ~/scratch/targetdb_bhm_rm_unique_XMM-LSS.fits clobber=yes mode=q
+
+'''
+
+
+
+
+'''
+drop table sandbox."td_test_XMM-LSS";
+
+CREATE TABLE sandbox."td_test_XMM-LSS" AS SELECT
+    DISTINCT ON(t.catalogid)
+    t.catalogid, ROW_NUMBER() OVER (ORDER BY t.catalogid) as targetid, t.catalogid as pk,
+    t.ra, t.dec,
+    COUNT(*) OVER (PARTITION BY t.catalogid) as ncartons, string_agg(c.carton,',') OVER (PARTITION BY t.catalogid) as cartons,
+    c2t.priority AS priority,
+    1000 as value, 'bhm_rm_178x8' as cadence,
+    r.mi,r.mg, psfmag_sdss[2] as psfmag_sdss_g, psfmag_sdss[4] as psfmag_sdss_i
+FROM target AS t
+JOIN carton_to_target AS c2t
+    ON t.pk = c2t.target_pk
+JOIN carton AS c
+    ON c2t.carton_pk = c.pk
+JOIN catalog_to_bhm_rm_v0 as c2r
+    ON t.catalogid = c2r.catalogid
+JOIN bhm_rm_v0 as r
+    ON c2r.target_id = r.pk
+WHERE
+    c.carton ~ '^bhm_rm_' AND
+    q3c_radial_query(t.ra,t.dec,35.70833,-5.05000,1.49) AND c.version_pk = 49
+ORDER BY t.catalogid,c2t.priority ASC;
+
+
+drop table sandbox."td_test_COSMOS";
+CREATE TABLE sandbox."td_test_COSMOS" AS SELECT
+    DISTINCT ON(t.catalogid)
+    t.catalogid, ROW_NUMBER() OVER (ORDER BY t.catalogid) as targetid, t.catalogid as pk,
+    t.ra, t.dec,
+    COUNT(*) OVER (PARTITION BY t.catalogid) as ncartons, string_agg(c.carton,',') OVER (PARTITION BY t.catalogid) as cartons,
+    c2t.priority AS priority,
+    1000 as value, 'bhm_rm_178x8' as cadence,
+    r.mi,r.mg, psfmag_sdss[2] as psfmag_sdss_g, psfmag_sdss[4] as psfmag_sdss_i
+FROM target AS t
+JOIN carton_to_target AS c2t
+    ON t.pk = c2t.target_pk
+JOIN carton AS c
+    ON c2t.carton_pk = c.pk
+JOIN catalog_to_bhm_rm_v0 as c2r
+    ON t.catalogid = c2r.catalogid
+JOIN bhm_rm_v0 as r
+    ON c2r.target_id = r.pk
+WHERE
+    c.carton ~ '^bhm_rm_' AND
+    q3c_radial_query(t.ra,t.dec,150.0,2.2,1.49) AND c.version_pk = 49
+ORDER BY t.catalogid,c2t.priority ASC;
+
+
+
+drop table sandbox."td_test_SDSS-RM";
+CREATE TABLE sandbox."td_test_SDSS-RM" AS SELECT
+    DISTINCT ON(t.catalogid)
+    t.catalogid, ROW_NUMBER() OVER (ORDER BY t.catalogid) as targetid, t.catalogid as pk,
+    t.ra, t.dec,
+    COUNT(*) OVER (PARTITION BY t.catalogid) as ncartons, string_agg(c.carton,',') OVER (PARTITION BY t.catalogid) as cartons,
+    c2t.priority AS priority,
+    1000 as value, 'bhm_rm_178x8' as cadence,
+    r.mi,r.mg, psfmag_sdss[2] as psfmag_sdss_g, psfmag_sdss[4] as psfmag_sdss_i
+FROM target AS t
+JOIN carton_to_target AS c2t
+    ON t.pk = c2t.target_pk
+JOIN carton AS c
+    ON c2t.carton_pk = c.pk
+JOIN catalog_to_bhm_rm_v0 as c2r
+    ON t.catalogid = c2r.catalogid
+JOIN bhm_rm_v0 as r
+    ON c2r.target_id = r.pk
+WHERE
+    c.carton ~ '^bhm_rm_' AND
+    q3c_radial_query(t.ra,t.dec,213.7042,53.08333,1.49) AND c.version_pk = 49
+ORDER BY t.catalogid,c2t.priority ASC;
+
+
+\copy (SELECT * FROM sandbox."td_test_XMM-LSS")  TO '/home/tdwelly/scratch/kaiju/td_test_XMM-LSS.csv' with csv header
+\copy (SELECT * FROM sandbox."td_test_COSMOS")  TO '/home/tdwelly/scratch/kaiju/td_test_COSMOS.csv' with csv header
+\copy (SELECT * FROM sandbox."td_test_SDSS-RM")  TO '/home/tdwelly/scratch/kaiju/td_test_SDSS-RM.csv' with csv header
+
+
+# on local machine run:
+for F in td_test_*.csv; do
+  stilts tpipe in=${F} out="${F%.*}.fits" ifmt=csv ofmt=fits-basic
+done
+
+
+#run this script
+
+~/SDSSV/gitwork/kaiju/bin/bhm_rm_tests -b 3.0 -n 1 | tee ~/scratch/kaiju/master.log
+
+for F in "COSMOS" "XMM-LSS"; do
+  ls ~/scratch/kaiju/kaiju_assignments_${F}_ITER???.fits > temp.lis
+  ftmerge @temp.lis ~/scratch/kaiju/kaiju_assignments_${F}_ALL.fits clobber=yes mode=q
+done
+
+
+# join outputs with inputs
+for F in "COSMOS" "XMM-LSS"; do
+  stilts tmatch2 ifmt1=fits ifmt2=fits in1=~/scratch/kaiju/kaiju_assignments_${F}.fits in2=~/scratch/kaiju/td_test_${F}.fits matcher=exact values1=pk values2=catalogid out=~/scratch/kaiju/kaiju_assignments_${F}_wcols.fits find=all suffix2=_inp suffix1= fixcols=all ofmt=fits-basic
+done
+
+gawk '$19 > 0 {Nok++} $19==0 {Nbad1++} $13==0 {Nbad2++} $7 == 0 {Nbad3++} /UH OH DID NOT ASSIGN ROBOT\(c\)/ {Nunc++}  /UH OH DID NOT ASSIGN ROBOT\(b\)/ {Nunb++} /KAIJU_ASSIGN END/{printf("results from %s\nNunb  = %3d\nNunc  = %3d\nNok   = %3d\nNbad1 = %3d\nNbad2 = %3d\nNbad3 = %3d\nNtot  = %3d\n",FILENAME,Nunb,Nunc,Nok,Nbad1,Nbad2,Nbad3,Nok+Nbad1+Nbad2+Nbad3);Nunb=Nunc=Nok=Nbad1=Nbad2=Nbad3=0;}' ~/scratch/kaiju/kaiju_*.log
+
+
+gawk 'BEGIN {nmin["COSMOS"]=500;nmin["XMM-LSS"]=500;} $4~/STATS/ {n[$2]++; sum[$2]+=$6; if($6>nmax[$2]){nmax[$2]=$6;best_iter[$2]=$3}; if ($6<nmin[$2]){nmin[$2]=$6;}}; END {printf("#%7s %8s %8s %6s %6s %6s\n", "FIELD", "nruns", "bestITER", "Nbest", "Nworst", "Nmean" ); for (f in n){printf("%8s %8d %8s %6d %6d %6.1f\n", f,n[f],best_iter[f],nmax[f],nmin[f],sum[f]/n[f])}} ' master.log  > master_field_stats.txt
+
+'''
