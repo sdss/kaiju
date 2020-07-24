@@ -46,8 +46,8 @@ if __name__ == '__main__':
 
 
     fields = [
-#        {'name':'COSMOS',   'racen': 150.0,    'deccen': 2.2,     'pa': 0.0, 'observatory':'apo'},
-#        {'name':'XMM-LSS',  'racen': 35.70833, 'deccen': -5.05000, 'pa': 0.0, 'observatory':'apo'},
+        {'name':'COSMOS',   'racen': 150.0,    'deccen': 2.2,     'pa': 0.0, 'observatory':'apo'},
+        {'name':'XMM-LSS',  'racen': 35.70833, 'deccen': -5.05000, 'pa': 0.0, 'observatory':'apo'},
         {'name':'SDSS-RM',  'racen': 213.7042, 'deccen': 53.08333, 'pa': 0.0, 'observatory':'apo'},
     ]
 
@@ -85,8 +85,9 @@ if __name__ == '__main__':
 
             # calc some stats
             #print (rs_f.target_assigned)
-            nok = np.sum(rs_f.target_assigned)
-            print(f"FIELD {fname:8} {itername} STATS Nok= {nok}")
+            nhex = np.sum(rs_f.target_within)
+            nassigned = np.sum(rs_f.target_assigned)
+            print(f"FIELD {fname:8} {itername} STATS Nok= {nassigned:4d} Nhex= {nhex:4d}")
 
 
             print(f"FIELD {fname:8} {itername} Writing assignments to {outfile_fits}")
@@ -229,35 +230,37 @@ done
 ~/SDSSV/gitwork/kaiju/bin/bhm_rm_tests -b 3.0 -n 100 | tee ~/scratch/kaiju/master.log
 
 
-gawk '$4~/STATS/ {n[$2]++; sum[$2]+=$6; if($6>nmax[$2]){nmax[$2]=$6;best_iter[$2]=$3}; if ($6<nmin[$2]||nmin[$2]==0){nmin[$2]=$6;}}; END {printf("#%7s %8s %8s %6s %6s %6s\n", "FIELD", "nruns", "bestITER", "Nbest", "Nworst", "Nmean" ); for (f in n){printf("%8s %8d %8s %6d %6d %6.1f\n", f,n[f],best_iter[f],nmax[f],nmin[f],sum[f]/n[f])}} ' master.log  | tee  master_field_stats.txt
+gawk '$4~/STATS/ {n[$2]++; sum[$2]+=$6; nhex[$2]=$8; if($6>nmax[$2]){nmax[$2]=$6;best_iter[$2]=$3}; if ($6<nmin[$2]||nmin[$2]==0){nmin[$2]=$6;}}; END {printf("#%7s %8s %8s %6s %6s %6s %6s\n", "FIELD", "nruns", "bestRun", "Nbest", "Nworst", "Nmean", "Nhex" ); for (f in n){printf("%8s %8d %8s %6d %6d %6.1f %6s\n", f,n[f],best_iter[f],nmax[f],nmin[f],sum[f]/n[f], nhex[f])}} ' master.log  | tee  master_field_stats.txt
 
 
 for F in "XMM-LSS" "COSMOS" "SDSS-RM" ; do
    # choose the best run
    I=`gawk -v f="$F" '$1==f {print $3}' master_field_stats.txt`
-   ftcopy "kaiju_assignments_${F}_${I}.fits[1][assigned][col catalogid(K)=pk,ra,dec,assigned,rmfield(8A)='${F}']" kaiju_assignable_BHM-RM_targets_${F}.fits clobber=yes mode=q copyall=no
+   ln -sf kaiju_assignments_${F}_${I}.fits kaiju_assignments_${F}_best.fits
+   ftcopy "kaiju_assignments_${F}_best.fits[1][assigned][col catalogid(K)=pk,ra,dec,assigned,rmfield(8A)='${F}']" kaiju_assignable_BHM-RM_targets_${F}.fits clobber=yes mode=q copyall=no
 done
 ftmerge kaiju_assignable_BHM-RM_targets_XMM-LSS.fits,kaiju_assignable_BHM-RM_targets_COSMOS.fits,kaiju_assignable_BHM-RM_targets_SDSS-RM.fits kaiju_assignable_BHM-RM_targets.fits columns=-assigned clobber=yes mode=q
 
 qfstat kaiju_assignable_BHM-RM_targets.fits rmfield
 
+tar -cvzf rm_best_kaiju_runs_24072020v2.tar.gz master_field_stats.txt master.log td_test_*.fits kaiju_assignments_*_best.fits
 
 
-
-for F in "COSMOS" "XMM-LSS"; do
-  ls ~/scratch/kaiju/kaiju_assignments_${F}_ITER???.fits > temp.lis
-  ftmerge @temp.lis ~/scratch/kaiju/kaiju_assignments_${F}_ALL.fits clobber=yes mode=q
-done
-
-
-# join outputs with inputs
-for F in "COSMOS" "XMM-LSS"; do
-  stilts tmatch2 ifmt1=fits ifmt2=fits in1=~/scratch/kaiju/kaiju_assignments_${F}.fits in2=~/scratch/kaiju/td_test_${F}.fits matcher=exact values1=pk values2=catalogid out=~/scratch/kaiju/kaiju_assignments_${F}_wcols.fits find=all suffix2=_inp suffix1= fixcols=all ofmt=fits-basic
-done
-
-gawk '$19 > 0 {Nok++} $19==0 {Nbad1++} $13==0 {Nbad2++} $7 == 0 {Nbad3++} /UH OH DID NOT ASSIGN ROBOT\(c\)/ {Nunc++}  /UH OH DID NOT ASSIGN ROBOT\(b\)/ {Nunb++} /KAIJU_ASSIGN END/{printf("results from %s\nNunb  = %3d\nNunc  = %3d\nNok   = %3d\nNbad1 = %3d\nNbad2 = %3d\nNbad3 = %3d\nNtot  = %3d\n",FILENAME,Nunb,Nunc,Nok,Nbad1,Nbad2,Nbad3,Nok+Nbad1+Nbad2+Nbad3);Nunb=Nunc=Nok=Nbad1=Nbad2=Nbad3=0;}' ~/scratch/kaiju/kaiju_*.log
-
-
-gawk 'BEGIN {nmin["COSMOS"]=500;nmin["XMM-LSS"]=500;} $4~/STATS/ {n[$2]++; sum[$2]+=$6; if($6>nmax[$2]){nmax[$2]=$6;best_iter[$2]=$3}; if ($6<nmin[$2]){nmin[$2]=$6;}}; END {printf("#%7s %8s %8s %6s %6s %6s\n", "FIELD", "nruns", "bestITER", "Nbest", "Nworst", "Nmean" ); for (f in n){printf("%8s %8d %8s %6d %6d %6.1f\n", f,n[f],best_iter[f],nmax[f],nmin[f],sum[f]/n[f])}} ' master.log  > master_field_stats.txt
+##
+## for F in "COSMOS" "XMM-LSS"; do
+##   ls ~/scratch/kaiju/kaiju_assignments_${F}_ITER???.fits > temp.lis
+##   ftmerge @temp.lis ~/scratch/kaiju/kaiju_assignments_${F}_ALL.fits clobber=yes mode=q
+## done
+##
+##
+## # join outputs with inputs
+## for F in "COSMOS" "XMM-LSS"; do
+##   stilts tmatch2 ifmt1=fits ifmt2=fits in1=~/scratch/kaiju/kaiju_assignments_${F}.fits in2=~/scratch/kaiju/td_test_${F}.fits matcher=exact values1=pk values2=catalogid out=~/scratch/kaiju/kaiju_assignments_${F}_wcols.fits find=all suffix2=_inp suffix1= fixcols=all ofmt=fits-basic
+## done
+##
+## gawk '$19 > 0 {Nok++} $19==0 {Nbad1++} $13==0 {Nbad2++} $7 == 0 {Nbad3++} /UH OH DID NOT ASSIGN ROBOT\(c\)/ {Nunc++}  /UH OH DID NOT ASSIGN ROBOT\(b\)/ {Nunb++} /KAIJU_ASSIGN END/{printf("results from %s\nNunb  = %3d\nNunc  = %3d\nNok   = %3d\nNbad1 = %3d\nNbad2 = %3d\nNbad3 = %3d\nNtot  = %3d\n",FILENAME,Nunb,Nunc,Nok,Nbad1,Nbad2,Nbad3,Nok+Nbad1+Nbad2+Nbad3);Nunb=Nunc=Nok=Nbad1=Nbad2=Nbad3=0;}' ~/scratch/kaiju/kaiju_*.log
+##
+##
+## gawk 'BEGIN {nmin["COSMOS"]=500;nmin["XMM-LSS"]=500;} $4~/STATS/ {n[$2]++; sum[$2]+=$6; if($6>nmax[$2]){nmax[$2]=$6;best_iter[$2]=$3}; if ($6<nmin[$2]){nmin[$2]=$6;}}; END {printf("#%7s %8s %8s %6s %6s %6s\n", "FIELD", "nruns", "bestITER", "Nbest", "Nworst", "Nmean" ); for (f in n){printf("%8s %8d %8s %6d %6d %6.1f\n", f,n[f],best_iter[f],nmax[f],nmin[f],sum[f]/n[f])}} ' master.log  > master_field_stats.txt
 
 '''

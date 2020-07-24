@@ -4,8 +4,12 @@ reset
 
 field = 'COSMOS'
 field = 'XMM-LSS'
+field = 'SDSS-RM'
 
-infilename = "~/scratch/kaiju/kaiju_".field.".log"
+iter = "ITER001"
+
+infir = "~/scratch/kaiju"
+infilename = indir."/kaiju_".field."_".iter.".log"
 
 infile_targets = "< gump ~/scratch/kaiju/kaiju_grid_out.fits+2 all yes dhigh"
 
