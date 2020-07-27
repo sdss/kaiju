@@ -149,7 +149,8 @@ CREATE TABLE sandbox."td_test_XMM-LSS" AS SELECT
     COUNT(*) OVER (PARTITION BY t.catalogid) as ncartons, string_agg(c.carton,',') OVER (PARTITION BY t.catalogid) as cartons,
     c2t.priority AS priority,
     1000 as value, 'bhm_rm_178x8' as cadence,
-    m.g, m.r, m.i, m.z, m.bp, m.rp
+    m.g, m.r, m.i, m.z, m.bp, m.rp,
+    r.mi as rm_mi, r.mg as rm_mg
 FROM target AS t
 JOIN carton_to_target AS c2t
     ON t.pk = c2t.target_pk
@@ -175,7 +176,8 @@ CREATE TABLE sandbox."td_test_COSMOS" AS SELECT
     COUNT(*) OVER (PARTITION BY t.catalogid) as ncartons, string_agg(c.carton,',') OVER (PARTITION BY t.catalogid) as cartons,
     c2t.priority AS priority,
     1000 as value, 'bhm_rm_178x8' as cadence,
-    m.g, m.r, m.i, m.z, m.bp, m.rp
+    m.g, m.r, m.i, m.z, m.bp, m.rp,
+    r.mi as rm_mi, r.mg as rm_mg
 FROM target AS t
 JOIN carton_to_target AS c2t
     ON t.pk = c2t.target_pk
@@ -202,7 +204,8 @@ CREATE TABLE sandbox."td_test_SDSS-RM" AS SELECT
     COUNT(*) OVER (PARTITION BY t.catalogid) as ncartons, string_agg(c.carton,',') OVER (PARTITION BY t.catalogid) as cartons,
     c2t.priority AS priority,
     1000 as value, 'bhm_rm_178x8' as cadence,
-    m.g, m.r, m.i, m.z, m.bp, m.rp
+    m.g, m.r, m.i, m.z, m.bp, m.rp,
+    r.mi as rm_mi, r.mg as rm_mg
 FROM target AS t
 JOIN carton_to_target AS c2t
     ON t.pk = c2t.target_pk
@@ -249,7 +252,7 @@ ftmerge kaiju_assignable_BHM-RM_targets_XMM-LSS.fits,kaiju_assignable_BHM-RM_tar
 
 qfstat kaiju_assignable_BHM-RM_targets.fits rmfield
 
-tar -cvzhf rm_best_kaiju_runs_24072020v3.tar.gz master_field_stats.txt master.log td_test_*.fits kaiju_assignments_*_best.fits
+tar -cvzhf rm_best_kaiju_runs_27072020v5.tar.gz master_field_stats.txt master.log td_test_*.fits kaiju_assignments_*_best.fits
 
 
 ##
