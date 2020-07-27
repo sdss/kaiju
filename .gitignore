@@ -1,2 +1,10 @@
 *.pyc
 build/*
+
+# Distribution / packaging
+*.egg-info/
+*.egg
+
+# emacs temp files
+*~
+

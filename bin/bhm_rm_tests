@@ -149,7 +149,7 @@ CREATE TABLE sandbox."td_test_XMM-LSS" AS SELECT
     COUNT(*) OVER (PARTITION BY t.catalogid) as ncartons, string_agg(c.carton,',') OVER (PARTITION BY t.catalogid) as cartons,
     c2t.priority AS priority,
     1000 as value, 'bhm_rm_178x8' as cadence,
-    r.mi,r.mg, psfmag_sdss[2] as psfmag_sdss_g, psfmag_sdss[4] as psfmag_sdss_i
+    m.g, m.r, m.i, m.z, m.bp, m.rp
 FROM target AS t
 JOIN carton_to_target AS c2t
     ON t.pk = c2t.target_pk
@@ -159,6 +159,8 @@ JOIN catalog_to_bhm_rm_v0 as c2r
     ON t.catalogid = c2r.catalogid
 JOIN bhm_rm_v0 as r
     ON c2r.target_id = r.pk
+LEFT OUTER JOIN magnitude AS m
+    ON m.carton_to_target_pk = c2t.pk
 WHERE
     c.carton ~ '^bhm_rm_' AND
     q3c_radial_query(t.ra,t.dec,35.70833,-5.05000,1.49) AND c.version_pk = 49
@@ -173,7 +175,7 @@ CREATE TABLE sandbox."td_test_COSMOS" AS SELECT
     COUNT(*) OVER (PARTITION BY t.catalogid) as ncartons, string_agg(c.carton,',') OVER (PARTITION BY t.catalogid) as cartons,
     c2t.priority AS priority,
     1000 as value, 'bhm_rm_178x8' as cadence,
-    r.mi,r.mg, psfmag_sdss[2] as psfmag_sdss_g, psfmag_sdss[4] as psfmag_sdss_i
+    m.g, m.r, m.i, m.z, m.bp, m.rp
 FROM target AS t
 JOIN carton_to_target AS c2t
     ON t.pk = c2t.target_pk
@@ -183,6 +185,8 @@ JOIN catalog_to_bhm_rm_v0 as c2r
     ON t.catalogid = c2r.catalogid
 JOIN bhm_rm_v0 as r
     ON c2r.target_id = r.pk
+LEFT OUTER JOIN magnitude AS m
+    ON m.carton_to_target_pk = c2t.pk
 WHERE
     c.carton ~ '^bhm_rm_' AND
     q3c_radial_query(t.ra,t.dec,150.0,2.2,1.49) AND c.version_pk = 49
@@ -198,7 +202,7 @@ CREATE TABLE sandbox."td_test_SDSS-RM" AS SELECT
     COUNT(*) OVER (PARTITION BY t.catalogid) as ncartons, string_agg(c.carton,',') OVER (PARTITION BY t.catalogid) as cartons,
     c2t.priority AS priority,
     1000 as value, 'bhm_rm_178x8' as cadence,
-    r.mi,r.mg, psfmag_sdss[2] as psfmag_sdss_g, psfmag_sdss[4] as psfmag_sdss_i
+    m.g, m.r, m.i, m.z, m.bp, m.rp
 FROM target AS t
 JOIN carton_to_target AS c2t
     ON t.pk = c2t.target_pk
@@ -208,6 +212,8 @@ JOIN catalog_to_bhm_rm_v0 as c2r
     ON t.catalogid = c2r.catalogid
 JOIN bhm_rm_v0 as r
     ON c2r.target_id = r.pk
+LEFT OUTER JOIN magnitude AS m
+    ON m.carton_to_target_pk = c2t.pk
 WHERE
     c.carton ~ '^bhm_rm_' AND
     q3c_radial_query(t.ra,t.dec,213.7042,53.08333,1.49) AND c.version_pk = 49
@@ -223,7 +229,7 @@ ORDER BY t.catalogid,c2t.priority ASC;
 for F in td_test_*.csv; do
   stilts tpipe in=${F} out="${F%.*}.fits" ifmt=csv ofmt=fits-basic
 done
-
+num_rows td_test*fits
 
 #run this script
 
@@ -243,7 +249,7 @@ ftmerge kaiju_assignable_BHM-RM_targets_XMM-LSS.fits,kaiju_assignable_BHM-RM_tar
 
 qfstat kaiju_assignable_BHM-RM_targets.fits rmfield
 
-tar -cvzf rm_best_kaiju_runs_24072020v2.tar.gz master_field_stats.txt master.log td_test_*.fits kaiju_assignments_*_best.fits
+tar -cvzhf rm_best_kaiju_runs_24072020v3.tar.gz master_field_stats.txt master.log td_test_*.fits kaiju_assignments_*_best.fits
 
 
 ##
