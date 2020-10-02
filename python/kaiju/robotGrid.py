@@ -298,7 +298,7 @@ class RobotGridFilledHex(kaiju.cKaiju.RobotGrid):
                                 ('yPos', np.float32),
                                 ('hasApogee', np.bool),
                                 ('hasBoss', np.bool),
-                                ('assignedTargetID', np.int32),
+                                ('assignedTargetID', np.int64),
                                 ('isAssigned', np.bool),
                                 ('isCollided', np.bool),
                                 ('alpha', np.float32),
@@ -322,15 +322,15 @@ class RobotGridFilledHex(kaiju.cKaiju.RobotGrid):
 
     def target_array(self):
         """Return ndarray with target information"""
-        target_dtype = np.dtype([('targetID', np.int32),
+        target_dtype = np.dtype([('targetID', np.int64),
                                  ('x', np.float64),
                                  ('y', np.float64),
                                  ('priority', np.int32),
                                  ('fiberType', np.string_, 30)])
 
         target_array = np.zeros(len(self.targetDict), dtype=target_dtype)
-        ks = np.array(list(self.targetDict.keys()))
-        for i, k in enumerate(ks):
+        i = 0
+        for k, td in self.targetDict.items():
             td = self.targetDict[k]
             target_array['targetID'][i] = td.id
             target_array['x'][i] = td.x
@@ -338,6 +338,7 @@ class RobotGridFilledHex(kaiju.cKaiju.RobotGrid):
             target_array['priority'][i] = td.priority
             ft = fiberType2Str[td.fiberType]
             target_array['fiberType'][i] = ft
+            i = i + 1
         return(target_array)
 
     def target_fromarray(self, target_array):

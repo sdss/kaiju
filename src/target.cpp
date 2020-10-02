@@ -4,7 +4,7 @@
 #include "target.h"
 
 
-Target::Target(int id, double x, double y, FiberType fiberType, int priority)
+Target::Target(long id, double x, double y, FiberType fiberType, int priority)
     : id(id), x(x), y(y), priority(priority), fiberType(fiberType)
 {}
 

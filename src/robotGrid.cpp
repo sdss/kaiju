@@ -57,7 +57,7 @@ void RobotGrid::addRobot(int robotID, double xPos, double yPos, bool hasApogee){
     robotDict[robotID]->setCollisionBuffer(collisionBuffer);
 }
 
-void RobotGrid::addTarget(int targetID, double xPos, double yPos, FiberType fiberType, double priority){
+void RobotGrid::addTarget(long targetID, double xPos, double yPos, FiberType fiberType, double priority){
     if (!initialized){
         throw std::runtime_error("Initialize RobotGrid before adding targets");
     }
@@ -422,13 +422,13 @@ std::vector<int> RobotGrid::targetlessRobots(){
     return idleRobotIDs;
 }
 
-std::vector<int> RobotGrid::unreachableTargets(){
+std::vector<long> RobotGrid::unreachableTargets(){
     // return list of targetIDs that are not reachable
     // by any robot
     if (targetDict.size()==0){
         throw std::runtime_error("unreachableTargets() failure, target list not yet set");
     }
-    std::vector<int> badTargs;
+    std::vector<long> badTargs;
     for (auto tPair : targetDict){
         auto targ = tPair.second;
         if (targ->validRobotIDs.size()==0){
@@ -438,10 +438,10 @@ std::vector<int> RobotGrid::unreachableTargets(){
     return badTargs;
 }
 
-std::vector<int> RobotGrid::assignedTargets(){
+std::vector<long> RobotGrid::assignedTargets(){
     // return list of targetIDs that have been assigned
     // to robots
-    std::vector<int> assignedTargIDs;
+    std::vector<long> assignedTargIDs;
 
     for (auto tPair : targetDict){
         auto t = tPair.second;
@@ -464,7 +464,7 @@ std::vector<int> RobotGrid::assignedTargets(){
 //     return false;
 // }
 
-void RobotGrid::unassignTarget(int targID){
+void RobotGrid::unassignTarget(long targID){
     // clear the the target assignment, and the
     // robot to which it's assigned
     auto target = targetDict[targID];
@@ -490,7 +490,7 @@ void RobotGrid::unassignRobot(int robotID){
     robot->clearAssignment();
 }
 
-void RobotGrid::assignRobot2Target(int robotID, int targetID){
+void RobotGrid::assignRobot2Target(int robotID, long targetID){
     // releases robot's previous target if present
     // releases target's previous robot if present
     auto robot = robotDict[robotID];
@@ -508,7 +508,7 @@ void RobotGrid::assignRobot2Target(int robotID, int targetID){
     robot->setAlphaBeta(ab[0], ab[1]);
 }
 
-bool RobotGrid::isValidAssignment(int robotID, int targetID){
+bool RobotGrid::isValidAssignment(int robotID, long targetID){
     auto robot = robotDict[robotID];
     auto target = targetDict[targetID];
     // first a quick position cut

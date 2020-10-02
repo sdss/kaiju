@@ -742,7 +742,7 @@ std::array<double, 2> Robot::alphaBetaFromFiberXY(double xFiberGlobal, double yF
 //     return isValid;
 // }
 
-void Robot::assignTarget(int targetID){
+void Robot::assignTarget(long targetID){
     // assigns the target and set alpha beta accordingly
     int ii = std::count(validTargetIDs.begin(), validTargetIDs.end(), targetID);
     if (ii == 0){
