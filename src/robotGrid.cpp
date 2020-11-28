@@ -578,6 +578,27 @@ bool RobotGrid::isCollidedWithAssigned(int robotID){
     return false;
 }
 
+bool RobotGrid::wouldCollideWithAssigned(int robotID, long targID){
+	long currentTargetID;
+	bool collide;
+
+	auto robot = robotDict[robotID];
+	if(robot->isAssigned())
+		currentTargetID = robot->assignedTargetID;
+	else
+		currentTargetID = -1;
+
+	assignRobot2Target(robotID, targID);
+	collide = isCollidedWithAssigned(robotID);
+
+	if(currentTargetID >= 0)
+		assignRobot2Target(robotID, currentTargetID);
+	else
+		unassignRobot(robotID);
+	
+	return collide;
+}
+
 std::vector<int> RobotGrid::robotColliders(int robotID){
 
     std::vector<int> collidingNeighbors;

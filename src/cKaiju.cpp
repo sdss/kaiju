@@ -141,6 +141,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("robotColliders", &RobotGrid::robotColliders)
         .def("fiducialColliders", &RobotGrid::fiducialColliders)
         .def("isCollidedWithAssigned", &RobotGrid::isCollidedWithAssigned)
+        .def("wouldCollideWithAssigned", &RobotGrid::wouldCollideWithAssigned)
         .def("isCollided", &RobotGrid::isCollided);
         // .def("greedyAssign", &RobotGrid::greedyAssign);
 }
