@@ -68,6 +68,7 @@ public:
     // bool isFiducialCollided(std::shared_ptr<Robot> r1);
     // bool isCollidedInd(int robotInd);
     void decollideRobot(int robotID);
+    void homeRobot(int robotID);
     void stepTowardFold(std::shared_ptr<Robot> r1, int stepNum);
     // void smoothPath(std::shared_ptr<Robot> robot, double epsilon);
 };

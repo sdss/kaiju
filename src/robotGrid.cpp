@@ -578,8 +578,15 @@ bool RobotGrid::isCollidedWithAssigned(int robotID){
     return false;
 }
 
+void RobotGrid::homeRobot(int robotID){
+    unassignRobot(robotID);
+    auto robot = robotDict[robotID];
+		robot->setAlphaBeta(0., 180.);
+}
+
 bool RobotGrid::wouldCollideWithAssigned(int robotID, long targID){
 	long currentTargetID;
+	int currentRobotID;
 	bool collide;
 
 	auto robot = robotDict[robotID];
@@ -588,6 +595,8 @@ bool RobotGrid::wouldCollideWithAssigned(int robotID, long targID){
 	else
 		currentTargetID = -1;
 
+	currentRobotID = targetDict[targID]->assignedRobotID;
+
 	assignRobot2Target(robotID, targID);
 	collide = isCollidedWithAssigned(robotID);
 
@@ -595,6 +604,9 @@ bool RobotGrid::wouldCollideWithAssigned(int robotID, long targID){
 		assignRobot2Target(robotID, currentTargetID);
 	else
 		unassignRobot(robotID);
+
+	if(currentRobotID >= 0)
+		assignRobot2Target(currentRobotID, targID);
 	
 	return collide;
 }
