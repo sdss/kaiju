@@ -783,8 +783,8 @@ void RobotGrid::stepGreedy(std::shared_ptr<Robot> robot, int stepNum){
         if (nextAlpha < 0){
             nextAlpha = 0;
         }
-        if (nextBeta > 360){
-            nextBeta = 360;
+        if (nextBeta > 180){
+            nextBeta = 180;
         }
         if (nextBeta < 0){
             nextBeta = 0;
