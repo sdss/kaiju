@@ -61,8 +61,8 @@ public:
     std::vector<int> unassignedRobots();
     // bool canSwapTarget(std::shared_ptr<Robot> r1, std::shared_ptr<Robot> r2);
     bool isCollided(int robotID);
-    bool isCollidedWithAssigned(int robotID);
-    bool wouldCollideWithAssigned(int robotID, long targID);
+  std::tuple<bool, bool, std::vector<int>> isCollidedWithAssigned(int robotID);
+  std::tuple<bool, bool, std::vector<int>> wouldCollideWithAssigned(int robotID, long targID);
     std::vector<int> robotColliders(int robotID);
     std::vector<int> fiducialColliders(int robotID);
     // bool isFiducialCollided(std::shared_ptr<Robot> r1);
