@@ -14,20 +14,79 @@ matplotlib.use('Agg')
 # internalBuffer = 1.5
 rg = None # need global because C++ obj can't be pickled for multiprocessing
 
+def plotTraj(r, figprefix="traj_", dpi=500):
+    # r is a robot
+    spa = numpy.array(r.smoothedAlphaPath)
+    spb = numpy.array(r.smoothedBetaPath)
+    rpa = numpy.array(r.alphaPath)
+    rpb = numpy.array(r.betaPath)
+    aRDP = numpy.array(r.simplifiedAlphaPath);
+    bRDP = numpy.array(r.simplifiedBetaPath);
+
+
+    av = numpy.array(r.alphaVel)
+    bv = numpy.array(r.betaVel)
+    vSteps = numpy.arange(len(av))
+    sav = numpy.array(r.smoothAlphaVel)
+    sbv = numpy.array(r.smoothBetaVel)
+    ss = numpy.arange(len(sav))
+
+    # print("plotting", r.id)
+    # print("alpha start", rpa[0,:] - aRDP[0,:])
+    # print("alpha end", rpa[-1,:] - aRDP[-1,:])
+    # print("beta start", rpb[0,:] - bRDP[0,:])
+    # print("beta end", rpb[-1,:] - bRDP[-1,:])
+
+    fig, ax = plt.subplots(2,1, figsize=(10,10))
+
+
+    ax[0].plot(rpa[:,0], rpa[:,1], linewidth=0.2, label="rough alpha", alpha=0.8)
+    ax[0].plot(rpb[:,0], rpb[:,1], linewidth=0.2, label="rough beta", alpha=0.8)
+    ax[0].plot(spa[:,0], spa[:,1], 'k-', linewidth=0.2, label="smooth alpha")
+    ax[0].plot(spb[:,0], spb[:,1], 'k-', linewidth=0.2, label="smooth beta")
+    ax[0].plot(aRDP[:,0], aRDP[:,1], 'oc-', linewidth=0.2, markeredgewidth=0.4, fillstyle="none", markersize=2, label="RDP alpha", alpha=0.7)
+    ax[0].plot(bRDP[:,0], bRDP[:,1], 'oc-', linewidth=0.2, markeredgewidth=0.4, fillstyle="none", markersize=2, label="RDP beta", alpha=0.7)
+    ax[0].legend()
+
+    ax[1].plot(vSteps, av, linewidth=0.2, label="alphaVel", alpha=0.4)
+    ax[1].plot(vSteps, bv, linewidth=0.2, label="betaVel", alpha=0.4)
+    ax[1].plot(ss, sav, 'k-', linewidth=0.2, label="smoothAlpha")
+    ax[1].plot(ss, sbv, 'k-', linewidth=0.2, label="smoothBeta")
+
+    ax[1].legend()
+    # plt.legend()
+
+
+    plt.savefig(figprefix+"robot_%s.png"%r.id, dpi=dpi)
+    plt.close()
+
 
 def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=False, xlim=None, ylim=None, highlightRobot=None):
     global rg
+    if hasattr(step, "__len__"):
+        fig = step[1]
+        step = step[0]
+    else:
+        fig = step
 
     if robotGrid is not None:
         rg = robotGrid
     plt.figure(figsize=(10,10))
     ax = plt.gca()
+    maxX = 0
+    maxY = 0
     for robotID, robot in rg.robotDict.items():
+        if robot.xPos > maxX:
+            maxX = robot.xPos
+        if robot.yPos > maxY:
+            maxY = robot.yPos
         if isSequence:
             alphaX = robot.roughAlphaX[step][1]
             alphaY = robot.roughAlphaY[step][1]
             betaX = robot.roughBetaX[step][1]
             betaY = robot.roughBetaY[step][1]
+            onTarget = False
+            # onTarget = robot.onTargetVec[step]
         else:
             # step input is ignored!!
             alphaPoint = robot.betaCollisionSegment[0]
@@ -36,6 +95,7 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
             alphaY = alphaPoint[1]
             betaX = betaPoint[0]
             betaY = betaPoint[1]
+            onTarget = robot.score() == 0
         plt.plot([robot.xPos, alphaX], [robot.yPos, alphaY], color='black', linewidth=2, alpha=0.5)
 
         topCollideLine = LineString(
@@ -45,7 +105,9 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
         edgecolor = 'black'
         if not robot.isAssigned():
             topcolor = "skyblue"
-        if rg.isCollided(robotID):
+        if onTarget:
+            topcolor = "gold"
+        if not isSequence and rg.isCollided(robotID):
             # collision trumps not assigned
             topcolor = "red"
         if highlightRobot == robotID:
@@ -61,24 +123,31 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
         ax.set_xlim(xlim)
     if ylim is not None:
         ax.set_ylim(ylim)
-    ax.set_xlim([-325, 325])
-    ax.set_ylim([-325, 325])
-    # ax.set_aspect("equal")
+    ax.set_xlim([-maxX-30, maxX+30])
+    ax.set_ylim([-maxY-30, maxY+30])
+    ax.set_aspect("equal")
 
     if figname is None:
-        figname = "step_%04d.png"%(step)
+        figname = "step_%04d.png"%(fig)
     plt.savefig(figname, dpi=100)
     plt.close()
 
-def plotPaths(robotGrid, nframes=None, filename=None):
+def plotPaths(robotGrid, downsample=None, filename=None):
     # figure out how to downsample paths
     global rg
     rg = robotGrid
-    steps = range(robotGrid.nSteps)
+    steps = list(range(len(robotGrid.robotDict[1].alphaPath))) # not sure why rg.nSteps is broken
+    if downsample is not None:
+        steps = steps[::downsample] + [steps[-1]]
+
+
+    figs = list(range(len(steps)))
+    stepfigs = list(zip(steps, figs))
+    print("plotting steps", figs[-1])
     # down sample if nframes specified
 
     p = Pool(cpu_count())
-    p.map(plotOne, steps)
+    p.map(plotOne, stepfigs)
 
     fps = 30 # frames per second
     if filename is None:

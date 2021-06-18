@@ -15,23 +15,29 @@ extern const double radius_buffer;
 // extern const double epsilon;
 extern const double min_targ_sep;
 
-
+enum AlgType {Greedy, MDP, Fold}; // order is important
 
 class RobotGrid {
 public:
+    AlgType algType;
     int nRobots;
     double epsilon;
     double collisionBuffer;
     double angStep;
+    double greed;
+    double phobia;
     bool didFail;
     int nSteps;
+    int seed;
     int maxPathSteps;
     int smoothCollisions;
     bool initialized = false;
+    double maxDisplacement;
     std::map<int, std::shared_ptr<Robot>> robotDict;
     std::map<int, std::shared_ptr<Fiducial>> fiducialDict;
     // std::vector<std::array<double, 2>> fiducialList;
     std::map<int, std::shared_ptr<Target>> targetDict;
+    std::vector<std::array<double, 2>> perturbArray; // alpha/beta perturbations
     RobotGrid (double angStep = 1, double collisionBuffer = 2, double epsilon = 2, int seed = 0);
     void addRobot(int robotID, double xPos, double yPos, bool hasApogee = true);
     void addTarget(int targetID, double xPos, double yPos, FiberType fiberType, double priority = 0);
@@ -39,7 +45,11 @@ public:
     void initGrid();
     void decollideGrid();
     int getNCollisions();
-    void pathGen();
+    std::vector<int> deadlockedRobots(); // robots not on target
+    void clearPaths();
+    void pathGen(); // step towards fold, initial solution
+    void pathGenGreedy(); // stepRotational with encroachment
+    void pathGenMDP(double greed, double phobia); // Markov Decision Process
     void simplifyPaths();
     void smoothPaths(int points);
     void verifySmoothed();
@@ -51,6 +61,8 @@ public:
     std::vector<int> targetlessRobots(); // returns robotIDs
     std::vector<int> unreachableTargets(); // returns targetIDs
     std::vector<int> assignedTargets(); // returns targetIDs
+    bool throwAway(int robotID);
+    bool replaceNearFold(int robotID);
     // void pairwiseSwap();
     // void swapTargets(int r1ind, int r2ind);
     // void greedyAssign();
@@ -65,9 +77,15 @@ public:
     bool isCollidedWithAssigned(int robotID);
     std::vector<int> robotColliders(int robotID);
     std::vector<int> fiducialColliders(int robotID);
+    bool neighborEncroachment(std::shared_ptr<Robot> r1);
     // bool isFiducialCollided(std::shared_ptr<Robot> r1);
     // bool isCollidedInd(int robotInd);
     void decollideRobot(int robotID);
     void stepTowardFold(std::shared_ptr<Robot> r1, int stepNum);
+    // void stepEuclidean(std::shared_ptr<Robot> r1, int stepNum);
+    void stepGreedy(std::shared_ptr<Robot> r1, int stepNum);
+    void stepMDP(std::shared_ptr<Robot> r1, int stepNum);
+    void stepBeta(std::shared_ptr<Robot> r1, int stepNum);
+    // double closestApproach2(int robotID); // squared distance to closest neighbor
     // void smoothPath(std::shared_ptr<Robot> robot, double epsilon);
 };

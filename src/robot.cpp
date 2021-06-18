@@ -152,6 +152,23 @@ void Robot::setFiberXY(double xFiberGlobal, double yFiberGlobal, FiberType fiber
 
 }
 
+// double Robot::maxDisplacement(){
+//     double x;
+//     if (beta > 90){
+//         x = 0;
+//     }
+//     else {
+//         x = cos(beta * M_PI/180)*(betaAxis2End - betaEndRadius);
+//     }
+//     return 2 * (alphaLen+x) * sin(angStep * M_PI / 180);
+// }
+
+double Robot::score(){
+    double alphaDist = alpha - destinationAlpha;
+    double betaDist = beta - destinationBeta;
+    return alphaDist*alphaDist + betaDist*betaDist;
+}
+
 
 double Robot::getMaxReach() {
 	return(maxReach);
@@ -163,6 +180,18 @@ void Robot::addRobotNeighbor(int robotID){
 
 void Robot::addFiducialNeighbor(int fiducialID){
     fiducialNeighbors.push_back(fiducialID);
+}
+
+void Robot::setDestinationAlphaBeta(double talpha, double tbeta){
+    // enforce limits here?
+    double currAlpha = alpha;
+    double currBeta = beta;
+    destinationAlpha = talpha;
+    destinationBeta = tbeta;
+    setAlphaBeta(talpha, tbeta); // to set metFiberPos
+    // targMetFiberPos = metFiberPos;
+    hasDestinationAlphaBeta = true;
+    setAlphaBeta(currAlpha, currBeta);
 }
 
 void Robot::setAlphaBeta(double newAlpha, double newBeta){
@@ -313,6 +342,9 @@ void Robot::smoothVelocity(int points){
     // std::vector<double> betaVel;
     // std::vector<double> smoothAlphaVel;
     // std::vector<double> smoothBetaVel;
+    if (alphaPath.size()==0){
+        throw std::runtime_error("Cannot smooth, no alphaPath, do path gen first");
+    }
 
 
     // std::vector<double> movingWindow;
@@ -453,6 +485,9 @@ void Robot::simplifyPath(double epsilon){
     // smooth a previously generated path
     double interpSimplifiedAlpha, interpSimplifiedBeta;
 
+    if (alphaPath.size()==0){
+        throw std::runtime_error("Cannot simplify, no smoothed paths, pathgen, and smooth first");
+    }
     // int npts;
     Eigen::Vector2d atemp, btemp;
 

@@ -1,6 +1,7 @@
 import pytest
 
-from kaiju import RobotGrid, utils
+from kaiju.cKaiju import RobotGrid
+from kaiju import utils
 
 
 def test_uniqueFiducial():

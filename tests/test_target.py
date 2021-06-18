@@ -3,7 +3,8 @@ import pytest
 import numpy
 import matplotlib.pyplot as plt
 
-from kaiju import RobotGrid, BossFiber, ApogeeFiber, MetrologyFiber, utils
+from kaiju.cKaiju import RobotGrid, BossFiber, ApogeeFiber, MetrologyFiber
+from kaiju import utils
 
 
 def test_nonInit():
