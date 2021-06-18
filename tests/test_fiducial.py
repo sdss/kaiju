@@ -32,16 +32,18 @@ def test_fiducial(plot=False):
     rg.initGrid()
     robot = rg.getRobot(robotID)
     for betaAng in range(20):
-        robot.setAlphaBeta(0,betaAng)
+        robot.setAlphaBeta(90,betaAng)
         rColliders = rg.robotColliders(robotID)
         fColliders = rg.fiducialColliders(robotID)
+        if plot:
+            utils.plotOne(0, rg, figname="fiducial_%i.png"%betaAng, isSequence=False, xlim=[-30, 30], ylim=[-30, 30])
+
         assert len(rColliders) == 0
         if betaAng < 14:
             assert fColliders == [fiducialID]
         else:
             assert len(fColliders) == 0
-        if plot:
-            utils.plotOne(0, rg, figname="fiducial_%i.png"%betaAng, isSequence=False, xlim=[-30, 30], ylim=[-30, 30])
+
 
 if __name__ == "__main__":
     test_fiducial(plot=True)

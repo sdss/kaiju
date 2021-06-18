@@ -66,6 +66,24 @@ const double alphaTransData[] = {alphaLen, 0, 0};
 Eigen::Vector3d alphaTransV(alphaTransData);
 
 
+// fix "neutral" positions in the global coord sys such that alpha==0
+// points to -y (it was previously assumed that alpha==0 points toward +x)
+// const double metFiberData[] = {0, -1*beta2metX, 0}; // from uw shop
+// Eigen::Vector3d metFiberNeutral(metFiberData);
+
+// const double apFiberData[] = {0.375, -1*beta2sciX, 0};
+// Eigen::Vector3d apFiberNeutral(apFiberData);
+
+// const double bossFiberData[] = {-0.375, -1*beta2sciX, 0};
+// Eigen::Vector3d bossFiberNeutral(bossFiberData);
+
+// // create a vector that translates from beta orgin to alpha origin
+// // this is just the length of the alpha arm
+// const double alphaTransData[] = {0, -1*alphaLen, 0};
+// Eigen::Vector3d alphaTransV(alphaTransData);
+
+
+
 const std::array<Eigen::Vector3d, 3> neutralFiberList{ {metFiberNeutral, apFiberNeutral, bossFiberNeutral} };
 
 const int BOSS_FIBER_ID = 2;
@@ -77,10 +95,20 @@ const int MET_FIBER_ID = 0;
 const double focalZ = 30; // height to focal plane (where fiber lives)
 const double betaAxis2End = 19.2 - 3.0; //mm
 const double betaEndRadius = 1.2; // mm
+
 const double betaEnvPt1Data[] = {0, 0, focalZ}; // beta axis
 Eigen::Vector3d betaEnvPt1(betaEnvPt1Data);
 const double betaEnvPt2Data[] = {betaAxis2End - betaEndRadius, 0, focalZ};
 Eigen::Vector3d betaEnvPt2(betaEnvPt2Data);
+
+// again fix beta collision segment so it points in the right direction
+// alpha==0 is global -y
+// const double betaEnvPt1Data[] = {0, 0, focalZ}; // beta axis
+// Eigen::Vector3d betaEnvPt1(betaEnvPt1Data);
+// const double betaEnvPt2Data[] = {0, -1*(betaAxis2End - betaEndRadius), focalZ};
+// Eigen::Vector3d betaEnvPt2(betaEnvPt2Data);
+
+
 const std::array<Eigen::Vector3d, 2> neutralBetaCollisionSegment{ {betaEnvPt1, betaEnvPt2} };
 // radius containing beta arm for collision detection
 // const double betaCollisionRadius = 1.5; // mm (3mm wide)
@@ -199,6 +227,7 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
     beta = newBeta;
     double alphaRad = alpha * M_PI / 180.0;
     double betaRad = beta * M_PI / 180.0;
+    double alphaOff = 90 * M_PI / 180.0;  // alpha==0 is 90 degree rot from wok +x
 
     // Eigen::Transform<float, 3, Eigen::Affine> t = Eigen::Transform<float, 3, Eigen::Affine>::Identity();
     // t.rotate(Eigen::AngleAxisf(betaRad, Eigen::Vector3d::UnitZ()));
@@ -208,7 +237,7 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
     // and we rotate beta about the origin 1st
     betaRot = Eigen::AngleAxisd(betaRad, Eigen::Vector3d::UnitZ());
     // next create rotation about alpha
-    alphaRot = Eigen::AngleAxisd(alphaRad, Eigen::Vector3d::UnitZ());
+    alphaRot = Eigen::AngleAxisd(alphaRad-alphaOff, Eigen::Vector3d::UnitZ());
     // full transform is
     // 1. rotate about beta
     // 2. translate by alpha arm length
@@ -264,6 +293,7 @@ void Robot::setXYUniform(){
         // use a science fiber ID (matches min/max reach)
         // std::cout.precision(20);
         ab = alphaBetaFromFiberXY(xy[0]+xPos, xy[1]+yPos, FiberType::MetrologyFiber);
+        // std::cout << ab[0] << " " << ab[1] << std::endl;
     }
     // if (ab[1] > 180.0){
     //     std::cout << "x " << xy[0] << " y " << xy[1] << " a " << ab[0]
@@ -689,6 +719,11 @@ std::array<double, 2> Robot::alphaBetaFromFiberXY(double xFiberGlobal, double yF
     // law of cosines at work here...
     double x = xFiberGlobal - xPos;
     double y = yFiberGlobal - yPos;
+
+    // alpha angle zero points toward -y in global coord sys, need rotation
+    // double y = xBeforeRot;
+    // double x = -1 * yBeforeRot;
+
     double xyMag = hypot(x, y);
     double beta2Fiber;
     double fao;
@@ -733,10 +768,14 @@ std::array<double, 2> Robot::alphaBetaFromFiberXY(double xFiberGlobal, double yF
     double alphaAngRad = rotAngRad - deltaAngRad;
 
     double betaAngDeg = betaAngRad * 180 / M_PI;
-    double alphaAngDeg = alphaAngRad * 180 / M_PI;
-    while (alphaAngDeg < 0){
+    double alphaAngDeg = alphaAngRad * 180 / M_PI + 90;  // alpha angle is rotated 90 degrees from wok coord xy
+    alphaAngDeg = std::fmod(alphaAngDeg, 360.0);
+    if (alphaAngDeg < 0){
         alphaAngDeg += 360;
     }
+    // while (alphaAngDeg < 0){
+    //     alphaAngDeg += 360;
+    // }
     std::array<double, 2> outArr = {alphaAngDeg, betaAngDeg};
     return outArr;
 }
