@@ -29,7 +29,8 @@ def test_memory():
         rg.pathGenGreedy()
     process = psutil.Process(os.getpid())
     GBUsed = process.memory_info().rss * GBperByte
-    assert GBUsed < 0.2
+    # print("GBUSED", GBUsed)
+    assert GBUsed < 0.3
 
 
 if __name__ == "__main__":

@@ -161,14 +161,12 @@ def test_reverseSmoothMDP(plot=False):
     rg.setCollisionBuffer(collisionBuffer - cs)
     rg.verifySmoothed()
 
-    if rg.smoothCollisions:
-        print("smoothing failed with %i collisions, try increasing the collisionBuffer and collisionShrink parameters", rg.smoothCollisions)
-        raise(RuntimeError, "smoothing failed")
-    for r in rg.robotDict.values():
-        utils.plotTraj(r, "reverseSmoothMDP", dpi=250)
+    assert rg.smoothCollisions == 0
 
-    # if plot:
-    #     utils.plotPaths(rg, downsample=downsample, filename="reverseSmoothMDP.mp4")
+    if plot:
+        for r in rg.robotDict.values():
+            utils.plotTraj(r, "reverseSmoothMDP", dpi=250)
+        utils.plotPaths(rg, downsample=downsample, filename="reverseSmoothMDP.mp4")
 
 
 def test_setMDP(plot=False):
@@ -216,7 +214,7 @@ def test_setMDP(plot=False):
     if plot:
         utils.plotPaths(rg, downsample=downsample, filename="reverseSetMDP.mp4")
 
-def test_initialConfigs(plot=True):
+def test_initialConfigs(plot=False):
 
     xPos, yPos = utils.hexFromDia(21, pitch=22.4)
     angStep = 1
