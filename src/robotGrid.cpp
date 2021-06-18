@@ -817,15 +817,7 @@ void RobotGrid::stepGreedy(std::shared_ptr<Robot> robot, int stepNum){
     betaPathPoint(1) = bestBeta;
     robot->alphaPath.push_back(alphaPathPoint);
     robot->betaPath.push_back(betaPathPoint);
-    // if (robot->score()==0){
-    //     robot->onTargetVec.push_back(true);
-    // }
-    // else {
-    //     robot->onTargetVec.push_back(false);
-    // }
 
-    // add alpha/beta xy points
-    // Eigen::Vector2d temp;
     temp(0) = stepNum;
     temp(1) = robot->betaCollisionSegment[0](0); // xAlphaEnd
     robot->roughAlphaX.push_back(temp);
@@ -989,15 +981,7 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
     betaPathPoint(1) = bestBeta;
     robot->alphaPath.push_back(alphaPathPoint);
     robot->betaPath.push_back(betaPathPoint);
-    // if (robot->score()==0){
-    //     robot->onTargetVec.push_back(true);
-    // }
-    // else {
-    //     robot->onTargetVec.push_back(false);
-    // }
 
-    // add alpha/beta xy points
-    // Eigen::Vector2d temp;
     temp(0) = stepNum;
     temp(1) = robot->betaCollisionSegment[0](0); // xAlphaEnd
     robot->roughAlphaX.push_back(temp);
@@ -1011,109 +995,59 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
 }
 
 
+// void RobotGrid::pathGen(){
+//     // first prioritize robots based on their alpha positions
+//     // robots closest to alpha = 0 are at highest risk with extended
+//     // betas for getting locked, so try to move those first
+//     // int pathPad = 20 / (float)angStep;
+//     if (!initialized){
+//         throw std::runtime_error("Initialize RobotGrid before pathGen");
+//     }
+//     didFail = true;
+//     for (auto rPair : robotDict){
+//         auto r = rPair.second;
+//         // clear any existing path
+//         r->alphaPath.clear();
+//         r->betaPath.clear();
+//         r->simplifiedAlphaPath.clear();
+//         r->simplifiedBetaPath.clear(); // sparse
+//         r->interpSimplifiedAlphaPath.clear();
+//         r->interpSimplifiedBetaPath.clear(); // dense
+//         r->smoothedAlphaPath.clear();
+//         r->smoothedBetaPath.clear();
+//         r->smoothAlphaVel.clear();
+//         r->smoothBetaVel.clear();
+//         r->interpAlphaX.clear();
+//         r->interpAlphaY.clear();
+//         r->interpBetaX.clear();
+//         r->interpBetaY.clear(); // smoothed
+//         r->roughAlphaX.clear();
+//         r->roughAlphaY.clear();
+//         r->roughBetaX.clear();
+//         r->roughBetaY.clear();
+//     }
+//     int ii;
+//     for (ii=0; ii<maxPathSteps; ii++){
+//         bool allFolded = true;
 
+//         for (auto rPair : robotDict){
+//             auto r = rPair.second;
+//             // std::cout << "path gen " << r.betaOrientation.size() << " " << r.betaModel.size() << std::endl;
+//             // std::cout << "alpha beta " << r.alpha << " " << r.beta << std::endl;
+//             stepTowardFold(r, ii);
+//             if (r->beta!=180 or r->alpha!=0) { // stop when beta = 180} or r.alpha!=0)){
+//                 allFolded = false;
+//             }
+//         }
 
+//         if (allFolded){
+//             didFail = false;
+//             break;
+//         }
+//     }
 
-    // // check all move combinations for each axis
-    // for (int betaDir=-1; betaDir<2; betaDir++){
-    //     for (int alphaDir=-1; alphaDir<2; alphaDir++){
-
-    //         double nextAlpha = currAlpha + alphaDir * angStep;
-    //         double nextBeta = currBeta + betaDir * angStep;
-    //         // careful not to overshoot
-    //         if (currAlpha > robot->destinationAlpha and nextAlpha <= robot->destinationAlpha){
-    //             nextAlpha = robot->destinationAlpha;
-    //         }
-    //         if (currAlpha < robot->destinationAlpha and nextAlpha >= robot->destinationAlpha){
-    //             nextAlpha = robot->destinationAlpha;
-    //         }
-    //         if (currBeta > robot->destinationBeta and nextBeta <= robot->destinationBeta){
-    //             nextBeta = robot->destinationBeta;
-    //         }
-    //         if (currBeta < robot->destinationBeta and nextBeta >= robot->destinationBeta){
-    //             nextBeta = robot->destinationBeta;
-    //         }
-    //         // handle limits of travel
-    //         // can probably ditch this as target
-    //         // must be in range anyways
-    //         if (nextAlpha > 360){
-    //             nextAlpha = 360;
-    //         }
-    //         if (nextAlpha < 0){
-    //             nextAlpha = 0;
-    //         }
-    //         if (nextBeta > 180){
-    //             nextBeta = 180;
-    //         }
-    //         if (nextBeta < 0){
-    //             nextBeta = 0;
-    //         }
-
-    //         robot->setAlphaBeta(nextAlpha, nextBeta);
-    //         // score is min possible steps till goal
-    //         score = robot->score(); // std::max(robot->alphaScore(), robot->betaScore()); //robot->score(); //+ nextClosestApproach2;
-    //         localEnergy = 0;
-    //         closestNeighbor = 1e16; // to be minimized
-
-    //         // compute robot's local energy, and nearest neighbor
-    //         for (auto otherRobotID : robot->robotNeighbors){
-    //             auto otherRobot = robotDict[otherRobotID];
-    //             dist2 = dist3D_Segment_to_Segment(
-    //                 otherRobot->betaCollisionSegment[0], otherRobot->betaCollisionSegment[1],
-    //                 robot->betaCollisionSegment[0], robot->betaCollisionSegment[1]
-    //             );
-
-    //             localEnergy += 1/dist2;
-    //             dist = sqrt(dist2);
-    //             if (dist < closestNeighbor){
-    //                 closestNeighbor = dist;
-    //             }
-    //         }
-
-    //         if (closestNeighbor < (2*collisionBuffer + maxDisplacement)){
-    //             // this is not a viable move option
-    //             // go on to next try
-    //             continue;
-    //         }
-    //         stateOptions.push_back({nextAlpha, nextBeta, localEnergy, score});
-
-    //         // double encroachment = 0;
-    //     }
-    // } // end loop over perturbations
-
-
-    // // pick the best move, first shuffle the possiblity array
-    // std::random_shuffle(stateOptions.begin(), stateOptions.end());
-    // // figure out probabilities of transistioning based on score
-    // // score is distance left to move
-
-    // // determine whether to rank on score, or energy
-    // // double myPhobia = -0.3/1080*robot->score() + 0.4;
-    // int ind;
-    // if (randomSample() < phobia) { //} (0.75 + stepNum / (0.25*maxPathSteps))){
-    //     ind = 2; // increase distance to neighbors
-    // }
-    // else{
-    //     ind = 3; // reduce score
-    // }
-
-    // for (auto stateOption : stateOptions){
-    //     score = stateOption[ind];
-    //     if (score < bestScore and randomSample() < greed){
-    //         // almost always pick a better score
-    //         bestScore = score;
-    //         bestAlpha = stateOption[0];
-    //         bestBeta = stateOption[1];
-    //     }
-    //     else if (score == bestScore and randomSample() > 0.5){
-    //         bestScore = score;
-    //         bestAlpha = stateOption[0];
-    //         bestBeta = stateOption[1];
-    //     }
-
-    // }
-
-
+//     nSteps = ii;
+// }
 
 
 void RobotGrid::stepTowardFold(std::shared_ptr<Robot> robot, int stepNum){
@@ -1217,358 +1151,9 @@ void RobotGrid::stepTowardFold(std::shared_ptr<Robot> robot, int stepNum){
     temp(1) = robot->betaCollisionSegment.back()(1); // yBetaEnd
     robot->roughBetaY.push_back(temp);
 
- //    if (robot->alpha == 0 and robot->beta == 180){
- //        robot->onTargetVec.push_back(true);
- //    }
- //    else {
-	// std::cout << "not on target" << std::endl;
- //        robot->onTargetVec.push_back(false);
- //    }
 }
 
 
 
 
-// bool RobotGrid::isCollidedInd(int robotInd){
-//     auto robot = allRobots[robotInd];
-//     return isCollided(robot);
-// }
 
-// void RobotGrid::smoothPath(std::shared_ptr<Robot> robot1, double epsilon){
-//     // smooth a previously generated path
-//     double interpSmoothAlpha, interpSmoothBeta;
-//     int npts;
-//     Eigen::Vector2d atemp, btemp;
-//     RamerDouglasPeucker(robot1->alphaPath, epsilon, robot1->simplifiedAlphaPath);
-//     // bias alpha positive direction because we are approaching zero
-//     npts = robot1->simplifiedAlphaPath.size();
-//     for (int ii=1; ii<npts-1; ii++){
-//         // only shift internal (not end) points
-//         robot1->simplifiedAlphaPath[ii](1) = robot1->simplifiedAlphaPath[ii](1);// + epsilon;
-//     }
-
-//     RamerDouglasPeucker(robot1->betaPath, epsilon, robot1->simplifiedBetaPath);
-//     // bias beta negative direction because we are approaching 180
-//     // linearly interpolate smooth paths to same step values
-//     // as computed
-//     // bias alpha positive direction because we are approaching zero
-//     npts = robot1->simplifiedBetaPath.size();
-//     for (int ii=1; ii<npts-1; ii++){
-//         // only shift internal (not end) points
-//         robot1->simplifiedBetaPath[ii](1) = robot1->simplifiedBetaPath[ii](1);// - epsilon;
-//     }
-
-//     // calculate smoothed alpha betas at every step
-//     int nDensePoints = robot1->alphaPath.size();
-//     for (int ii=0; ii<nDensePoints; ii++){
-//         double xVal = alphaPath[ii](0);
-//         atemp(0) = xVal; // interpolation step
-//         btemp(0) = xVal;
-//         interpSmoothAlpha = linearInterpolate(robot1->simplifiedAlphaPath, xVal);
-//         // bias alpha in positive direction because we're approaching zero
-//         atemp(1) = interpSmoothAlpha;
-//         interpSimplifiedAlphaPath.push_back(atemp);
-//         interpSmoothBeta = linearInterpolate(robot1->simplifiedBetaPath, xVal);
-//         btemp(1) = interpSmoothBeta;
-//         interpSimplifiedBetaPath.push_back(btemp);
-
-//         // populate interpXY points for alpha/beta ends
-//         robot1->setAlphaBeta(interpSmoothAlpha, interpSmoothBeta);
-//         atemp(1) = betaCollisionSegment[0](0); // xAlphaEnd
-//         interpAlphaX.push_back(atemp);
-//         atemp(1) = betaCollisionSegment[0](1); // yAlphaEnd
-//         interpAlphaY.push_back(atemp);
-//         atemp(1) = betaCollisionSegment.back()(0); // xBetaEnd
-//         interpBetaX.push_back(atemp);
-//         atemp(1) = betaCollisionSegment.back()(1); // yBetaEnd
-//         interpBetaY.push_back(atemp);
-
-//         atemp(1) = 0; // not collided
-//         if (isCollided()){
-//             atemp(1) = 1;
-//         }
-//         interpCollisions.push_back(atemp);
-
-//     }
-
-// }
-
-// void RobotGrid::optimizeTargets(){
-//     // warning...only considering boss fibers
-//     // at the moment
-//     double myX,myY,nX,nY;
-//     bool swapWorked;
-//     // Robot * rn;
-//     // int randIndex;
-//     // int randNeighborIndex;
-
-//     // could compile all this stuff into lookup
-//     // tables but this is working ok
-
-//     for (auto r : allRobots){
-//         if (!r->isCollided()){
-//             continue;  // this robot isn't collided skip it
-//         }
-//         swapWorked = false;
-//         // save current assignment
-//         myX = r->bossFiberPos(0);
-//         myY = r->bossFiberPos(1);
-//         std::vector<int> swappableNeighbors;
-//         for (int ii=0; ii < r->neighbors.size(); ii++){
-//             auto rn = r->neighbors[ii];
-//             nX = rn->bossFiberPos(0);
-//             nY = rn->bossFiberPos(1);
-//             if (!rn->checkFiberXYGlobal(myX, myY, 2)){
-//                 // neighbor can't reach mine
-//                 // move to next robot
-//                 continue;
-//             }
-//             if (!r->checkFiberXYGlobal(nX, nY, 2)){
-//                 // i cant reach neighbor
-//                 // move to next robot
-//                 continue;
-//             }
-//             // we can reach eachother, test it
-//             swappableNeighbors.push_back(ii);
-//             r->setFiberXY(nX, nY, 2);
-//             rn->setFiberXY(myX, myY, 2);
-//             if (!r->isCollided()){
-//                 // no longer collided
-//                 // keep this swap!
-//                 // first one that's good
-//                 swapWorked = true;
-//                 break;
-//             }
-//             // swap them back
-//             r->setFiberXY(myX, myY, 2);
-//             rn->setFiberXY(nX, nY, 2);
-//         }
-
-//         // if (!swapWorked and swappableNeighbors.size()>0){
-//         //     // we didn't find any swap that got rid
-//         //     // of collision, pick a random valid
-//         //     // swap for this robot
-//         //     // set them back,
-//         //     // swap didn't work
-//         //     randIndex = rand() % swappableNeighbors.size();
-//         //     rn = r.neighbors[swappableNeighbors[randIndex]];
-//         //     nX = rn->fiber_XYZ(0);
-//         //     nY = rn->fiber_XYZ(1);
-
-//         //     r.setFiberXY(nX, nY);
-//         //     rn->setFiberXY(myX, myY);
-//         // }
-
-
-//     }
-
-
-// }
-
-
-
-
-
-
-
-////// euclidean /////////
-// void RobotGrid::stepEuclidean(std::shared_ptr<Robot> robot, int stepNum){
-//     bool alphaOnTarg, betaOnTarg;
-//     double currAlpha = robot->alpha;
-//     double currBeta = robot->beta;
-//     double bestAlpha, bestBeta;
-//     bestAlpha = currAlpha;
-//     bestBeta = currBeta;
-//     int bestInd = -1;
-
-//     // Eigen::Vector3d currMetFiberPos;
-//     // currMetFiberPos = robot->metFiberPos;
-
-//     Eigen::Vector2d alphaPathPoint;
-//     Eigen::Vector2d betaPathPoint;
-//     Eigen::Vector2d temp;
-
-//     alphaPathPoint(0) = stepNum;
-//     betaPathPoint(0) = stepNum;
-
-//     // hangle alpha wrapping
-//     if (currAlpha == 360 and robot->destinationAlpha==0){
-//         alphaOnTarg = true;
-//     }
-//     else if (currAlpha == 0 and robot->destinationAlpha==360){
-//         alphaOnTarg = true;
-//     }
-//     else if (currAlpha == robot->destinationAlpha){
-//         alphaOnTarg = true;
-//     }
-//     else {
-//         alphaOnTarg = false;
-//     }
-
-//     // hangle alpha wrapping
-//     if (currBeta == 360 and robot->destinationBeta==0){
-//         betaOnTarg = true;
-//     }
-//     else if (currBeta == 0 and robot->destinationBeta==360){
-//         betaOnTarg = true;
-//     }
-//     else if (currBeta == robot->destinationBeta){
-//         betaOnTarg = true;
-//     }
-//     else {
-//         betaOnTarg = false;
-//     }
-
-//     if (betaOnTarg and alphaOnTarg){
-//         // done folding don't move
-//         alphaPathPoint(1) = currAlpha;
-//         betaPathPoint(1) = currBeta;
-//         robot->alphaPath.push_back(alphaPathPoint);
-//         robot->betaPath.push_back(betaPathPoint);
-//         robot->onTargetVec.push_back(true);
-
-//         // note make collision segment just two points
-
-//         temp(0) = stepNum;
-//         temp(1) = robot->betaCollisionSegment[0](0); // xAlphaEnd
-//         robot->roughAlphaX.push_back(temp);
-//         temp(1) = robot->betaCollisionSegment[0](1); // yAlphaEnd
-//         robot->roughAlphaY.push_back(temp);
-//         temp(1) = robot->betaCollisionSegment.back()(0); // xBetaEnd
-//         robot->roughBetaX.push_back(temp);
-//         temp(1) = robot->betaCollisionSegment.back()(1); // yBetaEnd
-//         robot->roughBetaY.push_back(temp);
-
-//         return;
-//     }
-
-//     robot->lastStepNum = stepNum;
-
-//     // look at all move options, rank them in terms of distance
-//     // to target met fiber pos
-//     Eigen::Array<double, 8, 2> alphaBetaStepChoices;
-//     double minSquaredDist = 1e15; // something large to be minimized
-//     alphaBetaStepChoices <<  -1,  1,
-//                              0,  1,
-//                              1,  1,
-//                             -1,  0,
-//                             1, 0,
-//                             -1, -1,
-//                             0, -1,
-//                             1, -1;
-
-//     for (int ii=0; ii<alphaBetaStepChoices.rows(); ii++){
-//         double nextAlpha = currAlpha + alphaBetaStepChoices(ii,0)*angStep;
-//         double nextBeta = currBeta + alphaBetaStepChoices(ii,1)*angStep;
-//         // careful not to overshoot
-//         if (currAlpha > robot->destinationAlpha and nextAlpha < robot->destinationAlpha){
-//             nextAlpha = robot->destinationAlpha;
-//         }
-//         if (currAlpha < robot->destinationAlpha and nextAlpha > robot->destinationAlpha){
-//             nextAlpha = robot->destinationAlpha;
-//         }
-//         if (currBeta > robot->destinationBeta and nextBeta < robot->destinationBeta){
-//             nextBeta = robot->destinationBeta;
-//         }
-//         if (currBeta < robot->destinationBeta and nextBeta > robot->destinationBeta){
-//             nextBeta = robot->destinationBeta;
-//         }
-
-//         // handle limits of travel
-//         // can probably ditch this as target
-//         // must be in range anyways
-//         if (nextAlpha > 360){
-//             nextAlpha = 360;
-//         }
-//         if (nextAlpha < 0){
-//             nextAlpha = 0;
-//         }
-//         if (nextBeta > 360){
-//             nextBeta = 360;
-//         }
-//         if (nextBeta < 0){
-//             nextBeta = 0;
-//         }
-//         // if next choice results in no move skip it
-//         // always favor a move
-//         if (nextBeta==currBeta and nextAlpha==currAlpha){
-//             continue;
-//         }
-//         robot->setAlphaBeta(nextAlpha, nextBeta);
-
-//         if (!isCollided(robot->id)){
-//             // this is a valid move see if its the best option so far
-//             // calculate euclidean distance to target
-//             auto dv = robot->targMetFiberPos - robot->metFiberPos;
-//             auto norm = dv.squaredNorm();
-//             if (norm < minSquaredDist){
-//                 // this is so far the best option, record it
-//                 minSquaredDist = norm;
-//                 bestAlpha = nextAlpha;
-//                 bestBeta = nextBeta;
-//                 bestInd = ii;
-//             }
-//         }
-
-//     // pick the best move (it may be a non move)
-//         // best Alpha /beta were never updated
-//         // if (robot->id == 1){
-//         //     std::cout << "robot 1 step " << stepNum << " best alpha beta " << bestAlpha << "," << bestBeta << " bestInd " << bestInd << " norm " << minSquaredDist << std::endl;
-//         // }
-
-
-//     }
-
-//     robot->setAlphaBeta(bestAlpha, bestBeta);
-//     alphaPathPoint(1) = bestAlpha;
-//     betaPathPoint(1) = bestBeta;
-//     robot->alphaPath.push_back(alphaPathPoint);
-//     robot->betaPath.push_back(betaPathPoint);
-//     robot->onTargetVec.push_back(false);
-
-//     // add alpha/beta xy points
-//     // Eigen::Vector2d temp;
-//     temp(0) = stepNum;
-//     temp(1) = robot->betaCollisionSegment[0](0); // xAlphaEnd
-//     robot->roughAlphaX.push_back(temp);
-//     temp(1) = robot->betaCollisionSegment[0](1); // yAlphaEnd
-//     robot->roughAlphaY.push_back(temp);
-//     temp(1) = robot->betaCollisionSegment.back()(0); // xBetaEnd
-//     robot->roughBetaX.push_back(temp);
-//     temp(1) = robot->betaCollisionSegment.back()(1); // yBetaEnd
-//     robot->roughBetaY.push_back(temp);
-
-
-
-// void RobotGrid::pathGen2(){
-//     // path gen 2 steps towards a target
-//     clearPaths();
-//     didFail = true;
-//     int ii;
-//     for (ii=0; ii<maxPathSteps; ii++){
-
-//         bool allAtTarget = true;
-
-//         for (auto rPair : robotDict){
-//             auto r = rPair.second;
-//             // std::cout << "path gen " << r.betaOrientation.size() << " " << r.betaModel.size() << std::endl;
-//             // std::cout << "alpha beta " << r.alpha << " " << r.beta << std::endl;
-//             stepEuclidean(r, ii);
-
-//             if (r->beta!=r->destinationBeta or r->alpha!=r->destinationAlpha) {
-//                 // could just check the last elemet in onTargetVec? same thing.
-//                 allAtTarget = false;
-//             }
-//         }
-
-//         if (allAtTarget){
-//             std::cout << "all at target" << std::endl;
-//             didFail = false;
-//             break;
-//         }
-//     }
-
-//     nSteps = ii+1;
-// }
-
-// }

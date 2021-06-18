@@ -5,8 +5,8 @@ from kaiju import RobotGrid
 from kaiju import utils
 
 nDia = 15
-angStep = 1
-collisionBuffer = 2
+angStep = 0.5
+collisionBuffer = 1.8 #2
 epsilon = angStep * 2
 hasApogee = True
 
@@ -25,7 +25,7 @@ def test_hexDeadlockedPath(plot=False):
     assert rg.getNCollisions() > 10
     rg.decollideGrid()
     assert rg.getNCollisions() == 0
-    rg.pathGen()
+    rg.pathGenGreedy()
     assert rg.didFail
     if plot:
         utils.plotPaths(rg, filename="test_hexDeadlockedPath.mp4")
@@ -56,7 +56,7 @@ def test_pathGen(plot=False):
     assert rg.getNCollisions() == 0
     if plot:
         utils.plotOne(0, rg, figname="pathGenDecollided.png", isSequence=False)
-    rg.pathGen()
+    rg.pathGenGreedy()
     # print("rg alg type", rg.algType, type(rg.algType), str(rg.algType))
     # sd = rg.robotGridSummaryDict()
     # for d in sd["robotDict"].values():
@@ -89,13 +89,13 @@ def test_filledHexDeadlockedPath(plot=False):
     if plot:
         utils.plotOne(0, rg, figname="filledHexDeadlockedDecollided.png", isSequence=False)
     assert rg.getNCollisions() == 0
-    rg.pathGen()
+    rg.pathGenGreedy()
     if plot:
         utils.plotPaths(rg, filename="filledHexDeadlocked.mp4")
     assert rg.didFail
 
 def test_filledHexPath(plot=False):
-    seed = 3
+    seed = 9
     rg = utils.robotGridFromFilledHex(angStep, collisionBuffer, seed)
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
@@ -108,7 +108,7 @@ def test_filledHexPath(plot=False):
     if plot:
         utils.plotOne(0, rg, figname="filledHexDecollided.png", isSequence=False)
     assert rg.getNCollisions() == 0
-    rg.pathGen()
+    rg.pathGenGreedy()
     if plot:
         utils.plotPaths(rg, filename="filledHex.mp4")
     assert not rg.didFail
@@ -126,7 +126,7 @@ def test_withDefulatArgs(plot=False):
     assert rg.getNCollisions() > 10
     rg.decollideGrid()
     assert rg.getNCollisions() == 0
-    rg.pathGen()
+    rg.pathGenGreedy()
     if plot:
         utils.plotPaths(rg, filename="test_default.mp4")
 
@@ -136,7 +136,7 @@ if __name__ == "__main__":
     # test_hexDeadlockedPath(plot=True)
     # test_pathGen(plot=True)
     # test_filledHexDeadlockedPath(plot=True)
-    # test_filledHexPath(plot=True)
-    test_pathGen(plot=True)
+    test_filledHexPath(plot=True)
+    # test_pathGen(plot=True)
 
 
