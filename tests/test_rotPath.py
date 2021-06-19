@@ -217,15 +217,14 @@ def test_setMDP(plot=False):
 def test_initialConfigs(plot=False):
 
     xPos, yPos = utils.hexFromDia(21, pitch=22.4)
-    angStep = 1
-    greed = 1
-    phobia = 0
-    downsample = int(numpy.floor(3 / angStep))
+    angStep = 0.1
+    greed = 0.8
+    phobia = 0.2
+    downsample = int(numpy.floor(10 / angStep))
     rg = RobotGrid(
         stepSize=angStep, collisionBuffer=collisionBuffer,
         epsilon=epsilon, seed=1
     )
-
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
         rg.addRobot(robotID, x, y, hasApogee)
     rg.initGrid()
@@ -266,6 +265,7 @@ def test_tofile(plot=False):
         robot = rg.getRobot(rID)
         robot.setXYUniform()
     assert rg.getNCollisions() > 10
+
 
     rg.decollideGrid()
     for robot in rg.robotDict.values():
@@ -331,7 +331,7 @@ if __name__ == "__main__":
     # test_forwardGreedy(plot=True)
     # test_reverseGreedy(plot=True)
     # test_forwardMDP(plot=True)
-    test_reverseSmoothMDP(plot=True)
+    test_initialConfigs(plot=True)
     # test_initialConfigs(plot=True)
 
     # test_setMDP(plot=True)

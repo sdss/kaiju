@@ -83,6 +83,7 @@ def runSetup(packages, requirements):
         keywords="astronomy software",
         ext_modules=[module],
         install_requires=requirements,
+        # setup_requires=["sdss-coordio>0.1.0"], also add sdss-coordio>0.1.0 to requirements.txt
         classifiers=[
             'Intended Audience :: Science/Research',
             'License :: OSI Approved :: BSD License',
