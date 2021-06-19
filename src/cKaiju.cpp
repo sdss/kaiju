@@ -63,6 +63,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("xPos", &Robot::xPos)
         .def_readwrite("yPos", &Robot::yPos)
         .def_readwrite("validTargetIDs", &Robot::validTargetIDs)
+        .def_readwrite("robotNeighbors", &Robot::robotNeighbors)
         .def_readwrite("hasApogee", &Robot::hasApogee)
         .def_readwrite("hasBoss", &Robot::hasBoss)
         .def_readwrite("metFiberPos", &Robot::metFiberPos)
@@ -142,6 +143,7 @@ PYBIND11_MODULE(cKaiju, m) {
         // .def("optimizeTargets", &RobotGrid::optimizeTargets)
         .def("decollideGrid", &RobotGrid::decollideGrid)
         .def("decollideRobot", &RobotGrid::decollideRobot)
+        .def("homeRobot", &RobotGrid::homeRobot)
         .def("simplifyPaths", &RobotGrid::simplifyPaths)
         .def("smoothPaths", &RobotGrid::smoothPaths)
         .def("verifySmoothed", &RobotGrid::verifySmoothed)
@@ -168,6 +170,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("robotColliders", &RobotGrid::robotColliders)
         .def("fiducialColliders", &RobotGrid::fiducialColliders)
         .def("isCollidedWithAssigned", &RobotGrid::isCollidedWithAssigned)
+        .def("wouldCollideWithAssigned", &RobotGrid::wouldCollideWithAssigned)
         .def("isCollided", &RobotGrid::isCollided);
 }
 

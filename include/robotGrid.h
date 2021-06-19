@@ -36,11 +36,11 @@ public:
     std::map<int, std::shared_ptr<Robot>> robotDict;
     std::map<int, std::shared_ptr<Fiducial>> fiducialDict;
     // std::vector<std::array<double, 2>> fiducialList;
-    std::map<int, std::shared_ptr<Target>> targetDict;
+    std::map<long, std::shared_ptr<Target>> targetDict;
     std::vector<std::array<double, 2>> perturbArray; // alpha/beta perturbations
     RobotGrid (double angStep = 1, double collisionBuffer = 2, double epsilon = 2, int seed = 0);
     void addRobot(int robotID, double xPos, double yPos, bool hasApogee = true);
-    void addTarget(int targetID, double xPos, double yPos, FiberType fiberType, double priority = 0);
+    void addTarget(long targetID, double xPos, double yPos, FiberType fiberType, double priority = 0);
     void addFiducial(int fiducialID, double xPos, double yPos, double collisionBuffer = 1.5);
     void initGrid();
     void decollideGrid();
@@ -59,28 +59,30 @@ public:
     // void addTargetList(Eigen::MatrixXd myTargetList);
     std::shared_ptr<Robot> getRobot(int robotID);
     std::vector<int> targetlessRobots(); // returns robotIDs
-    std::vector<int> unreachableTargets(); // returns targetIDs
-    std::vector<int> assignedTargets(); // returns targetIDs
+    std::vector<long> unreachableTargets(); // returns targetIDs
+    std::vector<long> assignedTargets(); // returns targetIDs
     bool throwAway(int robotID);
     bool replaceNearFold(int robotID);
     // void pairwiseSwap();
     // void swapTargets(int r1ind, int r2ind);
     // void greedyAssign();
     void clearTargetDict();
-    void assignRobot2Target(int robotID, int targID);
-    void unassignTarget(int targID);
+    void assignRobot2Target(int robotID, long targID);
+    void unassignTarget(long targID);
     void unassignRobot(int robotID);
-    bool isValidAssignment(int robotID, int targID);
+    bool isValidAssignment(int robotID, long targID);
     std::vector<int> unassignedRobots();
     // bool canSwapTarget(std::shared_ptr<Robot> r1, std::shared_ptr<Robot> r2);
     bool isCollided(int robotID);
-    bool isCollidedWithAssigned(int robotID);
+    std::tuple<bool, bool, std::vector<int>> isCollidedWithAssigned(int robotID);
+    std::tuple<bool, bool, std::vector<int>> wouldCollideWithAssigned(int robotID, long targID);
     std::vector<int> robotColliders(int robotID);
     std::vector<int> fiducialColliders(int robotID);
     bool neighborEncroachment(std::shared_ptr<Robot> r1);
     // bool isFiducialCollided(std::shared_ptr<Robot> r1);
     // bool isCollidedInd(int robotInd);
     void decollideRobot(int robotID);
+    void homeRobot(int robotID);
     void stepTowardFold(std::shared_ptr<Robot> r1, int stepNum);
     // void stepEuclidean(std::shared_ptr<Robot> r1, int stepNum);
     void stepGreedy(std::shared_ptr<Robot> r1, int stepNum);

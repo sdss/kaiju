@@ -11,6 +11,8 @@
 
 const double pitch = 22.4; // distance to next nearest neighbor
 
+const double maxReachCheck2 = 23. * 23.; // maximum reach to check
+
 // const double angStep = 1; // degrees
 // const int maxPathStepsGlob = (int)(ceil(700.0/angStep));
 // line smoothing factor
@@ -67,7 +69,7 @@ void RobotGrid::addRobot(int robotID, double xPos, double yPos, bool hasApogee){
     robotDict[robotID]->setCollisionBuffer(collisionBuffer);
 }
 
-void RobotGrid::addTarget(int targetID, double xPos, double yPos, FiberType fiberType, double priority){
+void RobotGrid::addTarget(long targetID, double xPos, double yPos, FiberType fiberType, double priority){
     if (!initialized){
         throw std::runtime_error("Initialize RobotGrid before adding targets");
     }
@@ -399,13 +401,13 @@ std::vector<int> RobotGrid::targetlessRobots(){
     return idleRobotIDs;
 }
 
-std::vector<int> RobotGrid::unreachableTargets(){
+std::vector<long> RobotGrid::unreachableTargets(){
     // return list of targetIDs that are not reachable
     // by any robot
     if (targetDict.size()==0){
         throw std::runtime_error("unreachableTargets() failure, target list not yet set");
     }
-    std::vector<int> badTargs;
+    std::vector<long> badTargs;
     for (auto tPair : targetDict){
         auto targ = tPair.second;
         if (targ->validRobotIDs.size()==0){
@@ -415,10 +417,10 @@ std::vector<int> RobotGrid::unreachableTargets(){
     return badTargs;
 }
 
-std::vector<int> RobotGrid::assignedTargets(){
+std::vector<long> RobotGrid::assignedTargets(){
     // return list of targetIDs that have been assigned
     // to robots
-    std::vector<int> assignedTargIDs;
+    std::vector<long> assignedTargIDs;
 
     for (auto tPair : targetDict){
         auto t = tPair.second;
@@ -432,7 +434,7 @@ std::vector<int> RobotGrid::assignedTargets(){
 
 
 
-void RobotGrid::unassignTarget(int targID){
+void RobotGrid::unassignTarget(long targID){
     // clear the the target assignment, and the
     // robot to which it's assigned
     auto target = targetDict[targID];
@@ -458,7 +460,7 @@ void RobotGrid::unassignRobot(int robotID){
     robot->clearAssignment();
 }
 
-void RobotGrid::assignRobot2Target(int robotID, int targetID){
+void RobotGrid::assignRobot2Target(int robotID, long targetID){
     // releases robot's previous target if present
     // releases target's previous robot if present
     auto robot = robotDict[robotID];
@@ -476,18 +478,22 @@ void RobotGrid::assignRobot2Target(int robotID, int targetID){
     robot->setAlphaBeta(ab[0], ab[1]);
 }
 
-bool RobotGrid::isValidAssignment(int robotID, int targetID){
+bool RobotGrid::isValidAssignment(int robotID, long targetID){
     auto robot = robotDict[robotID];
     auto target = targetDict[targetID];
-    // first a quick position cut
-    // quick position cut fails near edges, get rid of it
-    // double targDist = hypot(target->x - robot->xPos, target->y - robot->yPos);
-    // if (targDist > maxReach or targDist < minReach) {
-    //     return false;
-    // }
+
     if (target->fiberType == ApogeeFiber and !robot->hasApogee){
         return false;
     }
+
+    // first a quick position cut
+    // quick position cut fails near edges, get rid of it
+    double targDist2 = (target->x - robot->xPos) * (target->x - robot->xPos) +
+      (target->y - robot->yPos) * (target->y - robot->yPos) ;
+    if (targDist2 > maxReachCheck2) {
+      return false;
+    }
+
     auto ab = robot->alphaBetaFromFiberXY(target->x, target->y, target->fiberType);
     // check alpha beta valid
     if (std::isnan(ab[0]) or std::isnan(ab[1])){
@@ -528,21 +534,54 @@ bool RobotGrid::isCollided(int robotID){
     return false;
 }
 
+std::tuple<bool, bool, std::vector<int>> RobotGrid::isCollidedWithAssigned(int robotID){
+  bool collided, fiducial_collided;
+  std::vector<int> assignedRobotsColliding;
+  auto robotsColliding = robotColliders(robotID);
+  if (robotsColliding.size() != 0){
+    for (auto robotColliding : robotsColliding) {
+      if(robotDict[robotColliding]->isAssigned()) {
+	assignedRobotsColliding.push_back(robotColliding);
+      }
+    }
+  }
+  auto fiducialsColliding = fiducialColliders(robotID);
+  collided = (fiducialsColliding.size() != 0) || (assignedRobotsColliding.size() != 0);
+  fiducial_collided = (fiducialsColliding.size() != 0);
+  return std::make_tuple(collided, fiducial_collided, assignedRobotsColliding);
+}
 
-bool RobotGrid::isCollidedWithAssigned(int robotID){
-    auto robotsColliding = robotColliders(robotID);
-    if (robotsColliding.size() != 0){
-			for (auto robotColliding : robotsColliding) {
-				if(robotDict[robotColliding]->isAssigned()) {
-					return true;
-				}
-			}
-    }
-    auto fiducialsColliding = fiducialColliders(robotID);
-    if (fiducialsColliding.size() != 0){
-        return true;
-    }
-    return false;
+void RobotGrid::homeRobot(int robotID){
+    unassignRobot(robotID);
+    auto robot = robotDict[robotID];
+		robot->setAlphaBeta(0., 180.);
+}
+
+std::tuple<bool, bool, std::vector<int>> RobotGrid::wouldCollideWithAssigned(int robotID, long targID){
+  long currentTargetID;
+  int currentRobotID;
+  std::tuple<bool, bool, std::vector<int>> result;
+  
+  auto robot = robotDict[robotID];
+  if(robot->isAssigned())
+    currentTargetID = robot->assignedTargetID;
+  else
+    currentTargetID = -1;
+  
+  currentRobotID = targetDict[targID]->assignedRobotID;
+
+  assignRobot2Target(robotID, targID);
+  result = isCollidedWithAssigned(robotID);
+  
+  if(currentTargetID >= 0)
+    assignRobot2Target(robotID, currentTargetID);
+  else
+    unassignRobot(robotID);
+  
+  if(currentRobotID >= 0)
+    assignRobot2Target(currentRobotID, targID);
+  
+  return result;
 }
 
 

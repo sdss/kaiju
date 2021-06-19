@@ -27,7 +27,7 @@ public:
     int id;
     int nDecollide = 0;
     int lastStepNum = 0;
-    int assignedTargetID = -1; // -1 indicates no assigned target
+    long assignedTargetID = -1; // -1 indicates no assigned target
     // bool atTarget = false;
     bool hasDestinationAlphaBeta = false;
     bool hasApogee;
@@ -59,7 +59,7 @@ public:
     std::vector<Eigen::Vector2d> interpCollisions; // boolean points for collided or not
     std::vector<int> robotNeighbors; // robot IDs in RobotGrid.robotDict may potentially collide
     std::vector<int> fiducialNeighbors; // fiducial IDs in RobotGrid.fiducialDict may potentially collide
-    std::vector<int> validTargetIDs; // target IDs in RobotGrid.targetDict that I can reach
+    std::vector<long> validTargetIDs; // target IDs in RobotGrid.targetDict that I can reach
     Robot (int id, double xPos, double yPos, double angStep = 1, bool hasApogee = true);
     void setAlphaBeta (double alpha, double beta);
     void setDestinationAlphaBeta(double alpha, double beta);
@@ -83,7 +83,7 @@ public:
     std::array<double, 2> alphaBetaFromFiberXY(double x, double y, FiberType fiberType);
     std::array<double, 2> convFiberXY(double x, double y, FiberType fromFiberType, FiberType toFiberType);
     // bool isValidTarget(double x, double y, int fiberID);
-    void assignTarget(int targetID);
+    void assignTarget(long targetID);
     void clearAssignment();
     double getMaxReach();
     bool isAssigned();
