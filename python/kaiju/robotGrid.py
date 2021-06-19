@@ -722,10 +722,6 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
 
 
 
-
-
-
-
 class RobotGridFilledHex(RobotGrid):
     """Filled hexagon grid class for robots in FPS
 
@@ -824,5 +820,117 @@ class RobotGridFilledHex(RobotGrid):
         self.initGrid()
 
         return()
+
+class RobotGridDesignRef(RobotGrid):
+    """Filled hexagon grid class for robots in FPS
+
+    Parameters:
+    ----------
+
+    stepSize : float, np.float32
+        step size for paths (degrees), default 1.
+
+    collisionBuffer : float, np.float32
+        half-width of beta arm, including buffer (mm), default 2.0
+
+    Attributes:
+    ----------
+
+    stepSize : float, np.float32
+        step size for paths (degrees). A maximum perturbation allowed for either
+        alpha or beta axes
+
+    collisionBuffer : float, np.float32
+        half-width of beta arm, including buffer (mm)
+
+    epsilon : float
+        smoothing parameter used in the RDP path simplification.  Smaller values
+        mean smaller deviations from the rough path are allowed.
+
+    seed : int
+        seed for random number generator when used
+
+    robotDict : dictionary of Robot class objects
+        all robots
+
+    nRobots : int
+        number of robots
+
+    fiducialDict : dictionary of Fiducial objects
+        positions of fiducials
+
+    targetDict : dictionary of Target class objects
+        targets in field, with ID as keys
+
+    smoothCollisions : int
+        number of collisions detected after attempted path smoothing, should
+        be zero when things work out
+
+    didFail : bool
+        path generation failed, not all robots reached target
+
+    nSteps : int
+        steps taken to
+
+"""
+    def __init__(self, stepSize=1., collisionBuffer=2.0):
+        super().__init__(seed=0, stepSize=stepSize, collisionBuffer=collisionBuffer)
+        self._load_grid()
+        return
+
+    def _load_grid(self):
+        """Load filled hex grid of robot locations"""
+        gridFile = os.path.join(os.environ["KAIJU_DIR"], "etc",
+                                "fps_DesignReference.txt")
+
+        bossXY = []
+        baXY = []
+        fiducialXY = []
+        with open(gridFile, "r") as f:
+            lines = f.readlines()
+        for line in lines:
+            line = line.strip()
+            line = line.split("#")[0]
+            if not line:
+                continue
+            row, col, x, y, fType = line.split()
+            # make col 1 indexed to match pdf maps
+            # and wok hole naming convention
+            col = "C" + str(int(col) + 1)
+            if row == "0" or row.startswith("-"):
+                row = "R" + row
+            else:
+                row = "R+" + row
+
+            holeName = row + col
+            coords = [float(x), float(y)]
+            if fType == "BA":
+                baXY.append(coords)
+            elif fType == "BOSS":
+                bossXY.append(coords)
+            elif fType == "Fiducial":
+                fiducialXY.append(coords)
+            else:
+                # ignore other elements (like empty holes)
+                pass
+
+        fiberID = 0
+        fiducialID = 0
+        hasApogee = False
+        for b in bossXY:
+            self.addRobot(holeName, fiberID, b[0], b[1], hasApogee)
+            fiberID += 1
+        hasApogee = True
+        for ba in baXY:
+            self.addRobot(holeName, fiberID, ba[0], ba[1], hasApogee)
+            fiberID += 1
+        for fiducial in fiducialXY:
+            self.addFiducial(fiducialID, fiducial[0], fiducial[1],
+                             self.collisionBuffer)
+            fiducialID += 1
+        self.initGrid()
+
+        return()
+
 
 
