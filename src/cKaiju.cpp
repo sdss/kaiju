@@ -43,7 +43,7 @@ PYBIND11_MODULE(cKaiju, m) {
         This class is something totally awesome.
 
         )pbdoc")
-        .def(py::init<int, double, double, double, bool>())
+        .def(py::init<int, std::string, double, double, double, bool>())
         .def_readwrite("alpha", &Robot::alpha, R"pbdoc(
             Robot's alpha position (degrees).
             )pbdoc")
@@ -72,6 +72,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("nDecollide", &Robot::nDecollide)
         .def_readwrite("betaCollisionSegment", &Robot::betaCollisionSegment)
         .def_readwrite("id", &Robot::id)
+        .def_readwrite("holeID", &Robot::holeID)
         .def_readwrite("assignedTargetID", &Robot::assignedTargetID)
         .def_readwrite("alphaPath", &Robot::alphaPath)
         .def_readwrite("betaPath", &Robot::betaPath)
@@ -134,7 +135,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("getNCollisions", &RobotGrid::getNCollisions)
         .def("deadlockedRobots", &RobotGrid::deadlockedRobots)
         .def("addRobot", &RobotGrid::addRobot,
-            "robotID"_a, "xPos"_a, "yPos"_a, "hasApogee"_a = true)
+            "robotID"_a, "holeID"_a, "xPos"_a, "yPos"_a, "hasApogee"_a = true)
         .def("addFiducial", &RobotGrid::addFiducial,
             "fiducialID"_a, "x"_a, "y"_a, "collisionBuffer"_a = 1.5)
         .def("addTarget", &RobotGrid::addTarget,

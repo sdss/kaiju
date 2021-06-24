@@ -27,7 +27,7 @@ def test_fiducial(plot=False):
     fiducialID = 10
     seed = 0
     rg = RobotGrid(angStep, collisionBuffer, epsilon, seed)
-    rg.addRobot(robotID, 0, 0, hasApogee)
+    rg.addRobot(robotID, str(robotID), 0, 0, hasApogee)
     rg.addFiducial(fiducialID, 22.4, 0, fiducialCollisionBuffer)
     rg.initGrid()
     robot = rg.getRobot(robotID)

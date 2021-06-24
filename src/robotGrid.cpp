@@ -57,7 +57,7 @@ RobotGrid::RobotGrid(double angStep, double collisionBuffer, double epsilon, int
     }
 }
 
-void RobotGrid::addRobot(int robotID, double xPos, double yPos, bool hasApogee){
+void RobotGrid::addRobot(int robotID, std::string holeID, double xPos, double yPos, bool hasApogee){
     // ensure robot id doesn't already exist
     if (initialized){
         throw std::runtime_error("RobotGrid is already initialized, no more robots allowed");
@@ -65,7 +65,7 @@ void RobotGrid::addRobot(int robotID, double xPos, double yPos, bool hasApogee){
     if (robotDict.count(robotID) > 0){
         throw std::runtime_error("Robot ID already exists");
     }
-    robotDict[robotID] = std::make_shared<Robot>(robotID, xPos, yPos, angStep, hasApogee);
+    robotDict[robotID] = std::make_shared<Robot>(robotID, holeID, xPos, yPos, angStep, hasApogee);
     robotDict[robotID]->setCollisionBuffer(collisionBuffer);
 }
 

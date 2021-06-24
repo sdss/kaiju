@@ -11,7 +11,7 @@ def test_rotGrid(plot=False):
         xPos, yPos = utils.hexFromDia(nDia, pitch=22.4, rotAngle=rotAng)
         rg = RobotGrid()
         for robotID, (x, y) in enumerate(zip(xPos,yPos)):
-            rg.addRobot(robotID, x, y, hasApogee=True)
+            rg.addRobot(robotID, str(robotID), x, y, hasApogee=True)
         rg.initGrid()
         for robot in rg.robotDict.values():
             robot.setAlphaBeta(0,180)

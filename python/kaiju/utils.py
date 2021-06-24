@@ -260,11 +260,11 @@ def robotGridFromFilledHex(stepSize=1, collisionBuffer=2, seed=0, rotAngle=0):
     robotID = 0
     hasApogee = False
     for b in bossXY:
-        rg.addRobot(robotID, b[0], b[1], hasApogee)
+        rg.addRobot(robotID, str(robotID), b[0], b[1], hasApogee)
         robotID += 1
     hasApogee = True
     for ba in baXY:
-        rg.addRobot(robotID, ba[0], ba[1], hasApogee)
+        rg.addRobot(robotID, str(robotID), ba[0], ba[1], hasApogee)
         robotID += 1
     for fiducialID, fiducial in enumerate(fiducialXY):
         rg.addFiducial(fiducialID, fiducial[0], fiducial[1])

@@ -16,7 +16,7 @@ def test_hexDeadlockedPath(plot=False):
     seed = 3
     rg = RobotGrid(angStep, collisionBuffer, epsilon, seed)
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
-        rg.addRobot(robotID, x, y, hasApogee)
+        rg.addRobot(robotID, str(robotID), x, y, hasApogee)
         rg.robotDict[robotID].setDestinationAlphaBeta(0, 180)
     rg.initGrid()
     for rID in rg.robotDict:
@@ -43,7 +43,7 @@ def test_pathGen(plot=False):
     downsample = int(numpy.floor(3 / angStep))
     rg = RobotGrid(angStep, collisionBuffer, epsilon, seed)
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
-        rg.addRobot(robotID, x, y, hasApogee)
+        rg.addRobot(robotID, str(robotID), x, y, hasApogee)
         rg.robotDict[robotID].setDestinationAlphaBeta(0, 180)
     rg.initGrid()
     for rID in rg.robotDict:
@@ -117,7 +117,7 @@ def test_withDefulatArgs(plot=False):
     xPos, yPos = utils.hexFromDia(35, pitch = 22.4)
     rg = RobotGrid() # this is the test, that no args still works
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
-        rg.addRobot(robotID, x, y, hasApogee)
+        rg.addRobot(robotID, str(robotID), x, y, hasApogee)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)

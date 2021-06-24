@@ -23,7 +23,7 @@ def test_forwardGreedy(plot=False):
     )
 
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
-        rg.addRobot(robotID, x, y, hasApogee)
+        rg.addRobot(robotID, str(robotID), x, y, hasApogee)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
@@ -49,7 +49,7 @@ def test_reverseGreedy(plot=False):
     )
 
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
-        rg.addRobot(robotID, x, y, hasApogee)
+        rg.addRobot(robotID, str(robotID), x, y, hasApogee)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
@@ -74,7 +74,7 @@ def test_forwardMDP(plot=False):
     )
 
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
-        rg.addRobot(robotID, x, y, hasApogee)
+        rg.addRobot(robotID, str(robotID), x, y, hasApogee)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
@@ -106,7 +106,7 @@ def test_reverseMDP(plot=False):
     )
 
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
-        rg.addRobot(robotID, x, y, hasApogee)
+        rg.addRobot(robotID, str(robotID), x, y, hasApogee)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
@@ -141,7 +141,7 @@ def test_reverseSmoothMDP(plot=False):
     )
 
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
-        rg.addRobot(robotID, x, y, hasApogee)
+        rg.addRobot(robotID, str(robotID), x, y, hasApogee)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
@@ -186,7 +186,7 @@ def test_setMDP(plot=False):
         )
 
         for robotID, (x, y) in enumerate(zip(xPos, yPos)):
-            rg.addRobot(robotID, x, y, hasApogee)
+            rg.addRobot(robotID, str(robotID), x, y, hasApogee)
         rg.initGrid()
         for rID in rg.robotDict:
             robot = rg.getRobot(rID)
@@ -226,7 +226,7 @@ def test_initialConfigs(plot=False):
         epsilon=epsilon, seed=1
     )
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
-        rg.addRobot(robotID, x, y, hasApogee)
+        rg.addRobot(robotID, str(robotID), x, y, hasApogee)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
@@ -259,7 +259,7 @@ def test_tofile(plot=False):
     )
 
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
-        rg.addRobot(robotID, x, y, hasApogee)
+        rg.addRobot(robotID, str(robotID), x, y, hasApogee)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
@@ -309,7 +309,7 @@ def test_fatty(plot=False):
     )
 
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
-        rg.addRobot(robotID, x, y, hasApogee)
+        rg.addRobot(robotID, str(robotID), x, y, hasApogee)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)

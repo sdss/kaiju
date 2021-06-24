@@ -9,7 +9,7 @@ from kaiju import utils
 
 def test_nonInit():
     rg = RobotGrid()
-    rg.addRobot(robotID=1, xPos=0, yPos=0)
+    rg.addRobot(robotID=1, holeID="none", xPos=0, yPos=0)
     rg.addFiducial(fiducialID=1, x=22.4, y=0)
     with pytest.raises(RuntimeError) as excinfo:
         rg.addTarget(targetID=1, x=0, y=10, fiberType=BossFiber, priority=1)
@@ -18,7 +18,7 @@ def test_nonInit():
 
 def test_doubleTargetID():
     rg = RobotGrid()
-    rg.addRobot(robotID=1, xPos=0, yPos=0)
+    rg.addRobot(robotID=1, holeID="none", xPos=0, yPos=0)
     rg.addFiducial(fiducialID=1, x=22.4, y=0)
     rg.initGrid()
     rg.addTarget(targetID=1, x=0, y=10, fiberType=BossFiber, priority=1)
@@ -29,7 +29,7 @@ def test_doubleTargetID():
 
 def test_addTarget():
     rg = RobotGrid()
-    rg.addRobot(robotID=1, xPos=0, yPos=0)
+    rg.addRobot(robotID=1, holeID="none", xPos=0, yPos=0)
     rg.addFiducial(fiducialID=1, x=22.4, y=0)
     rg.initGrid()
     rg.addTarget(targetID=1, x=0, y=10, fiberType=BossFiber, priority=1)

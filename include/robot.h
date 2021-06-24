@@ -25,6 +25,7 @@ extern const double focalZ;
 class Robot{
 public:
     int id;
+    std::string holeID;
     int nDecollide = 0;
     int lastStepNum = 0;
     long assignedTargetID = -1; // -1 indicates no assigned target
@@ -60,7 +61,7 @@ public:
     std::vector<int> robotNeighbors; // robot IDs in RobotGrid.robotDict may potentially collide
     std::vector<int> fiducialNeighbors; // fiducial IDs in RobotGrid.fiducialDict may potentially collide
     std::vector<long> validTargetIDs; // target IDs in RobotGrid.targetDict that I can reach
-    Robot (int id, double xPos, double yPos, double angStep = 1, bool hasApogee = true);
+    Robot (int id, std::string holeID, double xPos, double yPos, double angStep = 1, bool hasApogee = true);
     void setAlphaBeta (double alpha, double beta);
     void setDestinationAlphaBeta(double alpha, double beta);
     void setFiberXY (double xFiberGlobal, double yFiberGlobal, FiberType fiberType); // xy in focal plane coord sys

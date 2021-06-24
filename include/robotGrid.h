@@ -39,7 +39,7 @@ public:
     std::map<long, std::shared_ptr<Target>> targetDict;
     std::vector<std::array<double, 2>> perturbArray; // alpha/beta perturbations
     RobotGrid (double angStep = 1, double collisionBuffer = 2, double epsilon = 2, int seed = 0);
-    void addRobot(int robotID, double xPos, double yPos, bool hasApogee = true);
+    void addRobot(int robotID, std::string holeID, double xPos, double yPos, bool hasApogee = true);
     void addTarget(long targetID, double xPos, double yPos, FiberType fiberType, double priority = 0);
     void addFiducial(int fiducialID, double xPos, double yPos, double collisionBuffer = 1.5);
     void initGrid();

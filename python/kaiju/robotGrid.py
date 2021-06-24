@@ -15,6 +15,7 @@ import kaiju
 import kaiju.cKaiju
 from descartes import PolygonPatch
 from shapely.geometry import LineString, Point
+import seaborn as sns
 
 
 __all__ = ['RobotGrid', 'RobotGridFilledHex']
@@ -721,7 +722,6 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         return
 
 
-
 class RobotGridFilledHex(RobotGrid):
     """Filled hexagon grid class for robots in FPS
 
@@ -774,8 +774,8 @@ class RobotGridFilledHex(RobotGrid):
         steps taken to
 
 """
-    def __init__(self, stepSize=1., collisionBuffer=2.0):
-        super().__init__(seed=0, stepSize=stepSize, collisionBuffer=collisionBuffer)
+    def __init__(self, stepSize=1., collisionBuffer=2.0, seed=0):
+        super().__init__(seed=seed, stepSize=stepSize, collisionBuffer=collisionBuffer)
         self._load_grid()
         return
 
@@ -806,12 +806,13 @@ class RobotGridFilledHex(RobotGrid):
         fiberID = 0
         fiducialID = 0
         hasApogee = False
+        holeName = "none"
         for b in bossXY:
-            self.addRobot(fiberID, b[0], b[1], hasApogee)
+            self.addRobot(fiberID, holeName, b[0], b[1], hasApogee)
             fiberID += 1
         hasApogee = True
         for ba in baXY:
-            self.addRobot(fiberID, ba[0], ba[1], hasApogee)
+            self.addRobot(fiberID, holeName, ba[0], ba[1], hasApogee)
             fiberID += 1
         for fiducial in fiducialXY:
             self.addFiducial(fiducialID, fiducial[0], fiducial[1],
@@ -821,7 +822,8 @@ class RobotGridFilledHex(RobotGrid):
 
         return()
 
-class RobotGridDesignRef(RobotGrid):
+
+class RobotGridAPO(RobotGridFilledHex):
     """Filled hexagon grid class for robots in FPS
 
     Parameters:
@@ -873,19 +875,15 @@ class RobotGridDesignRef(RobotGrid):
         steps taken to
 
 """
-    def __init__(self, stepSize=1., collisionBuffer=2.0):
-        super().__init__(seed=0, stepSize=stepSize, collisionBuffer=collisionBuffer)
-        self._load_grid()
-        return
 
     def _load_grid(self):
         """Load filled hex grid of robot locations"""
         gridFile = os.path.join(os.environ["KAIJU_DIR"], "etc",
                                 "fps_DesignReference.txt")
 
-        bossXY = []
-        baXY = []
-        fiducialXY = []
+
+        robotID = 1
+        fiducialID = 1
         with open(gridFile, "r") as f:
             lines = f.readlines()
         for line in lines:
@@ -903,34 +901,26 @@ class RobotGridDesignRef(RobotGrid):
                 row = "R+" + row
 
             holeName = row + col
-            coords = [float(x), float(y)]
+
             if fType == "BA":
-                baXY.append(coords)
+                self.addRobot(robotID, holeName, float(x), float(y), hasApogee=True)
+                robotID += 1
             elif fType == "BOSS":
-                bossXY.append(coords)
+                self.addRobot(robotID, holeName, float(x), float(y), hasApogee=False)
+                robotID += 1
             elif fType == "Fiducial":
-                fiducialXY.append(coords)
+                self.addFiducial(fiducialID, float(x), float(y), self.collisionBuffer)
+                fiducialID += 1
             else:
                 # ignore other elements (like empty holes)
                 pass
 
-        fiberID = 0
-        fiducialID = 0
-        hasApogee = False
-        for b in bossXY:
-            self.addRobot(holeName, fiberID, b[0], b[1], hasApogee)
-            fiberID += 1
-        hasApogee = True
-        for ba in baXY:
-            self.addRobot(holeName, fiberID, ba[0], ba[1], hasApogee)
-            fiberID += 1
-        for fiducial in fiducialXY:
-            self.addFiducial(fiducialID, fiducial[0], fiducial[1],
-                             self.collisionBuffer)
-            fiducialID += 1
         self.initGrid()
 
         return()
 
+
+class RobotGridLCO(RobotGridAPO):
+    pass
 
 

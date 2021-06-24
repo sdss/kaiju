@@ -18,7 +18,7 @@ def test_memory():
     for seed in range(300):
         rg = RobotGrid(angStep, collisionBuffer, epsilon, seed)
         for robotID, (x, y) in enumerate(zip(xPos, yPos)):
-            rg.addRobot(robotID, x, y, hasApogee)
+            rg.addRobot(robotID, str(robotID), x, y, hasApogee)
             # rg.robotDict[robotID].setTargetAlphaBeta(0, 180)
         rg.initGrid()
 

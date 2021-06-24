@@ -118,8 +118,8 @@ const std::array<Eigen::Vector3d, 2> neutralBetaCollisionSegment{ {betaEnvPt1, b
 // const double fiberNeutral_data[] = {betaLen, 0, 0};
 // Eigen::Vector3d fiberNeutral(fiberNeutral_data);
 
-Robot::Robot(int id, double xPos, double yPos, double angStep, bool hasApogee)
-    : id(id), xPos(xPos), yPos(yPos), angStep(angStep), hasApogee(hasApogee)
+Robot::Robot(int id, std::string holeID, double xPos, double yPos, double angStep, bool hasApogee)
+    : id(id), holeID(holeID), xPos(xPos), yPos(yPos), angStep(angStep), hasApogee(hasApogee)
 {
     // std::cout << "robot constructor called" << std::endl;
     // xPos = myxPos;
