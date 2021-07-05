@@ -46,6 +46,25 @@ def test_fiducial(plot=False):
         # else:
         #     assert len(fColliders) == 0
 
+def grow(plot=False):
+    angStep = 1
+    collisionBuffer = 2
+    fiducialCollisionBuffer = 1.5
+    epsilon = angStep * 2
+    hasApogee = True
+    robotID = 1
+    fiducialID = 10
+    seed = 0
+    for cb in [1.5, 2, 2.5, 3]:
+        rg = RobotGrid(angStep, cb, epsilon, seed)
+        rg.addRobot(robotID, str(robotID), [0, 0, 0], hasApogee)
+        rg.addFiducial(fiducialID, [22.4, 0, coordio.defaults.POSITIONER_HEIGHT], fiducialCollisionBuffer)
+        rg.initGrid()
+        robot = rg.getRobot(robotID)
+        robot.setAlphaBeta(90,0)
+        if plot:
+            utils.plotOne(0, rg, figname="grow_%.2f.png"%cb, isSequence=False, xlim=[-30, 30], ylim=[-30, 30])
+
 
 if __name__ == "__main__":
-    test_fiducial(plot=True)
+    grow(plot=True)

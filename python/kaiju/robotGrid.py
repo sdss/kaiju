@@ -679,8 +679,8 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         for i, k in enumerate(ks):
             crd = self.robotDict[k]
             robot_array['robotID'] = crd.id
-            robot_array['xPos'] = crd.xPos
-            robot_array['yPos'] = crd.yPos
+            robot_array['xPos'] = crd.basePos[0]
+            robot_array['yPos'] = crd.basePos[1]
             robot_array['hasApogee'] = crd.hasApogee
             robot_array['hasBoss'] = crd.hasBoss
             robot_array['assignedTargetID'] = crd.assignedTargetID
@@ -695,6 +695,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         target_dtype = np.dtype([('targetID', np.int64),
                                  ('x', np.float64),
                                  ('y', np.float64),
+                                 ('z', np.float64),
                                  ('priority', np.int32),
                                  ('fiberType', np.string_, 30)])
 
@@ -703,8 +704,9 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         for k, td in self.targetDict.items():
             td = self.targetDict[k]
             target_array['targetID'][i] = td.id
-            target_array['x'][i] = td.x
-            target_array['y'][i] = td.y
+            target_array['x'][i] = td.xWok
+            target_array['y'][i] = td.yWok
+            target_array['z'][i] = td.zWok
             target_array['priority'][i] = td.priority
             ft = fiberType2Str[td.fiberType]
             target_array['fiberType'][i] = ft
@@ -729,9 +731,13 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         for it in np.arange(len(target_array)):
             ft = target_array['fiberType'][it].decode().strip()
             fiberType = str2FiberType[ft]
+            xyzWok = [
+                target_array['x'][it],
+                target_array['y'][it],
+                target_array['z'][it]
+            ]
             self.addTarget(targetID=target_array['targetID'][it],
-                           x=target_array['x'][it],
-                           y=target_array['y'][it],
+                           xyzWok=xyzWok,
                            fiberType=fiberType,
                            priority=target_array['priority'][it])
         return

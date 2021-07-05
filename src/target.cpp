@@ -9,6 +9,7 @@ Target::Target(long id, vec3 xyzWok, FiberType fiberType, int priority)
 {
     x = xyzWok[0];
     y = xyzWok[1];
+    z = xyzWok[2];
 }
 
 void Target::clearAssignment(){

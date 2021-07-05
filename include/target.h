@@ -14,7 +14,7 @@ public:
     long id;
     int priority;
     FiberType fiberType;
-    double x,y;
+    double x,y,z;
     vec3 xyzWok;
     std::vector<int> validRobotIDs; // robots that can reach this target
     Target(long id, vec3 xyzWok, FiberType fiberType, int priority=0);

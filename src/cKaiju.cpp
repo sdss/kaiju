@@ -24,15 +24,16 @@ PYBIND11_MODULE(cKaiju, m) {
         .export_values();
 
     py::class_<Fiducial, std::shared_ptr<Fiducial>>(m, "Fiducial", py::dynamic_attr())
-        // .def_readwrite("x", &Fiducial::x)
-        // .def_readwrite("y", &Fiducial::y)
+        .def_readwrite("xWok", &Fiducial::x)
+        .def_readwrite("yWok", &Fiducial::y)
         .def_readwrite("xyzWok", &Fiducial::xyzWok)
         .def_readwrite("collisionBuffer", &Fiducial::collisionBuffer)
         .def_readwrite("id", &Fiducial::id);
 
     py::class_<Target, std::shared_ptr<Target>>(m, "Target", py::dynamic_attr())
-        // .def_readwrite("x", &Target::x)
-        // .def_readwrite("y", &Target::y)
+        .def_readwrite("xWok", &Target::x)
+        .def_readwrite("yWok", &Target::y)
+        .def_readwrite("zWok", &Target::z)
         .def_readwrite("xyzWok", &Target::xyzWok)
         .def_readwrite("id", &Target::id)
         .def_readwrite("priority", &Target::priority)
@@ -42,9 +43,6 @@ PYBIND11_MODULE(cKaiju, m) {
 
     py::class_<Robot, std::shared_ptr<Robot>>(m, "Robot", py::dynamic_attr(), R"pbdoc(
         A robot positioner class
-
-        This class is something totally awesome.
-
         )pbdoc")
         .def(py::init<int, std::string, vec3, vec3, vec3, vec3,
                         vec3, double, double, double,
