@@ -104,7 +104,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         return
 
     def addRobot(self,
-        robotID, holeID, basePos, hasApogee,
+        robotID, holeID, basePos, hasApogee=True,
         iHat=iHat, jHat=jHat, kHat=kHat,
         dxyz=[0,0,0], alphaLen=coordio.defaults.ALPHA_LEN, alphaOffDeg=0,
         betaOffDeg=0, elementHeight=coordio.defaults.POSITIONER_HEIGHT,
