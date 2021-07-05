@@ -646,7 +646,7 @@ std::vector<int> RobotGrid::robotColliders(int robotID){
             );
         dist = sqrt(dist2);
         // collideDist2 = (2*collisionBuffer)*(2*collisionBuffer);
-        if (dist < (2*collisionBuffer+ maxDisplacement)){
+        if (dist < (2*collisionBuffer + maxDisplacement)){
             // std::cout << "dist " << dist2 - collide_dist_squared << std::endl;
             collidingNeighbors.push_back(robot2->id);
         }
