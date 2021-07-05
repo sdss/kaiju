@@ -3,7 +3,7 @@ from setuptools import setup, Extension, find_packages
 from shutil import rmtree
 import glob
 import os
-
+from shutil import copyfile
 
 class getPybindInclude(object):
     """Helper class to determine the pybind11 include path
@@ -99,12 +99,13 @@ packages = find_packages(where="python")
 print("found packages", packages)
 runSetup(packages, requirements)
 
-# if sys.argv[-1] == "build":
-#     target = "build/lib"
-#     if os.path.exists(target):
-#         print("removing target")
-#         rmtree(target)
-#     # clean up the old lib directory if present
-#     # put the shared object in a standard location
-#     buildDir = glob.glob("build/lib*")[0]
-#     os.rename(buildDir, target)
+if sys.argv[-1] == "build":
+    buildDir = glob.glob("build/lib*")[0]
+    soFile = glob.glob(buildDir + "/kaiju/cKaiju*so")[0]
+    base, filename = os.path.split(soFile)
+    dest = "python/kaiju/%s"%filename
+    copyfile(soFile, dest)
+    mode = os.stat(dest).st_mode
+    mode |= (mode & 0o444) >> 2
+    os.chmod(dest, mode)
+
