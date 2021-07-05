@@ -1,5 +1,6 @@
 # pragma once
 #include <vector>
+#include "coordio.h"
 // #include "robot.h"
 // #include "robotGrid.h"
 
@@ -13,9 +14,10 @@ public:
     long id;
     int priority;
     FiberType fiberType;
-    double x,y;
+    double x,y,z;
+    vec3 xyzWok;
     std::vector<int> validRobotIDs; // robots that can reach this target
-    Target(long id, double x, double y, FiberType fiberType, int priority=0);
+    Target(long id, vec3 xyzWok, FiberType fiberType, int priority=0);
     void assignRobot(int robotID);
     void clearAssignment();
     bool isAssigned();

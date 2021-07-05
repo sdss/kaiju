@@ -1,6 +1,6 @@
 import sys
 from setuptools import setup, Extension, find_packages
-from shutil import rmtree
+from shutil import rmtree, copyfile
 import glob
 import os
 from shutil import copyfile
@@ -20,16 +20,27 @@ class getPybindInclude(object):
         import pybind11
         return pybind11.get_include(self.user)
 
+def getCoordioInclude():
+    import coordio
+    d = os.path.dirname(coordio.__file__)
+    return os.path.abspath(os.path.join(d, "..", "include"))
+
+def getCoordioSrc():
+    import coordio
+    d = os.path.dirname(coordio.__file__)
+    return os.path.abspath(os.path.join(d, "..", "cextern", "conv.cpp"))
+
 
 def getIncludes():
     return [
         'include',
         # '/usr/local/include',
-        '/usr/local/include/eigen3',
-        '/usr/include/eigen3',
+        # '/usr/local/include/eigen3',
+        # '/usr/include/eigen3',
         # '/usr/include',
         getPybindInclude(),
-        getPybindInclude(user=True)
+        getPybindInclude(user=True),
+        getCoordioInclude()
     ]
 
 
@@ -43,14 +54,17 @@ def getVersion():
             return v
 
 
-sources = [
-    'src/cKaiju.cpp',
-    'src/robot.cpp',
-    'src/robotGrid.cpp',
-    'src/utils.cpp',
-    'src/target.cpp',
-    'src/fiducial.cpp'
-]
+def getSources():
+
+    return [
+        'src/cKaiju.cpp',
+        'src/robot.cpp',
+        'src/robotGrid.cpp',
+        'src/utils.cpp',
+        'src/target.cpp',
+        'src/fiducial.cpp',
+        getCoordioSrc()
+    ]
 
 extra_compile_args = ["--std=c++11", "-fPIC", "-v", "-O3"]
 extra_link_args = None
@@ -65,8 +79,9 @@ module = Extension(
     include_dirs=getIncludes(),
     extra_compile_args=extra_compile_args,
     extra_link_args = extra_link_args,
-    sources=sources
+    sources=getSources()
 )
+
 
 def runSetup(packages, requirements):
     setup(
@@ -99,6 +114,7 @@ packages = find_packages(where="python")
 print("found packages", packages)
 runSetup(packages, requirements)
 
+
 if sys.argv[-1] == "build":
     buildDir = glob.glob("build/lib*")[0]
     soFile = glob.glob(buildDir + "/kaiju/cKaiju*so")[0]
@@ -108,4 +124,5 @@ if sys.argv[-1] == "build":
     mode = os.stat(dest).st_mode
     mode |= (mode & 0o444) >> 2
     os.chmod(dest, mode)
+
 

@@ -4,9 +4,13 @@
 #include "target.h"
 
 
-Target::Target(long id, double x, double y, FiberType fiberType, int priority)
-    : id(id), x(x), y(y), priority(priority), fiberType(fiberType)
-{}
+Target::Target(long id, vec3 xyzWok, FiberType fiberType, int priority)
+    : id(id), xyzWok(xyzWok), priority(priority), fiberType(fiberType)
+{
+    x = xyzWok[0];
+    y = xyzWok[1];
+    z = xyzWok[2];
+}
 
 void Target::clearAssignment(){
     assignedRobotID = -1;

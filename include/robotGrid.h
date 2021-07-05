@@ -5,15 +5,15 @@
 // #include <pybind11/stl_bind.h>
 
 // move constants to cpp file?
-extern const double pitch;
+// extern const double pitch;
 
-extern const double radius_buffer;
+// extern const double radius_buffer;
 
 // extern const double ang_step;
 // extern const int maxPathStepsGlob;
 // line smoothing factor
 // extern const double epsilon;
-extern const double min_targ_sep;
+// extern const double min_targ_sep;
 
 enum AlgType {Greedy, MDP, Fold}; // order is important
 
@@ -37,17 +37,23 @@ public:
     std::map<int, std::shared_ptr<Fiducial>> fiducialDict;
     // std::vector<std::array<double, 2>> fiducialList;
     std::map<long, std::shared_ptr<Target>> targetDict;
-    std::vector<std::array<double, 2>> perturbArray; // alpha/beta perturbations
+    std::vector<vec2> perturbArray; // alpha/beta perturbations
     RobotGrid (double angStep = 1, double collisionBuffer = 2, double epsilon = 2, int seed = 0);
-    void addRobot(int robotID, std::string holeID, double xPos, double yPos, bool hasApogee = true);
-    void addTarget(long targetID, double xPos, double yPos, FiberType fiberType, double priority = 0);
-    void addFiducial(int fiducialID, double xPos, double yPos, double collisionBuffer = 1.5);
+    void addRobot(
+        int robotID, std::string holeID, vec3 basePos, vec3 iHat, vec3 jHat,
+        vec3 kHat, vec3 dxyz, double alphaLen, double alphaOffDeg,
+        double betaOffDeg, double elementHeight, double scaleFac, vec2 metBetaXY,
+        vec2 bossBetaXY, vec2 apBetaXY,
+        std::array<vec2, 2> collisionSegBetaXY, bool hasApogee = true
+    );
+    void addTarget(long targetID, vec3 xyzWok, FiberType fiberType, double priority = 0);
+    void addFiducial(int fiducialID, vec3 xyzWok, double collisionBuffer = 1.5);
     void initGrid();
     void decollideGrid();
     int getNCollisions();
     std::vector<int> deadlockedRobots(); // robots not on target
     void clearPaths();
-    void pathGen(); // step towards fold, initial solution
+    // void pathGen(); // step towards fold, initial solution
     void pathGenGreedy(); // stepRotational with encroachment
     void pathGenMDP(double greed, double phobia); // Markov Decision Process
     void simplifyPaths();

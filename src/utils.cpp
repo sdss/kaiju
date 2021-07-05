@@ -1,6 +1,47 @@
 #include <iostream>
 #include "utils.h"
 
+// vec2 test(){
+//     vec2 testVec;
+//     testVec[0] = 1;
+//     testVec[1] =2;
+//     return testVec;
+// }
+
+vec3 sub3(vec3 & a, vec3 & b){
+    // subtract b from a
+    vec3 outVec;
+    outVec[0] = a[0] - b[0];
+    outVec[1] = a[1] - b[1];
+    outVec[2] = a[2] - b[2];
+    return outVec;
+}
+
+vec3 add3(vec3 & a, vec3 & b){
+    // subtract b from a
+    vec3 outVec;
+    outVec[0] = a[0] + b[0];
+    outVec[1] = a[1] + b[1];
+    outVec[2] = a[2] + b[2];
+    return outVec;
+}
+
+vec3 addScalar3(vec3 & a, double scalar){
+    vec3 outVec;
+    outVec[0] = a[0] + scalar;
+    outVec[1] = a[1] + scalar;
+    outVec[2] = a[2] + scalar;
+    return outVec;
+}
+
+vec3 multScalar3(vec3 & a, double scalar){
+    vec3 outVec;
+    outVec[0] = a[0] * scalar;
+    outVec[1] = a[1] * scalar;
+    outVec[2] = a[2] * scalar;
+    return outVec;
+}
+
 double randomSample(){
     // return between 0 and 1
     return static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
@@ -62,31 +103,31 @@ std::array<double, 2> sampleAnnulus(double rMin, double rMax){
 // }
 
 // create a linear interpolater
-double linearInterpolate(std::vector<Eigen::Vector2d> & sparseXYPoints, double xValue){
-    Eigen::Vector2d pt1, pt0;
+double linearInterpolate(std::vector<vec2> & sparseXYPoints, double xValue){
+    vec2 pt1, pt0;
     double yValue;
     int nPoints = sparseXYPoints.size();
     // check that x is in range
     // if (xValue < sparseXYPoints[0](0) || xValue > sparseXYPoints[nPoints-1](0)){
     //     throw std::runtime_error("x outside interpolation range");
     // }
-    if (xValue < sparseXYPoints[0](0)){
-        yValue = sparseXYPoints[0](1);
+    if (xValue < sparseXYPoints[0][0]){
+        yValue = sparseXYPoints[0][1];
         // constant extrapolation
     }
 
-    if (xValue > sparseXYPoints[nPoints-1](0)){
-        yValue = sparseXYPoints[nPoints-1](1);
+    if (xValue > sparseXYPoints[nPoints-1][0]){
+        yValue = sparseXYPoints[nPoints-1][1];
     }
     // check if x == last point
-    if (xValue == sparseXYPoints[nPoints-1](0)){
-        yValue = sparseXYPoints[nPoints-1](1);
+    if (xValue == sparseXYPoints[nPoints-1][0]){
+        yValue = sparseXYPoints[nPoints-1][1];
     }
     for (int ii = 0; ii < nPoints-1; ii++){
         pt1 = sparseXYPoints[ii+1];
         pt0 = sparseXYPoints[ii];
-        if (xValue < pt1(0)){
-            yValue = pt0(1) + (pt1(1)-pt0(1)) / (pt1(0) - pt0(0)) * (xValue - pt0(0));
+        if (xValue < pt1[0]){
+            yValue = pt0[1] + (pt1[1]-pt0[1]) / (pt1[0] - pt0[0]) * (xValue - pt0[0]);
             break;
         }
     }
@@ -99,17 +140,21 @@ double linearInterpolate(std::vector<Eigen::Vector2d> & sparseXYPoints, double x
 //    Return: the shortest distance between S1 and S2
 double dist3D_Segment_to_Segment(
     // return distance squared
-    Eigen::Vector3d S1_P0, Eigen::Vector3d S1_P1,
-    Eigen::Vector3d S2_P0, Eigen::Vector3d S2_P1)
+    vec3 S1_P0, vec3 S1_P1,
+    vec3 S2_P0, vec3 S2_P1)
 {
-    Eigen::Vector3d   u = S1_P1 - S1_P0;
-    Eigen::Vector3d   v = S2_P1 - S2_P0;
-    Eigen::Vector3d   w = S1_P0 - S2_P0;
-    double    a = u.dot(u);         // always >= 0
-    double    b = u.dot(v);
-    double    c = v.dot(v);         // always >= 0
-    double    d = u.dot(w);
-    double    e = v.dot(w);
+    vec3 u, v, w;
+
+    // vector subtraction
+    u = sub3(S1_P1, S1_P0);
+    v = sub3(S2_P1, S2_P0);
+    w = sub3(S1_P0, S2_P0);
+
+    double    a = dot3(u,u);         // always >= 0
+    double    b = dot3(u,v);
+    double    c = dot3(v,v);         // always >= 0
+    double    d = dot3(u,w);
+    double    e = dot3(v,w);
     double    D = a*c - b*b;        // always >= 0
     double    sc, sN, sD = D;       // sc = sN / sD, default sD = D >= 0
     double    tc, tN, tD = D;       // tc = tN / tD, default tD = D >= 0
@@ -168,21 +213,26 @@ double dist3D_Segment_to_Segment(
     tc = (std::fabs(tN) < SMALL_NUM ? 0.0 : tN / tD);
 
     // get the difference of the two closest points
-    Eigen::Vector3d   dP = w + (sc * u) - (tc * v);  // =  S1(sc) - S2(tc)
+    // Eigen::Vector3d   dP = w + (sc * u) - (tc * v);  // =  S1(sc) - S2(tc)
+
+    vec3 tmp1  = multScalar3(v, tc);
+    vec3 tmp2 = multScalar3(u, sc);
+    tmp1 = sub3(tmp2, tmp1);
+    vec3 dP = add3(w, tmp1);
 
     // this routine hasn't shown numerical instability
     // but just for paranoia explicitly check endpoints
-    double minDist = dP.dot(dP);
-    Eigen::Vector3d x2, x3, x4;
+    double minDist = dot3(dP,dP);
+    vec3 x2, x3, x4;
     double dw, dx2, dx3, dx4;
 
-    x2 = S1_P0 - S2_P1;
-    x3 = S1_P1 - S2_P0;
-    x4 = S1_P1 - S2_P1;
-    dw = w.dot(w);
-    dx2 = x2.dot(x2);
-    dx3 = x3.dot(x3);
-    dx4 = x4.dot(x4);
+    x2 = sub3(S1_P0, S2_P1);
+    x3 = sub3(S1_P1, S2_P0);
+    x4 = sub3(S1_P1, S2_P1);
+    dw =dot3( w,w);
+    dx2 = dot3(x2,x2);
+    dx3 = dot3(x3,x3);
+    dx4 = dot3(x4,x4);
     if (dw < minDist){
         minDist = dw;
     }
@@ -203,34 +253,35 @@ double dist3D_Segment_to_Segment(
 //     Input:  a Point P and a Segment S (in any dimension)
 //     Return: the shortest distance from P to S
 // dist_Point_to_Segment( Point P, Segment S)
-double dist3D_Point_to_Segment( Eigen::Vector3d Point, Eigen::Vector3d Seg_P0, Eigen::Vector3d Seg_P1)
+double dist3D_Point_to_Segment( vec3 Point, vec3 Seg_P0, vec3 Seg_P1)
 {
-    Eigen::Vector3d d, Pb;
-    Eigen::Vector3d v = Seg_P1 - Seg_P0;
-    Eigen::Vector3d w = Point - Seg_P0;
-    Eigen::Vector3d x = Point - Seg_P1;
+    vec3 d, Pb;
+    vec3 v = sub3(Seg_P1, Seg_P0);
+    vec3 w = sub3(Point, Seg_P0);
+    vec3 x = sub3(Point, Seg_P1);
     double d1, d2, d3, minDist;
 
-    double c1 = w.dot(v);
+    double c1 = dot3(w,v);
     if ( c1 <= 0 ){
-        d = Point - Seg_P0;
-        return d.dot(d);
+        d = sub3(Point, Seg_P0);
+        return dot3(d,d);
     }
 
-    double c2 = v.dot(v);
+    double c2 = dot3(v,v);
     if ( c2 <= c1 ){
-        d = Point - Seg_P1;
-        return d.dot(d);
+        d = sub3(Point, Seg_P1);
+        return dot3(d,d);
     }
     double b = c1 / c2;
-    Pb = Seg_P0 + (b * v);
+    vec3 tmp = multScalar3(v, b);
+    Pb = add3(Seg_P0, tmp);
 
     // this routine has some numerical instability
     // this probably insn't the best fix but it seems
     // to behave?
-    d1 = Point.dot(Pb);
-    d2 = x.dot(x);
-    d3 = w.dot(w);
+    d1 = dot3(Point,Pb);
+    d2 = dot3(x,x);
+    d3 = dot3(w,w);
     minDist = d1;
     if (d2 < minDist){
         minDist = d2;
@@ -256,13 +307,13 @@ double dist3D_Point_to_Segment( Eigen::Vector3d Point, Eigen::Vector3d Seg_P0, E
 // Ramer-Douglas-Peucker for segmentizing paths!
 // https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
 // https://gist.github.com/TimSC/0813573d77734bcb6f2cd2cf6cc7aa51
-// std::vector<Eigen::Vector2d>
-double PerpendicularDistance(const Eigen::Vector2d &pt, const Eigen::Vector2d &lineStart, const Eigen::Vector2d &lineEnd)
+// std::vector<vec2>
+double PerpendicularDistance(const vec2 &pt, const vec2 &lineStart, const vec2 &lineEnd)
 {
     // copied from dude's github,
     // could be made to use eigen stuff for linalg/norms
-    double dx = lineEnd(0) - lineStart(0);
-    double dy = lineEnd(1) - lineStart(1);
+    double dx = lineEnd[0] - lineStart[0];
+    double dy = lineEnd[1] - lineStart[1];
 
 
     //Normalise
@@ -272,8 +323,8 @@ double PerpendicularDistance(const Eigen::Vector2d &pt, const Eigen::Vector2d &l
         dx /= mag; dy /= mag;
     }
 
-    double pvx = pt(0) - lineStart(0);
-    double pvy = pt(1) - lineStart(1);
+    double pvx = pt[0] - lineStart[0];
+    double pvy = pt[1] - lineStart[1];
 
     //Get dot product (project pv onto normalized direction)
     double pvdot = dx * pvx + dy * pvy;
@@ -289,7 +340,7 @@ double PerpendicularDistance(const Eigen::Vector2d &pt, const Eigen::Vector2d &l
     return pow(pow(ax,2.0)+pow(ay,2.0),0.5);
 }
 
-void RamerDouglasPeucker(const std::vector<Eigen::Vector2d> &pointList, double epsilon, std::vector<Eigen::Vector2d> &out)
+void RamerDouglasPeucker(const std::vector<vec2> &pointList, double epsilon, std::vector<vec2> &out)
 {   // biasDir is to modify the internal (not end) points by epsilon in one directon to make sure we are on one
     // side of the curve
     if(pointList.size()<2)
@@ -313,10 +364,10 @@ void RamerDouglasPeucker(const std::vector<Eigen::Vector2d> &pointList, double e
     if(dmax > epsilon)
     {
         // Recursive call
-        std::vector<Eigen::Vector2d> recResults1;
-        std::vector<Eigen::Vector2d> recResults2;
-        std::vector<Eigen::Vector2d> firstLine(pointList.begin(), pointList.begin()+index+1);
-        std::vector<Eigen::Vector2d> lastLine(pointList.begin()+index, pointList.end());
+        std::vector<vec2> recResults1;
+        std::vector<vec2> recResults2;
+        std::vector<vec2> firstLine(pointList.begin(), pointList.begin()+index+1);
+        std::vector<vec2> lastLine(pointList.begin()+index, pointList.end());
         RamerDouglasPeucker(firstLine, epsilon, recResults1);
         RamerDouglasPeucker(lastLine, epsilon, recResults2);
 
@@ -338,8 +389,8 @@ void RamerDouglasPeucker(const std::vector<Eigen::Vector2d> &pointList, double e
 // double meanErrorRMD(
 //     // return the y value for which to shift points
 //     // such that we have only a 1 sided error
-//     const std::vector<Eigen::Vector2d> &rmdInterpPoints,
-//     const std::vector<Eigen::Vector2d> &pathGenPoints,
+//     const std::vector<vec2> &rmdInterpPoints,
+//     const std::vector<vec2> &pathGenPoints,
 //     )
 // {
 //     // compute mean error

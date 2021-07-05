@@ -4,6 +4,7 @@
 #include "robotGrid.h"
 #include "target.h"
 #include "fiducial.h"
+// #include "coordio.h"
 
 
 namespace py = pybind11;
@@ -23,14 +24,17 @@ PYBIND11_MODULE(cKaiju, m) {
         .export_values();
 
     py::class_<Fiducial, std::shared_ptr<Fiducial>>(m, "Fiducial", py::dynamic_attr())
-        .def_readwrite("x", &Fiducial::x)
-        .def_readwrite("y", &Fiducial::y)
+        .def_readwrite("xWok", &Fiducial::x)
+        .def_readwrite("yWok", &Fiducial::y)
+        .def_readwrite("xyzWok", &Fiducial::xyzWok)
         .def_readwrite("collisionBuffer", &Fiducial::collisionBuffer)
         .def_readwrite("id", &Fiducial::id);
 
     py::class_<Target, std::shared_ptr<Target>>(m, "Target", py::dynamic_attr())
-        .def_readwrite("x", &Target::x)
-        .def_readwrite("y", &Target::y)
+        .def_readwrite("xWok", &Target::x)
+        .def_readwrite("yWok", &Target::y)
+        .def_readwrite("zWok", &Target::z)
+        .def_readwrite("xyzWok", &Target::xyzWok)
         .def_readwrite("id", &Target::id)
         .def_readwrite("priority", &Target::priority)
         .def_readwrite("fiberType", &Target::fiberType)
@@ -39,11 +43,11 @@ PYBIND11_MODULE(cKaiju, m) {
 
     py::class_<Robot, std::shared_ptr<Robot>>(m, "Robot", py::dynamic_attr(), R"pbdoc(
         A robot positioner class
-
-        This class is something totally awesome.
-
         )pbdoc")
-        .def(py::init<int, std::string, double, double, double, bool>())
+        .def(py::init<int, std::string, vec3, vec3, vec3, vec3,
+                        vec3, double, double, double,
+                        double, double, vec2, vec2, vec2,
+                        std::array<vec2, 2>, double, bool>())
         .def_readwrite("alpha", &Robot::alpha, R"pbdoc(
             Robot's alpha position (degrees).
             )pbdoc")
@@ -60,17 +64,18 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("smoothAlphaVel", &Robot::smoothAlphaVel)
         .def_readwrite("smoothBetaVel", &Robot::smoothBetaVel)
         .def_readwrite("beta", &Robot::beta)
-        .def_readwrite("xPos", &Robot::xPos)
-        .def_readwrite("yPos", &Robot::yPos)
+        // .def_readwrite("xPos", &Robot::xPos)
+        // .def_readwrite("yPos", &Robot::yPos)
+        .def_readwrite("basePos", &Robot::basePos)
         .def_readwrite("validTargetIDs", &Robot::validTargetIDs)
         .def_readwrite("robotNeighbors", &Robot::robotNeighbors)
         .def_readwrite("hasApogee", &Robot::hasApogee)
         .def_readwrite("hasBoss", &Robot::hasBoss)
-        .def_readwrite("metFiberPos", &Robot::metFiberPos)
-        .def_readwrite("bossFiberPos", &Robot::bossFiberPos)
-        .def_readwrite("apFiberPos", &Robot::apFiberPos)
+        .def_readwrite("metWokXYZ", &Robot::metWokXYZ)
+        .def_readwrite("bossWokXYZ", &Robot::bossWokXYZ)
+        .def_readwrite("apWokXYZ", &Robot::apWokXYZ)
         .def_readwrite("nDecollide", &Robot::nDecollide)
-        .def_readwrite("betaCollisionSegment", &Robot::betaCollisionSegment)
+        .def_readwrite("collisionSegWokXYZ", &Robot::collisionSegWokXYZ)
         .def_readwrite("id", &Robot::id)
         .def_readwrite("holeID", &Robot::holeID)
         .def_readwrite("assignedTargetID", &Robot::assignedTargetID)
@@ -93,17 +98,15 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("roughBetaY", &Robot::roughBetaY)
         .def_readwrite("interpCollisions", &Robot::interpCollisions)
         .def("setAlphaBeta", &Robot::setAlphaBeta, R"pbdoc(
-            Set alpha beta
-
-            And some other bs.
+            A doc example
         )pbdoc")
         .def("setDestinationAlphaBeta", &Robot::setDestinationAlphaBeta)
         .def("setXYUniform", &Robot::setXYUniform)
         .def("randomXYUniform", &Robot::randomXYUniform)
-        .def("alphaBetaFromFiberXY", &Robot::alphaBetaFromFiberXY)
+        .def("alphaBetaFromWokXYZ", &Robot::alphaBetaFromWokXYZ)
         // .def("setAlphaBetaRand", &Robot::setAlphaBetaRand)
         // .def("isCollided", &Robot::isCollided)
-        .def("setFiberXY", &Robot::setFiberXY)
+        .def("setFiberToWokXYZ", &Robot::setFiberToWokXYZ)
         .def("score", &Robot::score)
         // .def("decollide", &Robot::decollide)
         .def("getMaxReach", &Robot::getMaxReach)
@@ -135,11 +138,20 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("getNCollisions", &RobotGrid::getNCollisions)
         .def("deadlockedRobots", &RobotGrid::deadlockedRobots)
         .def("addRobot", &RobotGrid::addRobot,
-            "robotID"_a, "holeID"_a, "xPos"_a, "yPos"_a, "hasApogee"_a = true)
+                "robotID"_a, "holeID"_a, "basePos"_a, "iHat"_a, "jHat"_a,
+                "kHat"_a, "dxyz"_a, "alphaLen"_a, "alphaOffDeg"_a,
+                "betaOffDeg"_a, "elementHeight"_a, "scaleFac"_a, "metBetaXY"_a,
+                "bossBetaXY"_a, "apBetaXY"_a,
+                "collisionSegBetaXY"_a,
+               "hasApogee"_a = true)
+        // .def("addRobot", &RobotGrid::addRobot,
+        //     "robotID"_a, "holeID"_a, "xPos"_a, "yPos"_a, "hasApogee"_a = true)
         .def("addFiducial", &RobotGrid::addFiducial,
-            "fiducialID"_a, "x"_a, "y"_a, "collisionBuffer"_a = 1.5)
+            "fiducialID"_a, "xyzWok"_a, "collisionBuffer"_a = 1.5)
         .def("addTarget", &RobotGrid::addTarget,
-            "targetID"_a, "x"_a, "y"_a, "fiberType"_a, "priority"_a = 0)
+            "targetID"_a, "xyzWok"_a, "fiberType"_a, "priority"_a = 0)
+        // .def("addTarget", &RobotGrid::addTarget,
+        //     "targetID"_a, "x"_a, "y"_a, "fiberType"_a, "priority"_a = 0)
         .def("initGrid", &RobotGrid::initGrid)
         // .def("optimizeTargets", &RobotGrid::optimizeTargets)
         .def("decollideGrid", &RobotGrid::decollideGrid)
@@ -149,7 +161,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("smoothPaths", &RobotGrid::smoothPaths)
         .def("verifySmoothed", &RobotGrid::verifySmoothed)
         .def("setCollisionBuffer", &RobotGrid::setCollisionBuffer)
-        .def("pathGen", &RobotGrid::pathGen)
+        // .def("pathGen", &RobotGrid::pathGen)
         .def("pathGenGreedy", &RobotGrid::pathGenGreedy)
         .def("pathGenMDP", &RobotGrid::pathGenMDP)
         // .def("setTargetList", &RobotGrid::setTargetList)
