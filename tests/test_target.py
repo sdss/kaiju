@@ -130,9 +130,9 @@ def test_targetAssign(plot=False):
         utils.plotOne(0, rg, figname="beforeAssign.png", isSequence=False)#, highlightRobot=205)
     # find boss target positions for all robots
     for rID, robot in rg.robotDict.items():
-        x,y,z = robot.bossFiberPos
+        xyzTarg = robot.bossWokXYZ
         # give the target the same id as the robot
-        rg.addTarget(rID, x, y, BossFiber)
+        rg.addTarget(rID, xyzTarg, BossFiber)
         targ = rg.targetDict[rID]
         assert rID in targ.validRobotIDs
         assert rID in robot.validTargetIDs
@@ -167,10 +167,11 @@ i think issue is it is at nearly full extension?
 test targets at full extension?
 """
 if __name__ == "__main__":
+    # test_validRobots(plot=True)
     # test_tonsOBosstargs(plot=True)
-    test_tonsOAptargs(plot=True)
+    # test_tonsOAptargs(plot=True)
     # test_nonInit()
     # test_doubleTargetID()
     # test_tonsOBosstargs(plot=True)
     # test_tonsOAptargs(plot=True)
-    # test_targetAssign(plot=True)
+    test_targetAssign(plot=True)
