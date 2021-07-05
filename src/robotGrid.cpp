@@ -1,6 +1,6 @@
 #include <iostream>
 #include <stdio.h>      /* printf, scanf, puts, NULL */
-#include <Eigen/Dense>
+// #include <Eigen/Dense>
 #include <algorithm>    // std::random_shuffle
 #include <chrono>       // std::chrono::system_clock
 #include "utils.h"

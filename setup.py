@@ -35,8 +35,8 @@ def getIncludes():
     return [
         'include',
         # '/usr/local/include',
-        '/usr/local/include/eigen3',
-        '/usr/include/eigen3',
+        # '/usr/local/include/eigen3',
+        # '/usr/include/eigen3',
         # '/usr/include',
         getPybindInclude(),
         getPybindInclude(user=True),
