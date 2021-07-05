@@ -20,6 +20,10 @@ import coordio
 
 
 # __all__ = ['RobotGrid', 'RobotGridFilledHex']
+# default orientation of positioner to wok
+iHat = [0,-1,0]
+jHat = [1,0,0]
+kHat = [0,0,1]
 
 
 # Create look-up dictionary for types to strings conversion
@@ -101,7 +105,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
 
     def addRobot(self,
         robotID, holeID, basePos, hasApogee,
-        iHat=[1,0,0], jHat=[0,1,0], kHat=[0,0,1],
+        iHat=iHat, jHat=jHat, kHat=kHat,
         dxyz=[0,0,0], alphaLen=coordio.defaults.ALPHA_LEN, alphaOffDeg=0,
         betaOffDeg=0, elementHeight=coordio.defaults.POSITIONER_HEIGHT,
         metBetaXY=coordio.defaults.MET_BETA_XY,
