@@ -76,10 +76,10 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
     maxX = 0
     maxY = 0
     for robotID, robot in rg.robotDict.items():
-        if robot.xPos > maxX:
-            maxX = robot.xPos
-        if robot.yPos > maxY:
-            maxY = robot.yPos
+        if robot.basePos[0] > maxX:
+            maxX = robot.basePos[0]
+        if robot.basePos[1] > maxY:
+            maxY = robot.basePos[1]
         if isSequence:
             alphaX = robot.roughAlphaX[step][1]
             alphaY = robot.roughAlphaY[step][1]
@@ -89,14 +89,14 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
             # onTarget = robot.onTargetVec[step]
         else:
             # step input is ignored!!
-            alphaPoint = robot.betaCollisionSegment[0]
-            betaPoint = robot.betaCollisionSegment[1]
+            alphaPoint = robot.collisionSegWokXYZ[0]
+            betaPoint = robot.collisionSegWokXYZ[1]
             alphaX = alphaPoint[0]
             alphaY = alphaPoint[1]
             betaX = betaPoint[0]
             betaY = betaPoint[1]
             onTarget = robot.score() == 0
-        plt.plot([robot.xPos, alphaX], [robot.yPos, alphaY], color='black', linewidth=2, alpha=0.5)
+        plt.plot([robot.basePos[0], alphaX], [robot.basePos[1], alphaY], color='black', linewidth=2, alpha=0.5)
 
         topCollideLine = LineString(
             [(alphaX, alphaY), (betaX, betaY)]
@@ -115,7 +115,7 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
         patch = PolygonPatch(topCollideLine, fc=topcolor, ec=edgecolor, alpha=0.5, zorder=10)
         ax.add_patch(patch)
     for fiducialID, fiducial in rg.fiducialDict.items():
-        fPoint = Point(fiducial.x, fiducial.y).buffer(fiducial.collisionBuffer, cap_style=1)
+        fPoint = Point(fiducial.xyzWok[0], fiducial.xyzWok[1]).buffer(fiducial.collisionBuffer, cap_style=1)
         patch = PolygonPatch(fPoint, fc="cyan", ec="black", alpha=0.8, zorder=10)
         ax.add_patch(patch)
 
@@ -218,58 +218,58 @@ def hexFromDia(nDia, pitch=22.4, rotAngle=0):
     ind = numpy.lexsort((xAll, yAll))
     return xAll[ind], yAll[ind]
 
-def robotGridFromFilledHex(stepSize=1, collisionBuffer=2, seed=0, rotAngle=0):
-    gridFile = os.path.join(os.environ["KAIJU_DIR"], "etc", "fps_filledHex.txt")
-    # Row   Col     X (mm)  Y (mm)          Assignment
-    #
-    #-13   0 -145.6000 -252.1866  BA
-    #-13   1 -123.2000 -252.1866  BA
-    bossXY = []
-    baXY = []
-    fiducialXY = []
-    cos = numpy.cos(numpy.radians(rotAngle))
-    sin = numpy.sin(numpy.radians(rotAngle))
-    rotMat = numpy.array([
-        [cos, sin],
-        [-sin, cos]
-    ])
-    with open(gridFile, "r") as f:
-        lines = f.readlines()
-    for line in lines:
-        line = line.strip()
-        line = line.split("#")[0]
-        if not line:
-            continue
-        row, col, x, y, fType = line.split()
-        x = float(x)
-        y = float(y)
-        if rotAngle:
-            x, y = numpy.dot([x,y], rotMat)
-        coords = [x, y]
-        if fType == "BA":
-            baXY.append(coords)
-        elif fType == "BOSS":
-            bossXY.append(coords)
-        else:
-            fiducialXY.append(coords)
+# def robotGridFromFilledHex(stepSize=1, collisionBuffer=2, seed=0, rotAngle=0):
+#     gridFile = os.path.join(os.environ["KAIJU_DIR"], "etc", "fps_filledHex.txt")
+#     # Row   Col     X (mm)  Y (mm)          Assignment
+#     #
+#     #-13   0 -145.6000 -252.1866  BA
+#     #-13   1 -123.2000 -252.1866  BA
+#     bossXY = []
+#     baXY = []
+#     fiducialXY = []
+#     cos = numpy.cos(numpy.radians(rotAngle))
+#     sin = numpy.sin(numpy.radians(rotAngle))
+#     rotMat = numpy.array([
+#         [cos, sin],
+#         [-sin, cos]
+#     ])
+#     with open(gridFile, "r") as f:
+#         lines = f.readlines()
+#     for line in lines:
+#         line = line.strip()
+#         line = line.split("#")[0]
+#         if not line:
+#             continue
+#         row, col, x, y, fType = line.split()
+#         x = float(x)
+#         y = float(y)
+#         if rotAngle:
+#             x, y = numpy.dot([x,y], rotMat)
+#         coords = [x, y]
+#         if fType == "BA":
+#             baXY.append(coords)
+#         elif fType == "BOSS":
+#             bossXY.append(coords)
+#         else:
+#             fiducialXY.append(coords)
 
 
-    epsilon = stepSize * 2.2
+#     epsilon = stepSize * 2.2
 
-    rg = RobotGrid(stepSize, collisionBuffer, epsilon, seed)
-    robotID = 0
-    hasApogee = False
-    for b in bossXY:
-        rg.addRobot(robotID, str(robotID), b[0], b[1], hasApogee)
-        robotID += 1
-    hasApogee = True
-    for ba in baXY:
-        rg.addRobot(robotID, str(robotID), ba[0], ba[1], hasApogee)
-        robotID += 1
-    for fiducialID, fiducial in enumerate(fiducialXY):
-        rg.addFiducial(fiducialID, fiducial[0], fiducial[1])
-    rg.initGrid()
-    return rg
+#     rg = RobotGrid(stepSize, collisionBuffer, epsilon, seed)
+#     robotID = 0
+#     hasApogee = False
+#     for b in bossXY:
+#         rg.addRobot(robotID, str(robotID), b[0], b[1], hasApogee)
+#         robotID += 1
+#     hasApogee = True
+#     for ba in baXY:
+#         rg.addRobot(robotID, str(robotID), ba[0], ba[1], hasApogee)
+#         robotID += 1
+#     for fiducialID, fiducial in enumerate(fiducialXY):
+#         rg.addFiducial(fiducialID, fiducial[0], fiducial[1])
+#     rg.initGrid()
+#     return rg
 
 
 

@@ -16,9 +16,10 @@ import kaiju.cKaiju
 from descartes import PolygonPatch
 from shapely.geometry import LineString, Point
 import seaborn as sns
+import coordio
 
 
-__all__ = ['RobotGrid', 'RobotGridFilledHex']
+# __all__ = ['RobotGrid', 'RobotGridFilledHex']
 
 
 # Create look-up dictionary for types to strings conversion
@@ -80,8 +81,11 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         steps taken to
 
     """
-    def __init__(self, stepSize=1., collisionBuffer=2.0, epsilon=None, seed=0):
+    def __init__(
+        self, stepSize=1., collisionBuffer=2.0,
+        epsilon=None, seed=0, scaleFac=1):
         self.stepSize = stepSize
+        self.scaleFac = scaleFac
         self.collisionBuffer = collisionBuffer
         if epsilon is None:
             self.epsilon = stepSize * 2.2
@@ -94,6 +98,45 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
                          self.epsilon, self.seed)
         # self._load_grid()
         return
+
+    def addRobot(self,
+        robotID, holeID, basePos, hasApogee,
+        iHat=[1,0,0], jHat=[0,1,0], kHat=[0,0,1],
+        dxyz=[0,0,0], alphaLen=coordio.defaults.ALPHA_LEN, alphaOffDeg=0,
+        betaOffDeg=0, elementHeight=coordio.defaults.POSITIONER_HEIGHT,
+        metBetaXY=coordio.defaults.MET_BETA_XY,
+        bossBetaXY=coordio.defaults.BOSS_BETA_XY,
+        apBetaXY=coordio.defaults.AP_BETA_XY,
+        collisionSegBetaXY=None
+    ):
+
+        if collisionSegBetaXY is None:
+            # find the point along the beta axis
+            # that will "just" enclose the tip of the
+            # beta arm
+            r = self.collisionBuffer
+            dx = np.sqrt(r**2 + 0.3**2)
+            collisionSegBetaXY = [
+                [0, 0], # can probably creep this up along the beta arm?
+                [coordio.defaults.BETA_LEN - dx, 0]
+            ]
+
+        else:
+            # ensure it's listified
+            collisionSegBetaXY = [list(x) for x in collisionSegBetaXY]
+
+        return super().addRobot(
+            robotID, holeID, list(basePos), list(iHat), list(jHat),
+            list(kHat), list(dxyz), alphaLen, alphaOffDeg,
+            betaOffDeg, elementHeight, self.scaleFac, list(metBetaXY),
+            list(bossBetaXY), list(apBetaXY), collisionSegBetaXY,
+            hasApogee
+        )
+
+    def addFiducial(self, fiducialID, xyzWok, collisionBuffer=1.5):
+        return super().addFiducial(
+            fiducialID, list(xyzWok), collisionBuffer
+        )
 
     def plotRobotCore(self, ax=None, robotID=None, isCollided=False):
         """Basic plotting for a single robot
@@ -722,7 +765,108 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         return
 
 
-class RobotGridFilledHex(RobotGrid):
+# class RobotGridFilledHex(RobotGrid):
+#     """Filled hexagon grid class for robots in FPS
+
+#     Parameters:
+#     ----------
+
+#     stepSize : float, np.float32
+#         step size for paths (degrees), default 1.
+
+#     collisionBuffer : float, np.float32
+#         half-width of beta arm, including buffer (mm), default 2.0
+
+#     Attributes:
+#     ----------
+
+#     stepSize : float, np.float32
+#         step size for paths (degrees). A maximum perturbation allowed for either
+#         alpha or beta axes
+
+#     collisionBuffer : float, np.float32
+#         half-width of beta arm, including buffer (mm)
+
+#     epsilon : float
+#         smoothing parameter used in the RDP path simplification.  Smaller values
+#         mean smaller deviations from the rough path are allowed.
+
+#     seed : int
+#         seed for random number generator when used
+
+#     robotDict : dictionary of Robot class objects
+#         all robots
+
+#     nRobots : int
+#         number of robots
+
+#     fiducialDict : dictionary of Fiducial objects
+#         positions of fiducials
+
+#     targetDict : dictionary of Target class objects
+#         targets in field, with ID as keys
+
+#     smoothCollisions : int
+#         number of collisions detected after attempted path smoothing, should
+#         be zero when things work out
+
+#     didFail : bool
+#         path generation failed, not all robots reached target
+
+#     nSteps : int
+#         steps taken to
+
+# """
+#     def __init__(self, stepSize=1., collisionBuffer=2.0, seed=0):
+#         super().__init__(seed=seed, stepSize=stepSize, collisionBuffer=collisionBuffer)
+#         self._load_grid()
+#         return
+
+#     def _load_grid(self):
+#         """Load filled hex grid of robot locations"""
+#         gridFile = os.path.join(os.environ["KAIJU_DIR"], "etc",
+#                                 "fps_filledHex.txt")
+
+#         bossXY = []
+#         baXY = []
+#         fiducialXY = []
+#         with open(gridFile, "r") as f:
+#             lines = f.readlines()
+#         for line in lines:
+#             line = line.strip()
+#             line = line.split("#")[0]
+#             if not line:
+#                 continue
+#             row, col, x, y, fType = line.split()
+#             coords = [float(x), float(y)]
+#             if fType == "BA":
+#                 baXY.append(coords)
+#             elif fType == "BOSS":
+#                 bossXY.append(coords)
+#             else:
+#                 fiducialXY.append(coords)
+
+#         fiberID = 0
+#         fiducialID = 0
+#         hasApogee = False
+#         holeName = "none"
+#         for b in bossXY:
+#             self.addRobot(fiberID, holeName, b[0], b[1], hasApogee)
+#             fiberID += 1
+#         hasApogee = True
+#         for ba in baXY:
+#             self.addRobot(fiberID, holeName, ba[0], ba[1], hasApogee)
+#             fiberID += 1
+#         for fiducial in fiducialXY:
+#             self.addFiducial(fiducialID, fiducial[0], fiducial[1],
+#                              self.collisionBuffer)
+#             fiducialID += 1
+#         self.initGrid()
+
+#         return()
+
+
+class RobotGridAPO(RobotGrid):
     """Filled hexagon grid class for robots in FPS
 
     Parameters:
@@ -782,103 +926,6 @@ class RobotGridFilledHex(RobotGrid):
     def _load_grid(self):
         """Load filled hex grid of robot locations"""
         gridFile = os.path.join(os.environ["KAIJU_DIR"], "etc",
-                                "fps_filledHex.txt")
-
-        bossXY = []
-        baXY = []
-        fiducialXY = []
-        with open(gridFile, "r") as f:
-            lines = f.readlines()
-        for line in lines:
-            line = line.strip()
-            line = line.split("#")[0]
-            if not line:
-                continue
-            row, col, x, y, fType = line.split()
-            coords = [float(x), float(y)]
-            if fType == "BA":
-                baXY.append(coords)
-            elif fType == "BOSS":
-                bossXY.append(coords)
-            else:
-                fiducialXY.append(coords)
-
-        fiberID = 0
-        fiducialID = 0
-        hasApogee = False
-        holeName = "none"
-        for b in bossXY:
-            self.addRobot(fiberID, holeName, b[0], b[1], hasApogee)
-            fiberID += 1
-        hasApogee = True
-        for ba in baXY:
-            self.addRobot(fiberID, holeName, ba[0], ba[1], hasApogee)
-            fiberID += 1
-        for fiducial in fiducialXY:
-            self.addFiducial(fiducialID, fiducial[0], fiducial[1],
-                             self.collisionBuffer)
-            fiducialID += 1
-        self.initGrid()
-
-        return()
-
-
-class RobotGridAPO(RobotGridFilledHex):
-    """Filled hexagon grid class for robots in FPS
-
-    Parameters:
-    ----------
-
-    stepSize : float, np.float32
-        step size for paths (degrees), default 1.
-
-    collisionBuffer : float, np.float32
-        half-width of beta arm, including buffer (mm), default 2.0
-
-    Attributes:
-    ----------
-
-    stepSize : float, np.float32
-        step size for paths (degrees). A maximum perturbation allowed for either
-        alpha or beta axes
-
-    collisionBuffer : float, np.float32
-        half-width of beta arm, including buffer (mm)
-
-    epsilon : float
-        smoothing parameter used in the RDP path simplification.  Smaller values
-        mean smaller deviations from the rough path are allowed.
-
-    seed : int
-        seed for random number generator when used
-
-    robotDict : dictionary of Robot class objects
-        all robots
-
-    nRobots : int
-        number of robots
-
-    fiducialDict : dictionary of Fiducial objects
-        positions of fiducials
-
-    targetDict : dictionary of Target class objects
-        targets in field, with ID as keys
-
-    smoothCollisions : int
-        number of collisions detected after attempted path smoothing, should
-        be zero when things work out
-
-    didFail : bool
-        path generation failed, not all robots reached target
-
-    nSteps : int
-        steps taken to
-
-"""
-
-    def _load_grid(self):
-        """Load filled hex grid of robot locations"""
-        gridFile = os.path.join(os.environ["KAIJU_DIR"], "etc",
                                 "fps_DesignReference.txt")
 
 
@@ -903,13 +950,13 @@ class RobotGridAPO(RobotGridFilledHex):
             holeName = row + col
 
             if fType == "BA":
-                self.addRobot(robotID, holeName, float(x), float(y), hasApogee=True)
+                self.addRobot(robotID, holeName, [float(x), float(y), 0], hasApogee=True)
                 robotID += 1
             elif fType == "BOSS":
-                self.addRobot(robotID, holeName, float(x), float(y), hasApogee=False)
+                self.addRobot(robotID, holeName, [float(x), float(y), 0], hasApogee=False)
                 robotID += 1
             elif fType == "Fiducial":
-                self.addFiducial(fiducialID, float(x), float(y), self.collisionBuffer)
+                self.addFiducial(fiducialID, [float(x), float(y), coordio.defaults.POSITIONER_HEIGHT], self.collisionBuffer)
                 fiducialID += 1
             else:
                 # ignore other elements (like empty holes)
