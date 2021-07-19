@@ -2,6 +2,7 @@
 
 Changelog
 =========
+* **1.1.0**  Add coordio dependency, implement handling for calibration offsets.
 
 * **1.0.0**  Using Rick's new designReference file specifying locations of robots and fiducials.  Alpha zero modified to point the correct direction with respect to the hexagonal grid.
 
