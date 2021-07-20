@@ -22,9 +22,6 @@ def test_APO(plot=False):
         # if not r.onTargetVec[-1]:
         if r.score() > 0:
             deadlockedRobots.append(r.id)
-    if len(deadlockedRobots):
-        print("seed", seed, "failed with these", deadlockedRobots, "in ", rg.nSteps)
-        assert False
 
     if plot:
         utils.plotPaths(rg, downsample=downsample, filename="apoUpdate.mp4")
@@ -33,20 +30,24 @@ def test_APO(plot=False):
         ys = []
         types = []
         for r in rg.robotDict.values():
-            xs.append(r.xPos)
-            ys.append(r.yPos)
+            xs.append(r.basePos[0])
+            ys.append(r.basePos[1])
             if r.hasApogee:
                 types.append("BA")
             else:
                 types.append("BOSS")
 
         for f in rg.fiducialDict.values():
-            xs.append(f.x)
-            ys.append(f.y)
+            xs.append(f.xyzWok[0])
+            ys.append(f.xyzWok[1])
             types.append("Fiducial")
 
         sns.scatterplot(x=xs, y=ys, hue=types)
         plt.savefig("scatterAPO.png")
+
+    if len(deadlockedRobots):
+        print("seed", seed, "failed with these", deadlockedRobots, "in ", rg.nSteps)
+        assert False
 
 
 def test_LCO(plot=False):
@@ -64,9 +65,7 @@ def test_LCO(plot=False):
         # if not r.onTargetVec[-1]:
         if r.score() > 0:
             deadlockedRobots.append(r.id)
-    if len(deadlockedRobots):
-        print("seed", seed, "failed with these", deadlockedRobots, "in ", rg.nSteps)
-        assert False
+
 
     if plot:
         utils.plotPaths(rg, downsample=downsample, filename="lcoUpdate.mp4")
@@ -75,20 +74,24 @@ def test_LCO(plot=False):
         ys = []
         types = []
         for r in rg.robotDict.values():
-            xs.append(r.xPos)
-            ys.append(r.yPos)
+            xs.append(r.basePos[0])
+            ys.append(r.basePos[1])
             if r.hasApogee:
                 types.append("BA")
             else:
                 types.append("BOSS")
 
         for f in rg.fiducialDict.values():
-            xs.append(f.x)
-            ys.append(f.y)
+            xs.append(f.xyzWok[0])
+            ys.append(f.xyzWok[1])
             types.append("Fiducial")
 
         sns.scatterplot(x=xs, y=ys, hue=types)
         plt.savefig("scatterLCO.png")
+
+    if len(deadlockedRobots):
+        print("seed", seed, "failed with these", deadlockedRobots, "in ", rg.nSteps)
+        assert False
 
 
 if __name__ == "__main__":

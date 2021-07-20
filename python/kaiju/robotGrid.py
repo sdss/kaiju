@@ -17,13 +17,15 @@ from descartes import PolygonPatch
 from shapely.geometry import LineString, Point
 import seaborn as sns
 import coordio
+from coordio.defaults import positionerTable, wokCoords, fiducialCoords
+from coordio.defaults import IHAT, JHAT, KHAT
 
 
 # __all__ = ['RobotGrid', 'RobotGridFilledHex']
 # default orientation of positioner to wok
-iHat = [0,-1,0]
-jHat = [1,0,0]
-kHat = [0,0,1]
+# iHat = [0,-1,0]
+# jHat = [1,0,0]
+# kHat = [0,0,1]
 
 
 # Create look-up dictionary for types to strings conversion
@@ -32,6 +34,7 @@ str2FiberType = {'ApogeeFiber': kaiju.cKaiju.ApogeeFiber,
 fiberType2Str = dict()
 for k in str2FiberType.keys():
     fiberType2Str[str2FiberType[k]] = k
+
 
 class RobotGrid(kaiju.cKaiju.RobotGrid):
     """Basic python subclass of cKaiju.RobotGrid
@@ -100,12 +103,17 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         self.runtime = 0 # hack for now until
         super().__init__(self.stepSize, self.collisionBuffer,
                          self.epsilon, self.seed)
-        # self._load_grid()
+        self._load_grid()
         return
+
+    def _load_grid(self):
+        # subclasses may want to specify grid initialization here
+        # but they don't have to
+        pass
 
     def addRobot(self,
         robotID, holeID, basePos, hasApogee=True,
-        iHat=iHat, jHat=jHat, kHat=kHat,
+        iHat=IHAT, jHat=JHAT, kHat=KHAT,
         dxyz=[0,0,0], alphaLen=coordio.defaults.ALPHA_LEN, alphaOffDeg=0,
         betaOffDeg=0, elementHeight=coordio.defaults.POSITIONER_HEIGHT,
         metBetaXY=coordio.defaults.MET_BETA_XY,
@@ -117,12 +125,19 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         if collisionSegBetaXY is None:
             # find the point along the beta axis
             # that will "just" enclose the tip of the
-            # beta arm
+            # beta arm + some "cornerProtection"
+            tipFlat = 0.6  # mm, length of flat top beta arm
+            betaPost = 0.5  # mm, radius of beta post that can catch fibers
+            # how much space around tip to save, set to zero
+            # to allow "corner brushes"?
+            # cornerProtection = 0.3  # mm
+            cornerProtection = 0.2
             r = self.collisionBuffer
-            dx = np.sqrt(r**2 + 0.3**2)
+            dxTip = np.sqrt(r**2 + (tipFlat/2)**2) - cornerProtection
+            dxPost = r - betaPost
             collisionSegBetaXY = [
-                [0, 0], # can probably creep this up along the beta arm?
-                [coordio.defaults.BETA_LEN - dx, 0]
+                [dxPost, 0],  # beta shaft is 1mm diameter
+                [coordio.defaults.BETA_LEN - dxTip, 0]
             ]
 
         else:
@@ -875,9 +890,16 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
 
 #         return()
 
+class RobotGridCalib(RobotGrid):
+
+    def _load_grid(self):
+        pass
+
+
+
 
 class RobotGridAPO(RobotGrid):
-    """Filled hexagon grid class for robots in FPS
+    """APO grid class for robots in FPS
 
     Parameters:
     ----------
@@ -928,10 +950,6 @@ class RobotGridAPO(RobotGrid):
         steps taken to
 
 """
-    def __init__(self, stepSize=1., collisionBuffer=2.0, seed=0):
-        super().__init__(seed=seed, stepSize=stepSize, collisionBuffer=collisionBuffer)
-        self._load_grid()
-        return
 
     def _load_grid(self):
         """Load filled hex grid of robot locations"""
