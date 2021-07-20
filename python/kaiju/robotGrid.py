@@ -116,6 +116,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         pass
 
 
+
     def getRandomPathPair(self, betaSafe=False):
         """
         Get a random trajectory pair.
