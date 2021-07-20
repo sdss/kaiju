@@ -19,6 +19,7 @@ import seaborn as sns
 import coordio
 from coordio.defaults import positionerTable, wokCoords, fiducialCoords
 from coordio.defaults import IHAT, JHAT, KHAT
+import pandas as pd
 
 
 # __all__ = ['RobotGrid', 'RobotGridFilledHex']
@@ -91,6 +92,9 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
     def __init__(
         self, stepSize=1., collisionBuffer=2.0,
         epsilon=None, seed=0, scaleFac=1):
+
+        np.random.seed(0) # for seedifying stuff out here in python
+
         self.stepSize = stepSize
         self.scaleFac = scaleFac
         self.collisionBuffer = collisionBuffer
@@ -110,6 +114,118 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         # subclasses may want to specify grid initialization here
         # but they don't have to
         pass
+
+
+    def getRandomPathPair(self, betaSafe=False):
+        """
+        Get a random trajectory pair.
+
+        Parameters
+        -------------
+        betaSafe : bool
+            flag for keeping
+
+
+        Returns
+        ---------
+        forwardPath: dict
+            alpha/beta points for all robots, moving them from lattice state
+            to target state (aligned with sources).  The out path.
+
+        reversePath: dict
+            alpha/beta points for all robots, moving them from target state
+            to lattice state.  The back path.
+        """
+        betaSafeLim = 165  # 155 should be safe even.
+        for robot in self.robotDict.values():
+            if betaSafe:
+                alpha = np.random.uniform(0, 359.99)
+                beta = np.random.uniform(betaSafeLim, 180)
+                robot.setAlphaBeta(alpha, beta)
+            else:
+                robot.setXYUniform()
+            robot.setDestinationAlphaBeta(0, 180)
+        self.decollideGrid()
+        return self.getPathPair()
+
+    def getPathPair(self):
+        """
+        Get paths in format that jaeger expects.  No checking is done, so
+        whoever calls this should check things and decide what to do next.
+
+        Robots must be placed in the desired source orientation, and the
+        desination (lattice) alpha/betas must be specified.
+
+
+        Returns
+        ---------
+        forwardPath: dict
+            alpha/beta points for all robots, moving them from lattice state
+            to target state (aligned with sources).  The out path.
+
+        reversePath: dict
+            alpha/beta points for all robots, moving them from target state
+            to lattice state.  The back path.
+        """
+        # break out these parameters later
+        smoothPoints = 5
+        collisionShrink = 0.05 # mm
+        speed = 3 # rpm at output
+        pathDelay = 0.5 # seconds
+        ###########
+
+        cb = self.collisionBuffer
+        self.pathGenGreedy()
+        self.smoothPaths(smoothPoints)
+        self.simplifyPaths()
+        self.setCollisionBuffer(cb - collisionShrink)
+        self.verifySmoothed()
+        self.setCollisionBuffer(cb)
+
+        forwardPath = {}
+        reversePath = {}
+
+        for r in self.robotDict.values():
+
+            # bp = numpy.array(r.betaPath)
+            # sbp = numpy.array(r.interpSmoothBetaPath)
+            ibp = np.array(r.simplifiedBetaPath)
+
+            # ap = numpy.array(r.alphaPath)
+            # sap = numpy.array(r.interpSmoothAlphaPath)
+            iap = np.array(r.simplifiedAlphaPath)
+
+            # generate kaiju trajectory (for robot 23)
+            # time = angStep * stepNum / speed
+
+            alphaTimesR = iap[:, 0] * self.stepSize / (speed * 360 / 60.)
+            alphaDegR = iap[:, 1]
+            betaTimesR = ibp[:, 0] * self.stepSize / (speed * 360 / 60.)
+            betaDegR = ibp[:, 1]
+
+
+            # add time buffer for the reverse path, in case robot is
+            # not exactly starting from the expected stop.
+            armPathR = {}  # reverse path
+            armPathR["alpha"] = [(pos + r.alphaOffDeg, time + pathDelay) for pos, time in zip(alphaDegR, alphaTimesR)]
+            armPathR["beta"] = [(pos + r.betaOffDeg, time + pathDelay) for pos, time in zip(betaDegR, betaTimesR)]
+
+            reversePath[int(r.id)] = armPathR
+
+            # build forward path
+            alphaTimesF = np.abs(alphaTimesR - alphaTimesR[-1])[::-1]
+            alphaDegF = alphaDegR[::-1]
+            betaTimesF = np.abs(betaTimesR - betaTimesR[-1])[::-1]
+            betaDegF = betaDegR[::-1]
+
+            armPathF = {}
+            armPathF["alpha"] = [(pos + r.alphaOffDeg, time + pathDelay) for pos, time in zip(alphaDegF, alphaTimesF)]
+            armPathF["beta"] = [(pos + r.betaOffDeg, time + pathDelay) for pos, time in zip(betaDegF, betaTimesF)]
+
+
+            forwardPath[int(r.id)] = armPathF
+
+        return forwardPath, reversePath
 
     def addRobot(self,
         robotID, holeID, basePos, hasApogee=True,
@@ -790,112 +906,40 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         return
 
 
-# class RobotGridFilledHex(RobotGrid):
-#     """Filled hexagon grid class for robots in FPS
-
-#     Parameters:
-#     ----------
-
-#     stepSize : float, np.float32
-#         step size for paths (degrees), default 1.
-
-#     collisionBuffer : float, np.float32
-#         half-width of beta arm, including buffer (mm), default 2.0
-
-#     Attributes:
-#     ----------
-
-#     stepSize : float, np.float32
-#         step size for paths (degrees). A maximum perturbation allowed for either
-#         alpha or beta axes
-
-#     collisionBuffer : float, np.float32
-#         half-width of beta arm, including buffer (mm)
-
-#     epsilon : float
-#         smoothing parameter used in the RDP path simplification.  Smaller values
-#         mean smaller deviations from the rough path are allowed.
-
-#     seed : int
-#         seed for random number generator when used
-
-#     robotDict : dictionary of Robot class objects
-#         all robots
-
-#     nRobots : int
-#         number of robots
-
-#     fiducialDict : dictionary of Fiducial objects
-#         positions of fiducials
-
-#     targetDict : dictionary of Target class objects
-#         targets in field, with ID as keys
-
-#     smoothCollisions : int
-#         number of collisions detected after attempted path smoothing, should
-#         be zero when things work out
-
-#     didFail : bool
-#         path generation failed, not all robots reached target
-
-#     nSteps : int
-#         steps taken to
-
-# """
-#     def __init__(self, stepSize=1., collisionBuffer=2.0, seed=0):
-#         super().__init__(seed=seed, stepSize=stepSize, collisionBuffer=collisionBuffer)
-#         self._load_grid()
-#         return
-
-#     def _load_grid(self):
-#         """Load filled hex grid of robot locations"""
-#         gridFile = os.path.join(os.environ["KAIJU_DIR"], "etc",
-#                                 "fps_filledHex.txt")
-
-#         bossXY = []
-#         baXY = []
-#         fiducialXY = []
-#         with open(gridFile, "r") as f:
-#             lines = f.readlines()
-#         for line in lines:
-#             line = line.strip()
-#             line = line.split("#")[0]
-#             if not line:
-#                 continue
-#             row, col, x, y, fType = line.split()
-#             coords = [float(x), float(y)]
-#             if fType == "BA":
-#                 baXY.append(coords)
-#             elif fType == "BOSS":
-#                 bossXY.append(coords)
-#             else:
-#                 fiducialXY.append(coords)
-
-#         fiberID = 0
-#         fiducialID = 0
-#         hasApogee = False
-#         holeName = "none"
-#         for b in bossXY:
-#             self.addRobot(fiberID, holeName, b[0], b[1], hasApogee)
-#             fiberID += 1
-#         hasApogee = True
-#         for ba in baXY:
-#             self.addRobot(fiberID, holeName, ba[0], ba[1], hasApogee)
-#             fiberID += 1
-#         for fiducial in fiducialXY:
-#             self.addFiducial(fiducialID, fiducial[0], fiducial[1],
-#                              self.collisionBuffer)
-#             fiducialID += 1
-#         self.initGrid()
-
-#         return()
-
 class RobotGridCalib(RobotGrid):
 
     def _load_grid(self):
-        pass
 
+        df = pd.merge(positionerTable, wokCoords, on="holeID").reset_index()
 
+        for ii, row in df.iterrows():
+            self.addRobot(
+                robotID=row.positionerID,
+                holeID=row.holeID,
+                basePos=[row.xWok, row.yWok, row.zWok],
+                hasApogee=bool("Apogee" in row.holeType),
+                iHat=[row.ix, row.iy, row.iz],
+                jHat=[row.jx, row.jy, row.jz],
+                kHat=[row.kx, row.ky, row.kz],
+                dxyz=[row.dx, row.dy, 0],
+                alphaLen=row.alphaArmLen,
+                alphaOffDeg=row.alphaOffset,
+                betaOffDeg=row.betaOffset,
+                elementHeight=coordio.defaults.POSITIONER_HEIGHT,
+                metBetaXY=[row.metX, row.metY],
+                bossBetaXY=[row.bossX, row.bossY],
+                apBetaXY=[row.apX, row.apY],
+                collisionSegBetaXY=None
+            )
+
+        for ii, row in fiducialCoords.iterrows():
+            self.addFiducial(
+                fiducialID=int(row.id.strip("F")),
+                xyzWok=[row.xWok, row.yWok, row.zWok],
+                collisionBuffer=1.5
+            )
+
+        self.initGrid()
 
 
 class RobotGridAPO(RobotGrid):

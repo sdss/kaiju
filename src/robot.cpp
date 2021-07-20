@@ -230,9 +230,14 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
     beta = newBeta;
     vec2 alphaBeta = {newAlpha, newBeta};
 
+    // note we apply the offsets in the commands to the
+    // positioners, not here...
+    double alphaOffNull = 0;
+    double betaOffNull = 0;
+
     // metrology fiber
     tmp2 = positionerToTangent(
-        alphaBeta, metBetaXY, alphaLen, alphaOffDeg, betaOffDeg
+        alphaBeta, metBetaXY, alphaLen, alphaOffNull, betaOffNull
     );
     tmp3 = {tmp2[0], tmp2[1], 0};
     metWokXYZ = tangentToWok(
@@ -242,7 +247,7 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
 
     // boss fiber
     tmp2 = positionerToTangent(
-        alphaBeta, bossBetaXY, alphaLen, alphaOffDeg, betaOffDeg
+        alphaBeta, bossBetaXY, alphaLen, alphaOffNull, betaOffNull
     );
     tmp3 = {tmp2[0], tmp2[1], 0};
     bossWokXYZ = tangentToWok(
@@ -252,7 +257,7 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
 
     // apogee fiber
     tmp2 = positionerToTangent(
-        alphaBeta, apBetaXY, alphaLen, alphaOffDeg, betaOffDeg
+        alphaBeta, apBetaXY, alphaLen, alphaOffNull, betaOffNull
     );
     tmp3 = {tmp2[0], tmp2[1], 0};
     apWokXYZ = tangentToWok(
@@ -262,7 +267,7 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
 
     // collision segment
     tmp2 = positionerToTangent(
-        alphaBeta, collisionSegBetaXY[0], alphaLen, alphaOffDeg, betaOffDeg
+        alphaBeta, collisionSegBetaXY[0], alphaLen, alphaOffNull, betaOffNull
     );
     tmp3 = {tmp2[0], tmp2[1], 0};
     collisionSegWokXYZ[0] = tangentToWok(
@@ -271,7 +276,7 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
     );
 
     tmp2 = positionerToTangent(
-        alphaBeta, collisionSegBetaXY[1], alphaLen, alphaOffDeg, betaOffDeg
+        alphaBeta, collisionSegBetaXY[1], alphaLen, alphaOffNull, betaOffNull
     );
     tmp3 = {tmp2[0], tmp2[1], 0};
     collisionSegWokXYZ[1] = tangentToWok(
@@ -292,15 +297,21 @@ void Robot::setXYUniform(){
     xyTangent = sampleAnnulus(minReach, maxReach);
     // use a science fiber ID (matches min/max reach)
     // std::cout.precision(20);
+
+    // note we apply the offsets in the commands to the
+    // positioners, not here...
+    double alphaOffNull = 0;
+    double betaOffNull = 0;
+
     ab = tangentToPositioner(
-        xyTangent, metBetaXY, alphaLen, alphaOffDeg, betaOffDeg
+        xyTangent, metBetaXY, alphaLen, alphaOffNull, betaOffNull
     );
 
     while (std::isnan(ab[0]) or std::isnan(ab[1])){
         xyTangent = sampleAnnulus(minReach, maxReach);
         // use a science fiber ID (matches min/max reach)
         ab = tangentToPositioner(
-            xyTangent, metBetaXY, alphaLen, alphaOffDeg, betaOffDeg
+            xyTangent, metBetaXY, alphaLen, alphaOffNull, betaOffNull
         );
     }
 

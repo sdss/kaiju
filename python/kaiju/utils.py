@@ -136,7 +136,7 @@ def plotPaths(robotGrid, downsample=None, filename=None):
     # figure out how to downsample paths
     global rg
     rg = robotGrid
-    steps = list(range(len(robotGrid.robotDict[1].alphaPath))) # not sure why rg.nSteps is broken
+    steps = list(range(robotGrid.nSteps)) # not sure why rg.nSteps is broken
     if downsample is not None:
         steps = steps[::downsample] + [steps[-1]]
 
