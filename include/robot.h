@@ -6,8 +6,8 @@
 #include <list>
 #include <array>
 #include <map>
-#include <Eigen/Dense>
-#include <Eigen/Geometry>
+// #include <Eigen/Dense>
+// #include <Eigen/Geometry>
 #include "target.h" // has FiberType
 
 // extern const double alphaLen;
