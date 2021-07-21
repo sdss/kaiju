@@ -6,6 +6,7 @@
 #include <list>
 #include <array>
 #include <map>
+#include <algorithm>
 // #include <Eigen/Dense>
 // #include <Eigen/Geometry>
 #include "target.h" // has FiberType
