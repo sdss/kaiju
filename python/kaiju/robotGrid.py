@@ -115,14 +115,18 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         # but they don't have to
         pass
 
-    def getRandomPathPair(self, betaSafe=False):
+    def getRandomPathPair(self, alphaHome=0, betaHome=180, betaSafe=False):
         """
         Get a random trajectory pair.
 
         Parameters
         -------------
+        alphaHome : float
+            degrees for alpha axis lattice/home state
+        betaHome : float
+            degrees for beta axis lattice/home state
         betaSafe : bool
-            flag for keeping
+            flag for making collisions impossible
 
 
         Returns
@@ -143,7 +147,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
                 robot.setAlphaBeta(alpha, beta)
             else:
                 robot.setXYUniform()
-            robot.setDestinationAlphaBeta(0, 180)
+            robot.setDestinationAlphaBeta(alphaHome, betaHome)
         self.decollideGrid()
         return self.getPathPair()
 
