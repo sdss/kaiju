@@ -94,6 +94,9 @@ public:
     void stepGreedy(std::shared_ptr<Robot> r1, int stepNum);
     void stepMDP(std::shared_ptr<Robot> r1, int stepNum);
     void stepBeta(std::shared_ptr<Robot> r1, int stepNum);
+    void stepDecollide(std::shared_ptr<Robot>, int stepNum);
+    double minCollideDist(int robotID);
+    void pathGenEscape(double deg2move);
     // double closestApproach2(int robotID); // squared distance to closest neighbor
     // void smoothPath(std::shared_ptr<Robot> robot, double epsilon);
 };

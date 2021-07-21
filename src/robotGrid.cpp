@@ -348,6 +348,32 @@ void RobotGrid::pathGenGreedy(){
     nSteps = ii+1;
 }
 
+void RobotGrid::pathGenEscape(double deg2move){
+    // first prioritize robots based on their alpha positions
+    // robots closest to alpha = 0 are at highest risk with extended
+    // betas for getting locked, so try to move those first
+    // int pathPad = 20 / (float)angStep;
+    clearPaths();
+    int ii;
+    double steps2move = deg2move / angStep;
+    for (ii=0; ii<steps2move; ii++){
+
+        for (auto rPair : robotDict){
+            auto r = rPair.second;
+            // std::cout << "path gen " << r.betaOrientation.size() << " " << r.betaModel.size() << std::endl;
+            // std::cout << "alpha beta " << r.alpha << " " << r.beta << std::endl;
+            stepDecollide(r, ii);
+        }
+
+        // if (getNCollisions()==0){
+        //     break;
+        // }
+    }
+
+    nSteps = ii;
+}
+
+
 
 // void RobotGrid::pathGen(){
 //     // first prioritize robots based on their alpha positions
@@ -783,6 +809,122 @@ std::vector<int> RobotGrid::deadlockedRobots(){
         }
     }
     return deadlockedRobotIDs;
+}
+
+void RobotGrid::stepDecollide(std::shared_ptr<Robot> robot, int stepNum){
+    double currAlpha = robot->alpha;
+    double currBeta = robot->beta;
+    vec2 alphaPathPoint;
+    vec2 betaPathPoint;
+    vec2 temp;
+    alphaPathPoint[0] = stepNum;
+    betaPathPoint[0] = stepNum;
+
+
+    double maxDist = -1e9; // to be maximized
+    double bestAlpha = 0;  // solved in loop
+    double bestBeta = 0;
+    // this is for keeping track of last step
+    // only updates if robot hasn't reached fold
+    robot->lastStepNum = stepNum;
+
+
+    for (auto dAlphaBeta : perturbArray){
+        double nextAlpha = currAlpha + dAlphaBeta[0];
+        double nextBeta = currBeta + dAlphaBeta[1];
+        if (nextAlpha > 360){
+            nextAlpha = 360;
+        }
+        if (nextAlpha < 0){
+            nextAlpha = 0;
+        }
+        if (nextBeta > 180){
+            nextBeta = 180;
+        }
+        if (nextBeta < 0){
+            nextBeta = 0;
+        }
+        // if next choice results in no move skip it
+        // always favor a move
+
+        robot->setAlphaBeta(nextAlpha, nextBeta);
+
+        auto collideDist = minCollideDist(robot->id);
+        if (collideDist > maxDist){
+            maxDist = collideDist;
+            bestAlpha = nextAlpha;
+            bestBeta = nextBeta;
+        }
+    }
+
+
+    robot->setAlphaBeta(bestAlpha, bestBeta);
+    alphaPathPoint[1] = bestAlpha;
+    betaPathPoint[1] = bestBeta;
+    robot->alphaPath.push_back(alphaPathPoint);
+    robot->betaPath.push_back(betaPathPoint);
+
+    // add alpha/beta xy points
+
+    temp[0] = stepNum;
+    // std::cout << "beta orientation size: " << betaOrientation.size() << std::endl;
+    // std::cout << "beta model size: " << betaModel.size() << std::endl;
+    temp[1] = robot->collisionSegWokXYZ[0][0]; // xAlphaEnd
+    // std::cout << "step toward fold " << ii << std::endl;
+
+    robot->roughAlphaX.push_back(temp);
+
+    temp[1] = robot->collisionSegWokXYZ[0][1]; // yAlphaEnd
+    robot->roughAlphaY.push_back(temp);
+    temp[1] = robot->collisionSegWokXYZ.back()[0]; // xBetaEnd
+    robot->roughBetaX.push_back(temp);
+    temp[1] = robot->collisionSegWokXYZ.back()[1]; // yBetaEnd
+    robot->roughBetaY.push_back(temp);
+
+    return;
+}
+
+double RobotGrid::minCollideDist(int robotID){
+
+    // so scope really fucked me on this one?
+    // lots of returns fixed it.
+    double dist2, collideDist2;
+    // check collisions with neighboring robots
+    double minDist = 1e9;  // to be minimized
+    auto robot1 = robotDict[robotID];
+
+
+    // search through robot neighbors for min dist
+    // std::cout << "robot max displace " << maxDisplacement << std::endl;
+    for (auto otherRobotID : robot1->robotNeighbors){
+        auto robot2 = robotDict[otherRobotID];
+        // squared distance returned
+        dist2 = dist3D_Segment_to_Segment(
+                robot2->collisionSegWokXYZ[0], robot2->collisionSegWokXYZ[1],
+                robot1->collisionSegWokXYZ[0], robot1->collisionSegWokXYZ[1]
+            );
+
+        if (dist2 < minDist){
+            minDist = dist2;
+        }
+    }
+
+    for (auto fiducialID : robot1->fiducialNeighbors){
+        auto fiducial = fiducialDict[fiducialID];
+        // squared distance
+        // std::array<double, 2> xyCoord = {fiducial->x, fiducial->y};
+        // vec3 xyzCoord = {fiducial->x, fiducial->y, focalZ};
+        dist2 = dist3D_Point_to_Segment(
+                fiducial->xyzWok, robot1->collisionSegWokXYZ[0],
+                robot1->collisionSegWokXYZ[1]
+                );
+        if (dist2 < minDist){
+            minDist = dist2;
+        }
+
+
+    }
+    return minDist;
 }
 
 void RobotGrid::stepGreedy(std::shared_ptr<Robot> robot, int stepNum){

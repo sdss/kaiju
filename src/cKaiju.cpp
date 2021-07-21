@@ -164,6 +164,7 @@ PYBIND11_MODULE(cKaiju, m) {
         // .def("pathGen", &RobotGrid::pathGen)
         .def("pathGenGreedy", &RobotGrid::pathGenGreedy)
         .def("pathGenMDP", &RobotGrid::pathGenMDP)
+        .def("pathGenEscape", &RobotGrid::pathGenEscape)
         // .def("setTargetList", &RobotGrid::setTargetList)
         // .def("addTargetList", &RobotGrid::addTargetList)
         .def("targetlessRobots", &RobotGrid::targetlessRobots)
