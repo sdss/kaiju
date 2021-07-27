@@ -771,8 +771,19 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         fp.write(self.json())
         fp.close()
 
-        fp = open(os.path.join(os.getenv('KAIJU_DIR'), 'etc',
-                               'robotGrid.html'), "r")
+        _htmlPath = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "etc",
+            "robotGrid.html"
+        )
+
+        # fp = open(os.path.join(os.getenv('KAIJU_DIR'), 'etc',
+        #                        'robotGrid.html'), "r")
+
+        fp = open(_htmlPath, "r")
+
         html_str = ''
         for l in fp.readlines():
             l = l.replace("fieldfile", "'" + os.path.basename(fieldfile) + "'")
