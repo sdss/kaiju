@@ -28,6 +28,9 @@ import pandas as pd
 # jHat = [1,0,0]
 # kHat = [0,0,1]
 
+KAIJU_ETC_DIR = os.path.join(
+    os.path.dirname(__file__), "..", "..", "etc"
+)
 
 # Create look-up dictionary for types to strings conversion
 str2FiberType = {'ApogeeFiber': kaiju.cKaiju.ApogeeFiber,
@@ -771,18 +774,18 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         fp.write(self.json())
         fp.close()
 
-        _htmlPath = os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            "..",
-            "etc",
-            "robotGrid.html"
-        )
+        # _htmlPath = os.path.join(
+        #     os.path.dirname(__file__),
+        #     "..",
+        #     "..",
+        #     "etc",
+        #     "robotGrid.html"
+        # )
 
         # fp = open(os.path.join(os.getenv('KAIJU_DIR'), 'etc',
         #                        'robotGrid.html'), "r")
 
-        fp = open(_htmlPath, "r")
+        fp = open(os.path.join(KAIJU_ETC_DIR, "robotGrid.html"), "r")
 
         html_str = ''
         for l in fp.readlines():
@@ -794,8 +797,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         fp.write(html_str)
         fp.close()
 
-        fp = open(os.path.join(os.getenv('KAIJU_DIR'), 'etc',
-                               'robotGrid.js'), "r")
+        fp = open(os.path.join(KAIJU_ETC_DIR, 'robotGrid.js'), "r")
         js_str = ''
         for l in fp.readlines():
             js_str = js_str + l
@@ -1011,8 +1013,7 @@ class RobotGridAPO(RobotGrid):
 
     def _load_grid(self):
         """Load filled hex grid of robot locations"""
-        gridFile = os.path.join(os.environ["KAIJU_DIR"], "etc",
-                                "fps_DesignReference.txt")
+        gridFile = os.path.join(KAIJU_ETC_DIR, "fps_DesignReference.txt")
 
 
         robotID = 1
