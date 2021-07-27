@@ -115,14 +115,14 @@ print("found packages", packages)
 runSetup(packages, requirements)
 
 
-if sys.argv[-1] == "build":
-    buildDir = glob.glob("build/lib*")[0]
-    soFile = glob.glob(buildDir + "/kaiju/cKaiju*so")[0]
-    base, filename = os.path.split(soFile)
-    dest = "python/kaiju/%s"%filename
-    copyfile(soFile, dest)
-    mode = os.stat(dest).st_mode
-    mode |= (mode & 0o444) >> 2
-    os.chmod(dest, mode)
+#if sys.argv[-1] == "build":
+buildDir = glob.glob("build/lib*")[0]
+soFile = glob.glob(buildDir + "/kaiju/cKaiju*so")[0]
+base, filename = os.path.split(soFile)
+dest = "python/kaiju/%s"%filename
+copyfile(soFile, dest)
+mode = os.stat(dest).st_mode
+mode |= (mode & 0o444) >> 2
+os.chmod(dest, mode)
 
 
