@@ -152,6 +152,7 @@ Robot::Robot(
     yPos = basePos[1];
     minReach = metBetaXY[0] - alphaLen; // close enough
     maxReach = metBetaXY[0] + alphaLen;
+    betaLen = collisionSegBetaXY[1][0];
 
     // transXY = Eigen::Vector3d(xPos, yPos, 0);
     // id = myid;

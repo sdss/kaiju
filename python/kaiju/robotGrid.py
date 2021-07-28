@@ -952,7 +952,7 @@ class RobotGridCalib(RobotGrid):
             self.addFiducial(
                 fiducialID=int(row.id.strip("F")),
                 xyzWok=[row.xWok, row.yWok, row.zWok],
-                collisionBuffer=1.5
+                collisionBuffer=10
             )
 
         self.initGrid()

@@ -116,7 +116,7 @@ void RobotGrid::addFiducial(int fiducialID, vec3 xyzWok, double collisionBuffer)
 
 void RobotGrid::initGrid(){
     // associate neighbors with fiducials and robots in grid
-    double dx, dy, dist;
+    double dx, dy, dist, minSep;
     if (initialized){
         throw std::runtime_error("RobotGrid is already initialized, don't do it twice!");
     }
@@ -131,7 +131,8 @@ void RobotGrid::initGrid(){
             dx = r1->xPos - fiducial->x;
             dy = r1->yPos - fiducial->y;
             dist = hypot(dx, dy);
-            if (dist < pitchRough+1) { // +1 for numerical buffer
+            minSep = r1->alphaLen + r1->betaLen + r1->collisionBuffer + fiducial->collisionBuffer;
+            if (dist < minSep) {
                 // std::cout << "add fiducial " << dist << std::endl;
                 r1->addFiducialNeighbor(fiducial->id);
             }
@@ -149,7 +150,9 @@ void RobotGrid::initGrid(){
             dx = r1->xPos - r2->xPos;
             dy = r1->yPos - r2->yPos;
             dist = hypot(dx, dy);
-            if (dist < (2*pitchRough+1)){ //+1 for numerical buffer
+            minSep = r1->alphaLen + r1->betaLen + r1->collisionBuffer +
+                     r2->alphaLen + r2->betaLen + r2->collisionBuffer;
+            if (dist < minSep){
                 // these robots are neighbors
                 r1->addRobotNeighbor(r2->id);
             }

@@ -52,6 +52,8 @@ public:
     vec3 kHat;
     vec3 dxyz;
     double alphaLen;
+    //distance from alpha axis to end of beta collision segment
+    double betaLen;
     double alphaOffDeg;
     double betaOffDeg;
     double elementHeight;

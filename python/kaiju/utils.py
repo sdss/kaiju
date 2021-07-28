@@ -115,7 +115,7 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
         patch = PolygonPatch(topCollideLine, fc=topcolor, ec=edgecolor, alpha=0.5, zorder=10)
         ax.add_patch(patch)
     for fiducialID, fiducial in rg.fiducialDict.items():
-        fPoint = Point(fiducial.xyzWok[0], fiducial.xyzWok[1]).buffer(fiducial.collisionBuffer, cap_style=1)
+        fPoint = Point(fiducial.xyzWok[0], fiducial.xyzWok[1]).buffer(fiducial.collisionBuffer) #, cap_style=1)
         patch = PolygonPatch(fPoint, fc="cyan", ec="black", alpha=0.8, zorder=10)
         ax.add_patch(patch)
 
