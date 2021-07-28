@@ -9,7 +9,7 @@
 // define constants
 // const double betaCollisionRadius = 1.5; // mm (3mm wide)
 
-const double pitchRough = 22.4; // distance to next nearest neighbor
+// const double pitchRough = 22.4; // distance to next nearest neighbor
 const double alphaLenRough = 7.4;
 const double betaLenRough = 15;
 
@@ -1002,8 +1002,8 @@ void RobotGrid::stepGreedy(std::shared_ptr<Robot> robot, int stepNum){
         if (nextAlpha < 0){
             nextAlpha = 0;
         }
-        if (nextBeta > 180){
-            nextBeta = 180;
+        if (nextBeta > 360){
+            nextBeta = 360;
         }
         if (nextBeta < 0){
             nextBeta = 0;
@@ -1134,8 +1134,8 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
         if (nextAlpha < 0){
             nextAlpha = 0;
         }
-        if (nextBeta > 180){
-            nextBeta = 180;
+        if (nextBeta > 360){
+            nextBeta = 360;
         }
         if (nextBeta < 0){
             nextBeta = 0;

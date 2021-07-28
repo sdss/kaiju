@@ -118,7 +118,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         # but they don't have to
         pass
 
-    def getRandomPathPair(self, alphaHome=0, betaHome=180, betaSafe=False):
+    def getRandomPathPair(self, alphaHome=0, betaHome=180, betaLim=None):
         """
         Get a random trajectory pair.
 
@@ -128,7 +128,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
             degrees for alpha axis lattice/home state
         betaHome : float
             degrees for beta axis lattice/home state
-        betaSafe : bool
+        betaLim : None, or [minBeta, maxBeta]  must be safe
             flag for making collisions impossible
 
 
@@ -142,16 +142,20 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
             alpha/beta points for all robots, moving them from target state
             to lattice state.  The back path.
         """
-        betaSafeLim = 165  # 155 should be safe even.
+        # betaSafeLim = 165  # 155 should be safe even.
         for robot in self.robotDict.values():
-            if betaSafe:
+            if betaLim is not None:
                 alpha = np.random.uniform(0, 359.99)
-                beta = np.random.uniform(betaSafeLim, 180)
+                beta = np.random.uniform(betaLim[0], betaLim[1])
                 robot.setAlphaBeta(alpha, beta)
             else:
                 robot.setXYUniform()
             robot.setDestinationAlphaBeta(alphaHome, betaHome)
-        self.decollideGrid()
+
+        if betaLim is not None and self.getNCollisions() > 0:
+            raise RuntimeError("betaLim specified, but collisions present")
+        else:
+            self.decollideGrid()
         return self.getPathPair()
 
     def getPathPair(self):
@@ -952,7 +956,7 @@ class RobotGridCalib(RobotGrid):
             self.addFiducial(
                 fiducialID=int(row.id.strip("F")),
                 xyzWok=[row.xWok, row.yWok, row.zWok],
-                collisionBuffer=10
+                collisionBuffer=2
             )
 
         self.initGrid()
