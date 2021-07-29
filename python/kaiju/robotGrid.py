@@ -217,8 +217,8 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
             # add time buffer for the reverse path, in case robot is
             # not exactly starting from the expected stop.
             armPathR = {}  # reverse path
-            armPathR["alpha"] = [(pos + r.alphaOffDeg, time + pathDelay) for pos, time in zip(alphaDegR, alphaTimesR)]
-            armPathR["beta"] = [(pos + r.betaOffDeg, time + pathDelay) for pos, time in zip(betaDegR, betaTimesR)]
+            armPathR["alpha"] = [(pos, time + pathDelay) for pos, time in zip(alphaDegR, alphaTimesR)]
+            armPathR["beta"] = [(pos, time + pathDelay) for pos, time in zip(betaDegR, betaTimesR)]
 
             reversePath[int(r.id)] = armPathR
 
@@ -229,8 +229,8 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
             betaDegF = betaDegR[::-1]
 
             armPathF = {}
-            armPathF["alpha"] = [(pos + r.alphaOffDeg, time + pathDelay) for pos, time in zip(alphaDegF, alphaTimesF)]
-            armPathF["beta"] = [(pos + r.betaOffDeg, time + pathDelay) for pos, time in zip(betaDegF, betaTimesF)]
+            armPathF["alpha"] = [(pos, time + pathDelay) for pos, time in zip(alphaDegF, alphaTimesF)]
+            armPathF["beta"] = [(pos, time + pathDelay) for pos, time in zip(betaDegF, betaTimesF)]
 
 
             forwardPath[int(r.id)] = armPathF
