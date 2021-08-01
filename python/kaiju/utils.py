@@ -112,6 +112,8 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
             topcolor = "red"
         if highlightRobot == robotID:
             topcolor = "orange"
+        if robot.isOffline:
+            topcolor = "black"
         patch = PolygonPatch(topCollideLine, fc=topcolor, ec=edgecolor, alpha=0.5, zorder=10)
         ax.add_patch(patch)
     for fiducialID, fiducial in rg.fiducialDict.items():

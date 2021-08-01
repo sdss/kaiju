@@ -35,6 +35,7 @@ public:
     bool hasApogee;
     bool hasBoss;
     bool nudge = false;
+    bool isOffline = false;
     double xPos, yPos, alpha, beta, destinationAlpha, destinationBeta; //, targetX, targetY;
     double angStep, minReach, maxReach;
     double collisionBuffer = 0;

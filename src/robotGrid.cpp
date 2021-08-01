@@ -184,6 +184,10 @@ void RobotGrid::decollideGrid(){
 
         for (auto rPair : robotDict){
             auto robotID = rPair.first;
+            // if robot is offline, don't try to decollide
+            if (rPair.second->isOffline){
+                continue;
+            }
             if (isCollided(robotID)){
                 decollideRobot(robotID);
             }
@@ -639,6 +643,10 @@ bool RobotGrid::neighborEncroachment(std::shared_ptr<Robot> robot1){
     double minDist = 2*collisionBuffer + 3*maxDisplacement;
 
     // std::cout << "check ne! " << std::endl;
+    // turn off neighbor encroachment if robot is disables
+    if (robot1->isOffline){
+        return false;
+    }
 
     // check collisions with neighboring robots
     for (auto otherRobotID : robot1->robotNeighbors){

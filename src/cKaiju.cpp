@@ -51,6 +51,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("alpha", &Robot::alpha, R"pbdoc(
             Robot's alpha position (degrees).
             )pbdoc")
+        .def_readwrite("isOffline", &Robot::isOffline)
         .def_readwrite("robotNeighbors", &Robot::robotNeighbors)
         .def_readwrite("scoreVec", &Robot::scoreVec)
         .def_readwrite("fiducialNeighbors", &Robot::fiducialNeighbors)

@@ -193,6 +193,10 @@ void Robot::setFiberToWokXYZ(vec3 wokXYZ, FiberType fiberID){
 }
 
 double Robot::score(){
+    // if robot is offline, force score to always be zero
+    if (isOffline){
+        return 0;
+    }
     double alphaDist = alpha - destinationAlpha;
     double betaDist = beta - destinationBeta;
     return alphaDist*alphaDist + betaDist*betaDist;
