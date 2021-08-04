@@ -144,13 +144,16 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         """
         # betaSafeLim = 165  # 155 should be safe even.
         for robot in self.robotDict.values():
+            robot.setDestinationAlphaBeta(alphaHome, betaHome)
+            if robot.isOffline:
+                continue
             if betaLim is not None:
                 alpha = np.random.uniform(0, 359.99)
                 beta = np.random.uniform(betaLim[0], betaLim[1])
                 robot.setAlphaBeta(alpha, beta)
             else:
                 robot.setXYUniform()
-            robot.setDestinationAlphaBeta(alphaHome, betaHome)
+
 
         if betaLim is not None and self.getNCollisions() > 0:
             raise RuntimeError("betaLim specified, but collisions present")
@@ -180,12 +183,13 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         # break out these parameters later
         smoothPoints = 5
         collisionShrink = 0.05 # mm
-        speed = 3 # rpm at output
-        pathDelay = 0.5 # seconds
+        speed = 2 # rpm at output
+        pathDelay = 1 # seconds
         ###########
 
         cb = self.collisionBuffer
         self.pathGenGreedy()
+        # self.pathGenMDP(0.8, 0.2)
         self.smoothPaths(smoothPoints)
         self.simplifyPaths()
         self.setCollisionBuffer(cb - collisionShrink)
@@ -196,6 +200,10 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         reversePath = {}
 
         for r in self.robotDict.values():
+
+            # if robot is offline, don't get a path for it
+            if r.isOffline:
+                continue
 
             # bp = numpy.array(r.betaPath)
             # sbp = numpy.array(r.interpSmoothBetaPath)
