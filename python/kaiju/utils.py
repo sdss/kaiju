@@ -8,6 +8,7 @@ from subprocess import Popen
 import glob
 import os
 from .cKaiju import RobotGrid
+import coordio
 
 matplotlib.use('Agg')
 
@@ -76,10 +77,28 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
     maxX = 0
     maxY = 0
     for robotID, robot in rg.robotDict.items():
-        if robot.basePos[0] > maxX:
-            maxX = robot.basePos[0]
-        if robot.basePos[1] > maxY:
-            maxY = robot.basePos[1]
+        # account for xy calibration offsets in base
+        # pos of robot in wok space
+        wokBase = coordio.libcoordio.tangentToWok(
+            [0,0,0],
+            robot.basePos,
+            robot.iHat,
+            robot.jHat,
+            robot.kHat,
+            robot.elementHeight,
+            robot.scaleFac,
+            robot.dxyz[0],
+            robot.dxyz[1],
+            robot.dxyz[2]
+        )
+
+        basePos = wokBase[:-1]
+        # basePos = robot.basePos
+
+        if basePos[0] > maxX:
+            maxX = basePos[0]
+        if basePos[1] > maxY:
+            maxY = basePos[1]
         if isSequence:
             alphaX = robot.roughAlphaX[step][1]
             alphaY = robot.roughAlphaY[step][1]
@@ -96,7 +115,7 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
             betaX = betaPoint[0]
             betaY = betaPoint[1]
             onTarget = robot.score() == 0
-        plt.plot([robot.basePos[0], alphaX], [robot.basePos[1], alphaY], color='black', linewidth=2, alpha=0.5)
+        plt.plot([basePos[0], alphaX], [basePos[1], alphaY], color='black', linewidth=2, alpha=0.5)
 
         topCollideLine = LineString(
             [(alphaX, alphaY), (betaX, betaY)]
@@ -140,7 +159,10 @@ def plotPaths(robotGrid, downsample=None, filename=None):
     rg = robotGrid
     steps = list(range(robotGrid.nSteps)) # not sure why rg.nSteps is broken
     if downsample is not None:
-        steps = steps[::downsample] + [steps[-1]]
+        steps = steps[::downsample] #+ [steps[-1]]
+        # throwout last step, sometimes is out of range index depending
+        # on which downsample was selected
+        steps = steps[:-1]
 
 
     figs = list(range(len(steps)))
@@ -150,6 +172,10 @@ def plotPaths(robotGrid, downsample=None, filename=None):
 
     p = Pool(cpu_count())
     p.map(plotOne, stepfigs)
+
+    # for stepFig in stepfigs:
+    #     print("stepfig", stepFig)
+    #     plotOne(stepFig)
 
     fps = 30 # frames per second
     if filename is None:

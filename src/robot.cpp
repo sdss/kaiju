@@ -136,13 +136,14 @@ Robot::Robot(
     int id, std::string holeID, vec3 basePos, vec3 iHat, vec3 jHat, vec3 kHat,
     vec3 dxyz, double alphaLen, double alphaOffDeg, double betaOffDeg,
     double elementHeight, double scaleFac, vec2 metBetaXY, vec2 bossBetaXY, vec2 apBetaXY,
-    std::array<vec2, 2> collisionSegBetaXY, double angStep, bool hasApogee
+    std::array<vec2, 2> collisionSegBetaXY, double angStep, bool hasApogee, bool lefthanded
     ):
     id(id), holeID(holeID), basePos(basePos), iHat(iHat), jHat(jHat),
     kHat(kHat), dxyz(dxyz), alphaLen(alphaLen), alphaOffDeg(alphaOffDeg),
     betaOffDeg(betaOffDeg), elementHeight(elementHeight), scaleFac(scaleFac), metBetaXY(metBetaXY),
     bossBetaXY(bossBetaXY), apBetaXY(apBetaXY),
-    collisionSegBetaXY(collisionSegBetaXY), angStep(angStep), hasApogee(hasApogee)
+    collisionSegBetaXY(collisionSegBetaXY), angStep(angStep), hasApogee(hasApogee),
+    lefthanded(lefthanded)
 {
     // std::cout << "robot constructor called" << std::endl;
     // xPos = myxPos;
@@ -235,14 +236,9 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
     beta = newBeta;
     vec2 alphaBeta = {newAlpha, newBeta};
 
-    // note we apply the offsets in the commands to the
-    // positioners, not here...
-    double alphaOffNull = 0;
-    double betaOffNull = 0;
-
     // metrology fiber
     tmp2 = positionerToTangent(
-        alphaBeta, metBetaXY, alphaLen, alphaOffNull, betaOffNull
+        alphaBeta, metBetaXY, alphaLen, alphaOffDeg, betaOffDeg
     );
     tmp3 = {tmp2[0], tmp2[1], 0};
     metWokXYZ = tangentToWok(
@@ -252,7 +248,7 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
 
     // boss fiber
     tmp2 = positionerToTangent(
-        alphaBeta, bossBetaXY, alphaLen, alphaOffNull, betaOffNull
+        alphaBeta, bossBetaXY, alphaLen, alphaOffDeg, betaOffDeg
     );
     tmp3 = {tmp2[0], tmp2[1], 0};
     bossWokXYZ = tangentToWok(
@@ -262,7 +258,7 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
 
     // apogee fiber
     tmp2 = positionerToTangent(
-        alphaBeta, apBetaXY, alphaLen, alphaOffNull, betaOffNull
+        alphaBeta, apBetaXY, alphaLen, alphaOffDeg, betaOffDeg
     );
     tmp3 = {tmp2[0], tmp2[1], 0};
     apWokXYZ = tangentToWok(
@@ -272,7 +268,7 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
 
     // collision segment
     tmp2 = positionerToTangent(
-        alphaBeta, collisionSegBetaXY[0], alphaLen, alphaOffNull, betaOffNull
+        alphaBeta, collisionSegBetaXY[0], alphaLen, alphaOffDeg, betaOffDeg
     );
     tmp3 = {tmp2[0], tmp2[1], 0};
     collisionSegWokXYZ[0] = tangentToWok(
@@ -281,7 +277,7 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
     );
 
     tmp2 = positionerToTangent(
-        alphaBeta, collisionSegBetaXY[1], alphaLen, alphaOffNull, betaOffNull
+        alphaBeta, collisionSegBetaXY[1], alphaLen, alphaOffDeg, betaOffDeg
     );
     tmp3 = {tmp2[0], tmp2[1], 0};
     collisionSegWokXYZ[1] = tangentToWok(
@@ -303,20 +299,16 @@ void Robot::setXYUniform(){
     // use a science fiber ID (matches min/max reach)
     // std::cout.precision(20);
 
-    // note we apply the offsets in the commands to the
-    // positioners, not here...
-    double alphaOffNull = 0;
-    double betaOffNull = 0;
 
     ab = tangentToPositioner(
-        xyTangent, metBetaXY, alphaLen, alphaOffNull, betaOffNull
+        xyTangent, metBetaXY, alphaLen, alphaOffDeg, betaOffDeg, lefthanded
     );
 
     while (std::isnan(ab[0]) or std::isnan(ab[1])){
         xyTangent = sampleAnnulus(minReach, maxReach);
         // use a science fiber ID (matches min/max reach)
         ab = tangentToPositioner(
-            xyTangent, metBetaXY, alphaLen, alphaOffNull, betaOffNull
+            xyTangent, metBetaXY, alphaLen, alphaOffDeg, betaOffDeg, lefthanded
         );
     }
 
@@ -552,7 +544,7 @@ vec2 Robot::alphaBetaFromWokXYZ(vec3 wokXYZ, FiberType fiberType){
     }
 
     auto alphaBeta = tangentToPositioner(
-        tangentXY, fibBetaXY, alphaLen, alphaOffDeg, betaOffDeg
+        tangentXY, fibBetaXY, alphaLen, alphaOffDeg, betaOffDeg, lefthanded
     );
 
     return alphaBeta;
