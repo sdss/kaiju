@@ -1,2 +1,6 @@
 *.pyc
 build/*
+
+.python-version
+.eggs
+.so
