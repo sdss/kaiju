@@ -71,7 +71,7 @@ class build_ext(_build_ext):
     def finalize_options(self):
         _build_ext.finalize_options(self)
 
-        # JSG: this is a bit of a hack but we are doing is not very standard.
+        # JSG: this is a bit of a hack but what we need is not very standard.
         # We want to link against libcoordio which is located in the
         # site-packages/coordio directory. We need to provide the full path
         # (since Python calls it libcoorio.something.architecture.so) and
