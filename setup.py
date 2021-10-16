@@ -23,7 +23,7 @@ class getPybindInclude(object):
 
 def getIncludes():
     return [
-        'include',
+        'python/kaiju/include',
         getPybindInclude(),
         getPybindInclude(user=True),
     ]
@@ -109,6 +109,8 @@ def runSetup(packages, requirements):
         packages=packages,
         cmdclass={'build_ext': build_ext},
         package_dir={'': 'python'},
+        package_data={'kaiju': ['python/kaiju/include/*']},
+        include_package_data=True,
         url="https://github.com/sdss/kaiju",
         keywords="astronomy software",
         ext_modules=[module],

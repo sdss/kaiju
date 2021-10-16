@@ -1,4 +1,4 @@
 include requirements.txt
 include README.rst
 include src/*
-include include/*
+graft python/kaiju/include
