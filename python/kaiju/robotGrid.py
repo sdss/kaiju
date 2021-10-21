@@ -17,7 +17,7 @@ from descartes import PolygonPatch
 from shapely.geometry import LineString, Point
 import seaborn as sns
 import coordio
-from coordio.defaults import positionerTableCalib, wokCoordsCalib, fiducialCoordsCalib
+from coordio.defaults import positionerTable, wokCoords, fiducialCoords
 from coordio.defaults import IHAT, JHAT, KHAT
 import pandas as pd
 
@@ -938,7 +938,7 @@ class RobotGridCalib(RobotGrid):
 
     def _load_grid(self):
 
-        df = pd.merge(positionerTableCalib, wokCoordsCalib, on="holeID").reset_index()
+        df = pd.merge(positionerTable, wokCoords, on="holeID").reset_index()
 
         for ii, row in df.iterrows():
             self.addRobot(
@@ -960,7 +960,7 @@ class RobotGridCalib(RobotGrid):
                 collisionSegBetaXY=None
             )
 
-        for ii, row in fiducialCoordsCalib.iterrows():
+        for ii, row in fiducialCoords.iterrows():
             self.addFiducial(
                 fiducialID=int(row.id.strip("F")),
                 xyzWok=[row.xWok, row.yWok, row.zWok],
@@ -1068,5 +1068,3 @@ class RobotGridAPO(RobotGrid):
 
 class RobotGridLCO(RobotGridAPO):
     pass
-
-
