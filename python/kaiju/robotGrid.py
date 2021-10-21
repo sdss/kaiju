@@ -837,16 +837,16 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         ks = self.robotDict.keys()
         for i, k in enumerate(ks):
             crd = self.robotDict[k]
-            robot_array['robotID'] = crd.id
-            robot_array['xPos'] = crd.basePos[0]
-            robot_array['yPos'] = crd.basePos[1]
-            robot_array['hasApogee'] = crd.hasApogee
-            robot_array['hasBoss'] = crd.hasBoss
-            robot_array['assignedTargetID'] = crd.assignedTargetID
-            robot_array['isAssigned'] = crd.isAssigned()
-            robot_array['isCollided'] = self.isCollided(crd.id)
-            robot_array['alpha'] = crd.alpha
-            robot_array['beta'] = crd.beta
+            robot_array[i]['robotID'] = crd.id
+            robot_array[i]['xPos'] = crd.basePos[0]
+            robot_array[i]['yPos'] = crd.basePos[1]
+            robot_array[i]['hasApogee'] = crd.hasApogee
+            robot_array[i]['hasBoss'] = crd.hasBoss
+            robot_array[i]['assignedTargetID'] = crd.assignedTargetID
+            robot_array[i]['isAssigned'] = crd.isAssigned()
+            robot_array[i]['isCollided'] = self.isCollided(crd.id)
+            robot_array[i]['alpha'] = crd.alpha
+            robot_array[i]['beta'] = crd.beta
         return(robot_array)
 
     def target_array(self):
