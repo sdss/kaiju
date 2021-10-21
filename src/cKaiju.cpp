@@ -105,6 +105,8 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("roughBetaX", &Robot::roughBetaX)
         .def_readwrite("roughBetaY", &Robot::roughBetaY)
         .def_readwrite("interpCollisions", &Robot::interpCollisions)
+        .def_readwrite("xPos", &Robot::xPos)
+        .def_readwrite("yPos", &Robot::yPos)
         .def("setAlphaBeta", &Robot::setAlphaBeta, R"pbdoc(
             A doc example
         )pbdoc")
@@ -119,6 +121,8 @@ PYBIND11_MODULE(cKaiju, m) {
         // .def("decollide", &Robot::decollide)
         .def("getMaxReach", &Robot::getMaxReach)
         .def("isAssigned", &Robot::isAssigned);
+
+
 
     py::class_<RobotGrid, std::shared_ptr<RobotGrid>>(m, "RobotGrid", py::dynamic_attr(), R"pbdoc(
             Robot Grid Class
@@ -195,4 +199,3 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("wouldCollideWithAssigned", &RobotGrid::wouldCollideWithAssigned)
         .def("isCollided", &RobotGrid::isCollided);
 }
-
