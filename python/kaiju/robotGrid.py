@@ -188,7 +188,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         ###########
 
         cb = self.collisionBuffer
-        self.pathGenGreedy()
+        # self.pathGenGreedy()
         # self.pathGenMDP(0.8, 0.2)
         self.smoothPaths(smoothPoints)
         self.simplifyPaths()
