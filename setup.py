@@ -93,7 +93,7 @@ class build_ext(_build_ext):
 
         self.extensions[0].extra_link_args += [
             libcoordio_path,  # This is equivalent to -l but with full path.
-            '-Wl,-rpath=' + coordio_base,
+            '-Wl,-rpath,' + coordio_base,
             '-L' + coordio_base]
 
 
