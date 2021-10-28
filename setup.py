@@ -1,4 +1,7 @@
+from glob import glob
 import os
+import re
+import subprocess
 import sys
 
 from setuptools import Extension, find_packages, setup
@@ -71,6 +74,26 @@ module = Extension(
 # We need a custom build extension class because we need to inspect the
 # coordio library after setup_requires has installed id.
 class build_ext(_build_ext):
+
+    def run(self):
+        super().run()
+
+        # On macOS we need to rename the path to the libcoordio library in cKaiju
+        # after it has been linked.
+        if sys.platform == 'darwin':
+            kaiju_lib = list(glob('python/kaiju/*.so'))[0]
+            otool_data = subprocess.run(f'otool -L {kaiju_lib}',
+                                        capture_output=True, shell=True)
+
+            reg = re.compile(r'\n\s*(.+libcoordio.+?)\s+.+\n', re.MULTILINE)
+            libcoordio_path_current = reg.search(otool_data.stdout.decode()).groups()[0]
+
+            from coordio import libcoordio
+            libcoordio_path = libcoordio.__file__
+
+            subprocess.run(f'install_name_tool -change {libcoordio_path_current} '
+                           f'{libcoordio_path} {kaiju_lib}', shell=True)
+
     def finalize_options(self):
         _build_ext.finalize_options(self)
 
