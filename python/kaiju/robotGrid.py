@@ -161,7 +161,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
             self.decollideGrid()
         return self.getPathPair()
 
-    def getPathPair(self):
+    def getPathPair(self, speed=2):
         """
         Get paths in format that jaeger expects.  No checking is done, so
         whoever calls this should check things and decide what to do next.
@@ -169,6 +169,10 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         Robots must be placed in the desired source orientation, and the
         desination (lattice) alpha/betas must be specified.
 
+        Parameters
+        -----------
+        speed: float
+            RPM at output, how fast robots move
 
         Returns
         ---------
@@ -183,7 +187,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         # break out these parameters later
         smoothPoints = 5
         collisionShrink = 0.05 # mm
-        speed = 2 # rpm at output
+        # speed = 2 # rpm at output
         pathDelay = 1 # seconds
         ###########
 
