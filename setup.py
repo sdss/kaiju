@@ -55,6 +55,9 @@ if sys.platform == 'darwin':
     extra_compile_args += ['-stdlib=libc++', '-mmacosx-version-min=10.9']
     extra_link_args = ["-v", '-mmacosx-version-min=10.9']
 
+    from distutils import sysconfig
+    vars = sysconfig.get_config_vars()
+    vars['LDSHARED'] = vars['LDSHARED'].replace('-bundle', '-dynamiclib')
 
 module = Extension(
     'kaiju.cKaiju',
@@ -116,7 +119,7 @@ def runSetup(packages, requirements):
         ext_modules=[module],
         install_requires=requirements,
         setup_requires=[
-            # "sdss-coordio @ git+https://github.com/sdss/coordio.git@albireox/jaeger-integration",
+            "sdss-coordio>=1.1.1",
             "pybind11>=2.2.4"
         ],
         classifiers=[
