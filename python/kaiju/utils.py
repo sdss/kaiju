@@ -62,7 +62,7 @@ def plotTraj(r, figprefix="traj_", dpi=500):
     plt.close()
 
 
-def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=False, xlim=None, ylim=None, highlightRobot=None):
+def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=False, xlim=None, ylim=None, highlightRobot=None, returnax=False):
     global rg
     if hasattr(step, "__len__"):
         fig = step[1]
@@ -147,6 +147,9 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
     ax.set_xlim([-maxX-30, maxX+30])
     ax.set_ylim([-maxY-30, maxY+30])
     ax.set_aspect("equal")
+
+    if returnax:
+        return ax
 
     if figname is None:
         figname = "step_%04d.png"%(fig)
