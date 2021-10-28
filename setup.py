@@ -116,7 +116,7 @@ def runSetup(packages, requirements):
         ext_modules=[module],
         install_requires=requirements,
         setup_requires=[
-            "sdss-coordio @ git+https://github.com/sdss/coordio.git@albireox/jaeger-integration",
+            # "sdss-coordio @ git+https://github.com/sdss/coordio.git@albireox/jaeger-integration",
             "pybind11>=2.2.4"
         ],
         classifiers=[
