@@ -161,7 +161,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
             self.decollideGrid()
         return self.getPathPair()
 
-    def getPathPair(self):
+    def getPathPair(self, speed=2):
         """
         Get paths in format that jaeger expects.  No checking is done, so
         whoever calls this should check things and decide what to do next.
@@ -169,6 +169,10 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         Robots must be placed in the desired source orientation, and the
         desination (lattice) alpha/betas must be specified.
 
+        Parameters
+        -----------
+        speed: float
+            RPM at output, how fast robots move
 
         Returns
         ---------
@@ -183,12 +187,12 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         # break out these parameters later
         smoothPoints = 5
         collisionShrink = 0.05 # mm
-        speed = 2 # rpm at output
+        # speed = 2 # rpm at output
         pathDelay = 1 # seconds
         ###########
 
         cb = self.collisionBuffer
-        self.pathGenGreedy()
+        # self.pathGenGreedy()
         # self.pathGenMDP(0.8, 0.2)
         self.smoothPaths(smoothPoints)
         self.simplifyPaths()
@@ -265,10 +269,11 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
             # how much space around tip to save, set to zero
             # to allow "corner brushes"?
             # cornerProtection = 0.3  # mm
-            cornerProtection = 0.2
+            cornerProtection = 0.4
             r = self.collisionBuffer
             dxTip = np.sqrt(r**2 + (tipFlat/2)**2) - cornerProtection
-            dxPost = r - betaPost
+            #dxPost = r - betaPost
+            dxPost = 0
             collisionSegBetaXY = [
                 [dxPost, 0],  # beta shaft is 1mm diameter
                 [coordio.defaults.BETA_LEN - dxTip, 0]
