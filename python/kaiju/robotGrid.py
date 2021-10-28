@@ -269,10 +269,11 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
             # how much space around tip to save, set to zero
             # to allow "corner brushes"?
             # cornerProtection = 0.3  # mm
-            cornerProtection = 0.2
+            cornerProtection = 0.4
             r = self.collisionBuffer
             dxTip = np.sqrt(r**2 + (tipFlat/2)**2) - cornerProtection
-            dxPost = r - betaPost
+            #dxPost = r - betaPost
+            dxPost = 0
             collisionSegBetaXY = [
                 [dxPost, 0],  # beta shaft is 1mm diameter
                 [coordio.defaults.BETA_LEN - dxTip, 0]
