@@ -81,9 +81,11 @@ class build_ext(_build_ext):
         # On macOS we need to rename the path to the libcoordio library in cKaiju
         # after it has been linked.
         if sys.platform == 'darwin':
-            libs = list(glob('python/kaiju/*.so'))
+            libs = list(glob('python/kaiju/cKaiju*.so'))
             if len(libs) == 0:
-                return
+                libs = list(glob('build/**/kaiju/cKaiju*.so'))
+                if len(libs) == 0:
+                    return
 
             kaiju_lib = libs[0]
             otool_data = subprocess.run(f'otool -L {kaiju_lib}',
