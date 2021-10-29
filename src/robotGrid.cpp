@@ -822,6 +822,54 @@ std::vector<int> RobotGrid::deadlockedRobots(){
     return deadlockedRobotIDs;
 }
 
+
+// handle things near limits of robot motion
+vec2 handleLimits(double currAlpha, double currBeta, double nextAlpha, double nextBeta){
+    vec2 nextAlphaBeta;
+
+    // handle alpha lims
+    // if robots currently beyond limits
+    // don't allow them to go further beyond limits
+    if (currAlpha < 0 && nextAlpha < currAlpha){
+        nextAlpha = currAlpha; // don't move further the wrong direction
+    }
+
+    else if (currAlpha > 360 && nextAlpha > currAlpha){
+        nextAlpha = currAlpha;
+    }
+    // robots currently in bounds
+    else if (nextAlpha > 360){
+        nextAlpha = 360;
+    }
+    else if (nextAlpha < 0){
+        nextAlpha = 0;
+    }
+
+    if (currBeta < 0 && nextBeta < currBeta){
+        nextBeta = currBeta; // don't move further the wrong direction
+    }
+
+    else if (currBeta > 360 && nextBeta > currBeta){
+        nextBeta = currBeta;
+    }
+    // robots currently in bounds
+    else if (nextBeta > 360){
+        nextBeta = 360;
+    }
+    else if (nextBeta < 0){
+        nextBeta = 0;
+    }
+
+    nextAlphaBeta[0] = nextAlpha;
+    nextAlphaBeta[1] = nextBeta;
+    return nextAlphaBeta;
+
+    // if robots moving beyond limits, don't let them do it
+
+
+
+}
+
 void RobotGrid::stepDecollide(std::shared_ptr<Robot> robot, int stepNum){
     double currAlpha = robot->alpha;
     double currBeta = robot->beta;
@@ -843,20 +891,11 @@ void RobotGrid::stepDecollide(std::shared_ptr<Robot> robot, int stepNum){
     for (auto dAlphaBeta : perturbArray){
         double nextAlpha = currAlpha + dAlphaBeta[0];
         double nextBeta = currBeta + dAlphaBeta[1];
-        if (nextAlpha > 360){
-            nextAlpha = 360;
-        }
-        if (nextAlpha < 0){
-            nextAlpha = 0;
-        }
-        if (nextBeta > 360){
-            nextBeta = 360;
-        }
-        if (nextBeta < 0){
-            nextBeta = 0;
-        }
-        // if next choice results in no move skip it
-        // always favor a move
+
+        vec2 nextAlphaBeta = handleLimits(currAlpha, currBeta, nextAlpha, nextBeta);
+        nextAlpha = nextAlphaBeta[0];
+        nextBeta =nextAlphaBeta[1];
+
 
         robot->setAlphaBeta(nextAlpha, nextBeta);
 
@@ -1004,18 +1043,9 @@ void RobotGrid::stepGreedy(std::shared_ptr<Robot> robot, int stepNum){
         // handle limits of travel
         // can probably ditch this as target
         // must be in range anyways
-        if (nextAlpha > 360){
-            nextAlpha = 360;
-        }
-        if (nextAlpha < 0){
-            nextAlpha = 0;
-        }
-        if (nextBeta > 360){
-            nextBeta = 360;
-        }
-        if (nextBeta < 0){
-            nextBeta = 0;
-        }
+        vec2 nextAlphaBeta = handleLimits(currAlpha, currBeta, nextAlpha, nextBeta);
+        nextAlpha = nextAlphaBeta[0];
+        nextBeta =nextAlphaBeta[1];
 
         robot->setAlphaBeta(nextAlpha, nextBeta);
         score = robot->score();
@@ -1136,18 +1166,9 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
             nextBeta = robot->destinationBeta;
         }
         // handle limits of travel
-        if (nextAlpha > 360){
-            nextAlpha = 360;
-        }
-        if (nextAlpha < 0){
-            nextAlpha = 0;
-        }
-        if (nextBeta > 360){
-            nextBeta = 360;
-        }
-        if (nextBeta < 0){
-            nextBeta = 0;
-        }
+        vec2 nextAlphaBeta = handleLimits(currAlpha, currBeta, nextAlpha, nextBeta);
+        nextAlpha = nextAlphaBeta[0];
+        nextBeta =nextAlphaBeta[1];
 
         robot->setAlphaBeta(nextAlpha, nextBeta);
         // score is min possible steps till goal

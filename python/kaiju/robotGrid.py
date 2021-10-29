@@ -29,7 +29,7 @@ import pandas as pd
 # kHat = [0,0,1]
 
 KAIJU_ETC_DIR = os.path.join(
-    os.path.dirname(__file__), "..", "..", "etc"
+    os.path.dirname(__file__), "etc"
 )
 
 # Create look-up dictionary for types to strings conversion

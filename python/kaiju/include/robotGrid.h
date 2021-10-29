@@ -17,6 +17,8 @@
 
 enum AlgType {Greedy, MDP, Fold}; // order is important
 
+vec2 handleLimits(double currAlpha, double currBeta, double nextAlpha, double nextBeta);
+
 class RobotGrid {
 public:
     AlgType algType;
