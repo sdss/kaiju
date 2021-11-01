@@ -784,7 +784,7 @@ bool RobotGrid::gfaColliders(int robotID){
                         (robot->collisionBuffer+gfaCollisionBuffer);
 
         if (dist2 < collideDist2){
-            std::cout << "GFA Collision!" << std::endl;
+            // std::cout << "GFA Collision!" << std::endl;
             return true;
         }
     }
