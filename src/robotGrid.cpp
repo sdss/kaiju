@@ -57,6 +57,55 @@ RobotGrid::RobotGrid(double angStep, double collisionBuffer, double epsilon, int
             perturbArray.push_back({ii*angStep, jj*angStep});
         }
     }
+
+    // hardcoded and slow, for apo flat wok only!!!
+    std::array<vec3, 2> gfa1, gfa2, gfa3, gfa4, gfa5, gfa6;
+
+    gfaCollisionBuffer = 2;
+
+    vec3 gfa1a = {-267.49, 89.15, 143.1};
+    vec3 gfa1b = {-210.95, 187.08, 143.1};
+
+    vec3 gfa2a = {-56.54, 276.23, 143.1};
+    vec3 gfa2b = {56.54, 276.23, 143.1};
+
+    vec3 gfa3a = {210.95, 187.07, 143.1};
+    vec3 gfa3b = {267.49, 89.15, 143.1};
+
+    vec3 gfa4a = {267.49, -89.15, 143.1};
+    vec3 gfa4b = {210.95, -187.08, 143.1};
+
+    vec3 gfa5a = {56.54, -276.23, 143.1};
+    vec3 gfa5b = {-56.54, -276.23, 143.1};
+
+    vec3 gfa6a = {-210.95, -187.07, 143.1};
+    vec3 gfa6b = {-267.49, -89.15, 143.1};
+
+    gfa1[0] = gfa1a;
+    gfa1[1] = gfa1b;
+
+    gfa2[0] = gfa2a;
+    gfa2[1] = gfa2b;
+
+    gfa3[0] = gfa3a;
+    gfa3[1] = gfa3b;
+
+    gfa4[0] = gfa4a;
+    gfa4[1] = gfa4b;
+
+    gfa5[0] = gfa5a;
+    gfa5[1] = gfa5b;
+
+    gfa6[0] = gfa6a;
+    gfa6[1] = gfa6b;
+
+    gfaList[0] = gfa1;
+    gfaList[1] = gfa2;
+    gfaList[2] = gfa3;
+    gfaList[3] = gfa4;
+    gfaList[4] = gfa5;
+    gfaList[5] = gfa6;
+
 }
 
 void RobotGrid::addRobot(
@@ -582,7 +631,7 @@ bool RobotGrid::isCollided(int robotID){
     if (fiducialsColliding.size() != 0){
         return true;
     }
-    return false;
+    return gfaColliders(robotID);
 }
 
 std::tuple<bool, bool, std::vector<int>> RobotGrid::isCollidedWithAssigned(int robotID){
@@ -716,6 +765,30 @@ std::vector<int> RobotGrid::fiducialColliders(int robotID){
         }
     }
     return collidingNeighbors;
+
+}
+
+bool RobotGrid::gfaColliders(int robotID){
+
+    auto robot = robotDict[robotID];
+    // std::cout << "isFiducialCollided" << std::endl;
+    double dist2, collideDist2;
+    // std::cout << "n fiducials " << fiducials.size() << std::endl;
+    for (auto gfaSeg : gfaList){
+        dist2 = dist3D_Segment_to_Segment(
+                gfaSeg[0], gfaSeg[1],
+                robot->collisionSegWokXYZ[0], robot->collisionSegWokXYZ[1]
+            );
+
+        collideDist2 =  (robot->collisionBuffer+gfaCollisionBuffer) *
+                        (robot->collisionBuffer+gfaCollisionBuffer);
+
+        if (dist2 < collideDist2){
+            std::cout << "GFA Collision!" << std::endl;
+            return true;
+        }
+    }
+    return false;
 
 }
 

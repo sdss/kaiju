@@ -40,6 +40,8 @@ public:
     // std::vector<std::array<double, 2>> fiducialList;
     std::map<long, std::shared_ptr<Target>> targetDict;
     std::vector<vec2> perturbArray; // alpha/beta perturbations
+    std::array<std::array<vec3, 2>, 6> gfaList;
+    double gfaCollisionBuffer;
     RobotGrid (double angStep = 1, double collisionBuffer = 2, double epsilon = 2, int seed = 0);
     void addRobot(
         int robotID, std::string holeID, vec3 basePos, vec3 iHat, vec3 jHat,
@@ -86,6 +88,7 @@ public:
     std::tuple<bool, bool, std::vector<int>> wouldCollideWithAssigned(int robotID, long targID);
     std::vector<int> robotColliders(int robotID);
     std::vector<int> fiducialColliders(int robotID);
+    bool gfaColliders(int robotID);
     bool neighborEncroachment(std::shared_ptr<Robot> r1);
     // bool isFiducialCollided(std::shared_ptr<Robot> r1);
     // bool isCollidedInd(int robotInd);

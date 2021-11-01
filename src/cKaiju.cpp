@@ -137,6 +137,8 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("greed", &RobotGrid::greed)
         .def_readwrite("phobia", &RobotGrid::phobia)
         .def_readwrite("angStep", &RobotGrid::angStep)
+        .def_readwrite("gfaList", &RobotGrid::gfaList)
+        .def_readwrite("gfaCollisionBuffer", &RobotGrid::gfaCollisionBuffer)
         .def_readwrite("collisionBuffer", &RobotGrid::collisionBuffer)
         .def_readwrite("smoothCollisions", &RobotGrid::smoothCollisions)
         .def_readwrite("didFail", &RobotGrid::didFail)

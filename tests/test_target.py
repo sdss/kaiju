@@ -168,10 +168,10 @@ test targets at full extension?
 """
 if __name__ == "__main__":
     # test_validRobots(plot=True)
-    # test_tonsOBosstargs(plot=True)
-    # test_tonsOAptargs(plot=True)
+    test_tonsOBosstargs(plot=True)
+    test_tonsOAptargs(plot=True)
     # test_nonInit()
     # test_doubleTargetID()
     # test_tonsOBosstargs(plot=True)
     # test_tonsOAptargs(plot=True)
-    test_targetAssign(plot=True)
+    # test_targetAssign(plot=True)
