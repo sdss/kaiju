@@ -150,8 +150,8 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
         ax.set_xlim(xlim)
     if ylim is not None:
         ax.set_ylim(ylim)
-    ax.set_xlim([-maxX-30, maxX+30])
-    ax.set_ylim([-maxY-30, maxY+30])
+    ax.set_xlim([-maxX-50, maxX+50])
+    ax.set_ylim([-maxY-50, maxY+50])
     ax.set_aspect("equal")
 
     if returnax:
