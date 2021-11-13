@@ -7,130 +7,12 @@
 #include "robot.h"
 #include "robotGrid.h"
 
-// define position of fibers in beta arm's reference frame
-// 0,0,0 is beta axis,
-// +x extends toward beta arm head,
-// +y points towards increasing beta arm angle
-// +z (defined by right hand rule) points towards M2 mirror
 
-// xyz pos of fiber in beta neutral position
-// taken from peter's solid model (not MPS)
-// const double metFiberData[] = {14.3458, 0, 0}; // from uw shop
-// Eigen::Vector3d metFiberNeutral(metFiberData);
-
-// const double apFiberData[] = {14.9953, 0.375, 0};
-// Eigen::Vector3d apFiberNeutral(apFiberData);
-
-// const double bossFiberData[] = {14.9953, -0.375, 0};
-// Eigen::Vector3d bossFiberNeutral(bossFiberData);
-
-// const double alphaLen = 7.4;
-// const double betaLen = 15; // mm to fiber
-
-// conor's optimal data to obtain full extension for top fiber (ap)
-// .75 is fiber to fiber spacing in snowflake
-// .375 is half that
-// const double met2sciX = sqrt(0.75*0.75 - 0.375*0.375);
-// const double beta2sciX = sqrt(22.4*22.4-0.375*0.375) - alphaLen;
-// const double beta2metX = 14.345792714510825; // beta2sciX - met2sciX;
-
-// dist to metrology 14.345792714510825
-
-
-// min reach is distance from alpha axis to science fiber when beta = 180
-// const double minReach = hypot(beta2sciX, 0.375) - alphaLen;
-// max reach is the distance from alpha axis to science fiber when beta = 0
-// const double maxReach = betaLen + alphaLen;
-
-// these max/min Reaches are the slightly more restrictive ones
-// based on the small angular offset of the science fibers
-// with respect to the beta axis...
-// const double maxReach = hypot(alphaLen+beta2sciX, 0.375);
-// const double minReach = hypot(alphaLen-beta2sciX, 0.375);
-
-// const double maxReach = alphaLen + betaLen;
-// const double minReach = betaLen - alphaLen;
-
-// const double metFiberData[] = {beta2metX, 0, 0}; // from uw shop
-// Eigen::Vector3d metFiberNeutral(metFiberData);
-
-// const double apFiberData[] = {beta2sciX, 0.375, 0};
-// Eigen::Vector3d apFiberNeutral(apFiberData);
-
-// const double bossFiberData[] = {beta2sciX, -0.375, 0};
-// Eigen::Vector3d bossFiberNeutral(bossFiberData);
-
-// // create a vector that translates from beta orgin to alpha origin
-// // this is just the length of the alpha arm
-// const double alphaTransData[] = {alphaLen, 0, 0};
-// Eigen::Vector3d alphaTransV(alphaTransData);
-
-// const double metFiberData[] = {beta2metX, 0, 0}; // from uw shop
-// vec3 metFiberNeutral(metFiberData);
-
-// const double apFiberData[] = {beta2sciX, 0.375, 0};
-// vec3 apFiberNeutral(apFiberData);
-
-// const double bossFiberData[] = {beta2sciX, -0.375, 0};
-// vec3 bossFiberNeutral(bossFiberData);
-
-// // create a vector that translates from beta orgin to alpha origin
-// // this is just the length of the alpha arm
-// const double alphaTransData[] = {alphaLen, 0, 0};
-// vec3 alphaTransV(alphaTransData);
-
-
-// fix "neutral" positions in the global coord sys such that alpha==0
-// points to -y (it was previously assumed that alpha==0 points toward +x)
-// const double metFiberData[] = {0, -1*beta2metX, 0}; // from uw shop
-// Eigen::Vector3d metFiberNeutral(metFiberData);
-
-// const double apFiberData[] = {0.375, -1*beta2sciX, 0};
-// Eigen::Vector3d apFiberNeutral(apFiberData);
-
-// const double bossFiberData[] = {-0.375, -1*beta2sciX, 0};
-// Eigen::Vector3d bossFiberNeutral(bossFiberData);
-
-// // create a vector that translates from beta orgin to alpha origin
-// // this is just the length of the alpha arm
-// const double alphaTransData[] = {0, -1*alphaLen, 0};
-// Eigen::Vector3d alphaTransV(alphaTransData);
-
-
-
-// const std::array<vec3, 3> neutralFiberList{ {metFiberNeutral, apFiberNeutral, bossFiberNeutral} };
 
 const int BOSS_FIBER_ID = 2;
 const int AP_FIBER_ID = 1;
 const int MET_FIBER_ID = 0;
 
-// beta arm collision segments
-// beta geometries in beta arm reference frame
-// const double focalZ = 30; // height to focal plane (where fiber lives)
-// const double betaAxis2End = 19.2 - 3.0; //mm
-// const double betaEndRadius = 1.2; // mm
-
-// const double betaEnvPt1Data[] = {0, 0, focalZ}; // beta axis
-// vec3 betaEnvPt1(betaEnvPt1Data);
-// const double betaEnvPt2Data[] = {betaAxis2End - betaEndRadius, 0, focalZ};
-// vec3 betaEnvPt2(betaEnvPt2Data);
-
-// again fix beta collision segment so it points in the right direction
-// alpha==0 is global -y
-// const double betaEnvPt1Data[] = {0, 0, focalZ}; // beta axis
-// Eigen::Vector3d betaEnvPt1(betaEnvPt1Data);
-// const double betaEnvPt2Data[] = {0, -1*(betaAxis2End - betaEndRadius), focalZ};
-// Eigen::Vector3d betaEnvPt2(betaEnvPt2Data);
-
-
-// const std::array<vec3, 2> neutralBetaCollisionSegment{ {betaEnvPt1, betaEnvPt2} };
-// radius containing beta arm for collision detection
-// const double betaCollisionRadius = 1.5; // mm (3mm wide)
-// const double fiducialBuffer = 1.5; // 3mm wide fiducial
-
-// xyz pos of fiber in beta neutra position
-// const double fiberNeutral_data[] = {betaLen, 0, 0};
-// Eigen::Vector3d fiberNeutral(fiberNeutral_data);
 
 Robot::Robot(
     int id, std::string holeID, vec3 basePos, vec3 iHat, vec3 jHat, vec3 kHat,
@@ -145,34 +27,16 @@ Robot::Robot(
     collisionSegBetaXY(collisionSegBetaXY), angStep(angStep), hasApogee(hasApogee),
     lefthanded(lefthanded)
 {
-    // std::cout << "robot constructor called" << std::endl;
-    // xPos = myxPos;
-    // yPos = myyPos;
-    // angStep = myAngStep;
+
     xPos = basePos[0];
     yPos = basePos[1];
     minReach = metBetaXY[0] - alphaLen; // close enough
     maxReach = metBetaXY[0] + alphaLen;
-    betaLen = collisionSegBetaXY[1][0];
+    // betaLen = collisionSegBetaXY[1][0];
+    // break this out into a config/constructor, right now assuming
+    // every robot has a boss fiber, which may not be true in the future
+    hasBoss = true;
 
-    // transXY = Eigen::Vector3d(xPos, yPos, 0);
-    // id = myid;
-    // hasApogee = myHasApogee;
-    hasBoss = true; // break this out into a config/constructor
-    // betaCollisionSegment = neutralBetaCollisionSegment;
-    // std::pair<betaGeometry, std::vector<double>> betaPair = getBetaGeom(8);
-    // betaModel = betaPair.first;
-    // betaOrientation = betaPair.first;
-    // modelRadii = betaPair.second;
-
-    // alphaBetaArr <<  -angStep,  angStep,
-    //                          0,  angStep,
-    //                   angStep,  angStep,
-    //                  -angStep,         0,
-    //                   angStep,         0,
-    //                  -angStep, -angStep,
-    //                          0, -angStep,
-    //                   angStep, -angStep;
 }
 
 void Robot::setCollisionBuffer(double newBuffer){

@@ -1,43 +1,14 @@
 #include <iostream>
 #include <stdio.h>      /* printf, scanf, puts, NULL */
-// #include <Eigen/Dense>
 #include <algorithm>    // std::random_shuffle
 #include <chrono>       // std::chrono::system_clock
 #include "utils.h"
 #include "robotGrid.h"
 
-// define constants
-// const double betaCollisionRadius = 1.5; // mm (3mm wide)
 
-// const double pitchRough = 22.4; // distance to next nearest neighbor
 const double alphaLenRough = 7.4;
 const double betaLenRough = 15;
 
-// const double maxReachCheck2 = 23. * 23.; // maximum reach to check
-
-// const double angStep = 1; // degrees
-// const int maxPathStepsGlob = (int)(ceil(700.0/angStep));
-// line smoothing factor
-// const double epsilon =  5 * angStep; // was 7*angStep for 0.1 step size
-
-// const double min_targ_sep = 8; // mm
-// const double min_targ_sep = 0; // mm
-
-// bool sortTargList(std::array<double, 5> targ1, std::array<double, 5> targ2){
-//     return targ1[3] > targ2[3];
-// }
-
-// bool sortTargList(std::shared_ptr<Target> t1, std::shared_ptr<Target> t2){
-//     return t1->priority > t2->priority;
-// }
-
-// bool reverseSortTargList(std::shared_ptr<Target> t1, std::shared_ptr<Target> t2){
-//     return t1->priority < t2->priority;
-// }
-
-// bool sortrobotID(std::shared_ptr<Robot> robot1, std::shared_ptr<Robot> robot2){
-//     return robot1->id < robot2->id;
-// }
 
 RobotGrid::RobotGrid(double angStep, double collisionBuffer, double epsilon, int seed)
     : angStep(angStep), collisionBuffer(collisionBuffer), epsilon(epsilon), seed(seed)
@@ -429,41 +400,6 @@ void RobotGrid::pathGenEscape(double deg2move){
     nSteps = ii;
 }
 
-
-
-// void RobotGrid::pathGen(){
-//     // first prioritize robots based on their alpha positions
-//     // robots closest to alpha = 0 are at highest risk with extended
-//     // betas for getting locked, so try to move those first
-//     // int pathPad = 20 / (float)angStep;
-//     clearPaths();
-//     algType = Fold;
-//     didFail = true;
-//     greed = -1;
-//     phobia = -1;
-//     int ii;
-//     for (ii=0; ii<maxPathSteps; ii++){
-//         bool allFolded = true;
-
-//         for (auto rPair : robotDict){
-//             auto r = rPair.second;
-//             // std::cout << "path gen " << r.betaOrientation.size() << " " << r.betaModel.size() << std::endl;
-//             // std::cout << "alpha beta " << r.alpha << " " << r.beta << std::endl;
-//             stepTowardFold(r, ii);
-//             if (r->beta!=180 or r->alpha!=0) { // stop when beta = 180} or r.alpha!=0)){
-//                 allFolded = false;
-//             }
-//         }
-
-//         if (allFolded){
-//             didFail = false;
-//             break;
-//         }
-//     }
-
-//     nSteps = ii+1;
-// }
-
 void RobotGrid::clearTargetDict(){
     targetDict.clear(); // does clear destroy the shared_ptrs?
     // clear all robot target lists
@@ -584,26 +520,13 @@ bool RobotGrid::isValidAssignment(int robotID, long targetID){
         return false;
     }
 
-    // first a quick position cut
-    // quick position cut fails near edges, get rid of it
-    // double targDist2 = (target->x - robot->xPos) * (target->x - robot->xPos) +
-    //   (target->y - robot->yPos) * (target->y - robot->yPos) ;
-    // if (targDist2 > maxReachCheck2) {
-    //   return false;
-    // }
 
     auto ab = robot->alphaBetaFromWokXYZ(target->xyzWok, target->fiberType);
     // check alpha beta valid
     if (std::isnan(ab[0]) or std::isnan(ab[1])){
         return false;
     }
-    // check alpha beta in range
-    // if (ab[0]<0 or ab[0]>=360){
-    //     return false;
-    // }
-    // if (ab[1]<0 or ab[1]>180){
-    //     return false;
-    // }
+
 
     // save current alpha beta
     double savedAlpha = robot->alpha;
@@ -812,33 +735,6 @@ bool RobotGrid::throwAway(int robotID){
     return false;
 }
 
-// bool RobotGrid::replaceNearFold(int robotID){
-//     // return true if worked
-//     // robot gets new alpha beta position
-//     // if return is false robot is unchanged
-//     auto robot = robotDict[robotID];
-//     auto currAlpha = robot->alpha;
-//     auto currBeta = robot->beta;
-//     // attempt to keep beta as small as possible
-//     // loop over it first
-//     double betaProbe = 180;
-//     double stepSize = 0.05;
-//     while (betaProbe > 0){
-//         double alphaProbe = 0;
-//         while (alphaProbe < 360){
-//             robot->setAlphaBeta(alphaProbe, betaProbe);
-//             if (!isCollided(robotID)){
-//                 return true;
-//             }
-//             alphaProbe = alphaProbe + stepSize;
-//         }
-//         betaProbe = betaProbe - stepSize;
-//     }
-//     // couldn't find shit!
-//     robot->setAlphaBeta(currAlpha, currBeta);
-//     return false;
-// }
-
 
 void RobotGrid::decollideRobot(int robotID){
     // remove assigned target if present
@@ -862,19 +758,6 @@ void RobotGrid::decollideRobot(int robotID){
 std::vector<int> RobotGrid::deadlockedRobots(){
     std::vector<int> deadlockedRobotIDs;
 
-
-    // auto r362 = robotDict[362];
-    // double minDist = 4*collisionBuffer*4*maxDisplacement;
-    // std::cout << "minDist " << minDist << std::endl;
-    // for (auto otherRobotID : r362->robotNeighbors){
-    //     auto robot2 = robotDict[otherRobotID];
-    //     // squared distance returned
-    //     double dist2 = dist3D_Segment_to_Segment(
-    //             robot2->collisionSegWokXYZ[0], robot2->collisionSegWokXYZ[1],
-    //             r362->collisionSegWokXYZ[0], r362->collisionSegWokXYZ[1]
-    //         );
-    //     std::cout << otherRobotID <<": " << dist2 << std::endl;
-    // }
 
     for (auto rPair : robotDict){
         auto robot = rPair.second;
@@ -1314,166 +1197,6 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
     robot->roughBetaY.push_back(temp);
     robot->nudge = false;
 }
-
-
-// void RobotGrid::pathGen(){
-//     // first prioritize robots based on their alpha positions
-//     // robots closest to alpha = 0 are at highest risk with extended
-//     // betas for getting locked, so try to move those first
-//     // int pathPad = 20 / (float)angStep;
-//     if (!initialized){
-//         throw std::runtime_error("Initialize RobotGrid before pathGen");
-//     }
-//     didFail = true;
-//     for (auto rPair : robotDict){
-//         auto r = rPair.second;
-//         // clear any existing path
-//         r->alphaPath.clear();
-//         r->betaPath.clear();
-//         r->simplifiedAlphaPath.clear();
-//         r->simplifiedBetaPath.clear(); // sparse
-//         r->interpSimplifiedAlphaPath.clear();
-//         r->interpSimplifiedBetaPath.clear(); // dense
-//         r->smoothedAlphaPath.clear();
-//         r->smoothedBetaPath.clear();
-//         r->smoothAlphaVel.clear();
-//         r->smoothBetaVel.clear();
-//         r->interpAlphaX.clear();
-//         r->interpAlphaY.clear();
-//         r->interpBetaX.clear();
-//         r->interpBetaY.clear(); // smoothed
-//         r->roughAlphaX.clear();
-//         r->roughAlphaY.clear();
-//         r->roughBetaX.clear();
-//         r->roughBetaY.clear();
-//     }
-//     int ii;
-//     for (ii=0; ii<maxPathSteps; ii++){
-//         bool allFolded = true;
-
-//         for (auto rPair : robotDict){
-//             auto r = rPair.second;
-//             // std::cout << "path gen " << r.betaOrientation.size() << " " << r.betaModel.size() << std::endl;
-//             // std::cout << "alpha beta " << r.alpha << " " << r.beta << std::endl;
-//             stepTowardFold(r, ii);
-//             if (r->beta!=180 or r->alpha!=0) { // stop when beta = 180} or r.alpha!=0)){
-//                 allFolded = false;
-//             }
-//         }
-
-//         if (allFolded){
-//             didFail = false;
-//             break;
-//         }
-//     }
-
-//     nSteps = ii;
-// }
-
-
-// void RobotGrid::stepTowardFold(std::shared_ptr<Robot> robot, int stepNum){
-//     double currAlpha = robot->alpha;
-//     double currBeta = robot->beta;
-//     vec2 alphaPathPoint;
-//     vec2 betaPathPoint;
-//     vec2 temp;
-//     alphaPathPoint[0] = stepNum;
-//     betaPathPoint[0] = stepNum;
-
-//     if (currBeta==180 and currAlpha==0){
-//         // done folding don't move
-//         alphaPathPoint[1] = currAlpha;
-//         betaPathPoint[1] = currBeta;
-//         robot->alphaPath.push_back(alphaPathPoint);
-//         robot->betaPath.push_back(betaPathPoint);
-
-//         temp[0] = stepNum;
-//         temp[1] = robot->collisionSegWokXYZ[0][0]; // xAlphaEnd
-//         robot->roughAlphaX.push_back(temp);
-//         temp[1] = robot->collisionSegWokXYZ[0][1]; // yAlphaEnd
-//         robot->roughAlphaY.push_back(temp);
-//         temp[1] = robot->collisionSegWokXYZ.back()[0]; // xBetaEnd
-//         robot->roughBetaX.push_back(temp);
-//         temp[1] = robot->collisionSegWokXYZ.back()[1]; // yBetaEnd
-//         robot->roughBetaY.push_back(temp);
-//         // robot->onTargetVec.push_back(true);
-
-//         return;
-//     }
-//     // this is for keeping track of last step
-//     // only updates if robot hasn't reached fold
-//     robot->lastStepNum = stepNum;
-//     // begin trying options pick first that works
-//     for (int ii=0; ii<robot->alphaBetaArr.rows(); ii++){
-//         double nextAlpha = currAlpha + robot->alphaBetaArr(ii, 0);
-//         double nextBeta = currBeta + robot->alphaBetaArr(ii, 1);
-//         if (nextAlpha > 360){
-//             nextAlpha = 360;
-//         }
-//         if (nextAlpha < 0){
-//             nextAlpha = 0;
-//         }
-//         if (nextBeta > 180){
-//             nextBeta = 180;
-//         }
-//         if (nextBeta < 0){
-//             nextBeta = 0;
-//         }
-//         // if next choice results in no move skip it
-//         // always favor a move
-//         if (nextBeta==currBeta and nextAlpha==currAlpha){
-//             continue;
-//         }
-//         robot->setAlphaBeta(nextAlpha, nextBeta);
-//         if (!isCollided(robot->id)){
-//             alphaPathPoint[1] = nextAlpha;
-//             betaPathPoint[1] = nextBeta;
-//             robot->alphaPath.push_back(alphaPathPoint);
-//             robot->betaPath.push_back(betaPathPoint);
-
-//             // add alpha/beta xy points
-
-//             temp[0] = stepNum;
-//             // std::cout << "beta orientation size: " << betaOrientation.size() << std::endl;
-//             // std::cout << "beta model size: " << betaModel.size() << std::endl;
-//             temp[1] = robot->collisionSegWokXYZ[0][0]; // xAlphaEnd
-//             // std::cout << "step toward fold " << ii << std::endl;
-
-//             robot->roughAlphaX.push_back(temp);
-
-//             temp[1] = robot->collisionSegWokXYZ[0][1]; // yAlphaEnd
-//             robot->roughAlphaY.push_back(temp);
-//             temp[1] = robot->collisionSegWokXYZ.back()[0]; // xBetaEnd
-//             robot->roughBetaX.push_back(temp);
-//             temp[1] = robot->collisionSegWokXYZ.back()[1]; // yBetaEnd
-//             robot->roughBetaY.push_back(temp);
-
-//             return;
-//         }
-//     }
-
-//     // no move options worked,
-//     // settle for a non-move
-//     robot->setAlphaBeta(currAlpha, currBeta);
-//     alphaPathPoint[1] = currAlpha;
-//     betaPathPoint[1] = currBeta;
-//     robot->alphaPath.push_back(alphaPathPoint);
-//     robot->betaPath.push_back(betaPathPoint);
-
-//     // add alpha/beta xy points
-//     // vec2 temp;
-//     temp[0] = stepNum;
-//     temp[1] = robot->collisionSegWokXYZ[0][0]; // xAlphaEnd
-//     robot->roughAlphaX.push_back(temp);
-//     temp[1] = robot->collisionSegWokXYZ[0][1]; // yAlphaEnd
-//     robot->roughAlphaY.push_back(temp);
-//     temp[1] = robot->collisionSegWokXYZ.back()[0]; // xBetaEnd
-//     robot->roughBetaX.push_back(temp);
-//     temp[1] = robot->collisionSegWokXYZ.back()[1]; // yBetaEnd
-//     robot->roughBetaY.push_back(temp);
-
-// }
-
 
 
 

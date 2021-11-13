@@ -18,8 +18,9 @@ from shapely.geometry import LineString, Point
 import seaborn as sns
 import coordio
 from coordio.defaults import positionerTable, wokCoords, fiducialCoords
-from coordio.defaults import IHAT, JHAT, KHAT
+from coordio.defaults import IHAT, JHAT, KHAT, POSITIONER_HEIGHT
 import pandas as pd
+from scipy.optimize import minimize
 
 
 # __all__ = ['RobotGrid', 'RobotGridFilledHex']
@@ -248,6 +249,108 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
             forwardPath[int(r.id)] = armPathF
 
         return forwardPath, reversePath
+
+    # def alphaBetaFromMetWokXYMeas(self, robotID, wokXY):
+    #     """Determine the alpha and beta coordinates for a robot with a measured
+    #     metrology fiber position in xyzWok coordinates.
+
+    #     If robot.alphaBetaFromWokXYZ returns finite values, return those.
+    #     Otherwise use a minimizer on the forward model to get at least
+    #     some estimation of where it is.  Robots near beta=180 and alpha=0/360
+    #     may require this.  Or if the measured position is measured to be
+    #     slightly outside the patrol zone.
+
+    #     WARNING: currently assuming flat wok where tangent plane
+    #     is POSITIONER_HEIGHT above the wok surface.
+
+    #     Parameters:
+    #     -----------
+    #     robotID: int
+    #         positioner ID
+    #     wokXY: 2-element array
+    #         [x, y] Wok coordinates of the metrology fiber
+
+    #     Returns:
+    #     ---------
+    #     alpha: float
+    #         degrees of alpha axis
+    #     beta: float
+    #         degrees of beta axis
+    #     exact: bool
+    #         False if minimizer was used instead of analytic computation
+    #     """
+
+    #     wokXYZ = list(wokXY) + [POSITIONER_HEIGHT]
+    #     if len(wokXYZ) != 3:
+    #         raise RuntimeError("wokXY must be a 2 element array")
+
+    #     robot = self.robotDict[robotID]
+    #     alphaOrig = robot.alpha
+    #     betaOrig = robot.beta
+
+    #     alphaExact, betaExact = robot.alphaBetaFromWokXYZ(
+    #         wokXYZ, kaiju.cKaiju.MetrologyFiber
+    #     )
+
+    #     exactFail = False
+    #     if np.isnan(alphaExact) or np.isnan(betaExact):
+    #         exactFail = True
+
+    #     trueXYZ = np.array(wokXYZ)
+    #     xBar = trueXYZ[0]
+    #     yBar = trueXYZ[1]
+    #     xB = robot.basePos[0]
+    #     yB = robot.basePos[1]
+    #     la = 7.4
+    #     lb = 14.314
+
+    #     def f1(_alpha, _beta):
+    #         radAlpha = np.radians(_alpha)
+    #         radBeta = np.radians(_beta)
+    #         return xB + la*np.cos(radAlpha) + lb*np.cos(radAlpha+radBeta)
+
+    #     def f2(_alpha, _beta):
+    #         radAlpha = np.radians(_alpha)
+    #         radBeta = np.radians(_beta)
+    #         return yB + la*np.sin(radAlpha) + lb*np.sin(radAlpha+radBeta)
+
+    #     def f_jac(x):
+    #         _alpha, _beta = x
+    #         radAlpha = np.radians(_alpha)
+    #         radBeta = np.radians(_beta)
+    #         dAlpha = 2*(f1(_alpha, _beta) - xBar) * (-la*np.sin(radAlpha)-lb*np.sin(radBeta+radAlpha)) +\
+    #                  2*(f2(_alpha, _beta) - yBar) * (la*np.cos(radAlpha)+lb*np.cos(radBeta+radAlpha))
+
+
+    #         dBeta = 2*(f1(_alpha, _beta) - xBar) * (-lb*np.sin(radBeta+radAlpha)) +\
+    #                  2*(f2(_alpha, _beta) - yBar) * (lb*np.cos(radBeta+radAlpha))
+
+    #         return np.array([dAlpha, dBeta])
+
+    #     def minimizeMe(x):
+    #         _alpha, _beta = x
+    #         # warning this changes the state of the robot?
+    #         # be sure to set it back
+    #         _x = f1(_alpha, _beta)
+    #         _y = f2(_alpha, _beta)
+    #         return (_x-xBar)**2 + (_y-yBar)**2
+
+    #     x0 = [robot.alpha, robot.beta]
+    #     out = minimize(minimizeMe, x0, method="Nelder-Mead")#, jac=f_jac) # this works better than Powell
+    #     # out = minimize(minimizeMe, x0, method="")
+
+    #     if not out.success:
+    #         print("minimize failed alpha=%.4f beta=%.4f"%(alphaOrig, betaOrig))
+
+    #     # set robot to original values
+    #     robot.setAlphaBeta(alphaOrig, betaOrig)
+
+    #     # wrap minimized solns to 0,360
+    #     alphaMin = out.x[0] % 360
+    #     betaMin = out.x[1] % 360
+
+    #     return alphaExact, betaExact, alphaMin, betaMin, exactFail
+
 
     def addRobot(self,
         robotID, holeID, basePos, hasApogee=True,
