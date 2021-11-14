@@ -14,13 +14,15 @@ import matplotlib.pyplot as plt
 import kaiju
 import kaiju.cKaiju
 from descartes import PolygonPatch
-from shapely.geometry import LineString, Point
-import seaborn as sns
+from shapely.geometry import LineString
 import coordio
-from coordio.defaults import positionerTable, wokCoords, fiducialCoords
-from coordio.defaults import IHAT, JHAT, KHAT
+from coordio.defaults import IHAT, JHAT, KHAT, calibration
 import pandas as pd
 
+
+positionerTable = calibration.positionerTable
+wokCoords = calibration.wokCoords
+fiducialCoords = calibration.fiducialCoords
 
 # __all__ = ['RobotGrid', 'RobotGridFilledHex']
 # default orientation of positioner to wok
