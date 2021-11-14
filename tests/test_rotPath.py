@@ -15,7 +15,7 @@ hasApogee = True
 
 
 def test_forwardGreedy(plot=False):
-    xPos, yPos = utils.hexFromDia(35, pitch=22.4)
+    xPos, yPos = utils.hexFromDia(25, pitch=22.4)
     seed = 1
     rg = RobotGrid(
         stepSize=angStep, collisionBuffer=collisionBuffer,
@@ -41,7 +41,7 @@ def test_forwardGreedy(plot=False):
         utils.plotPaths(rg, filename="forwardGreedy.mp4")
 
 def test_reverseGreedy(plot=False):
-    xPos, yPos = utils.hexFromDia(35, pitch=22.4)
+    xPos, yPos = utils.hexFromDia(25, pitch=22.4)
     seed = 1
     rg = RobotGrid(
         stepSize=angStep, collisionBuffer=collisionBuffer,
@@ -66,7 +66,7 @@ def test_reverseGreedy(plot=False):
         utils.plotPaths(rg, filename="reverseGreedy.mp4")
 
 def test_forwardMDP(plot=False):
-    xPos, yPos = utils.hexFromDia(35, pitch=22.4)
+    xPos, yPos = utils.hexFromDia(25, pitch=22.4)
     seed = 1
     rg = RobotGrid(
         stepSize=angStep, collisionBuffer=collisionBuffer,
@@ -98,7 +98,7 @@ def test_reverseMDP(plot=False):
     phobia = 0.1
     angStep = 1
     downsample = int(numpy.floor(3 / angStep))
-    xPos, yPos = utils.hexFromDia(35, pitch=22.4)
+    xPos, yPos = utils.hexFromDia(25, pitch=22.4)
     seed = 1
     rg = RobotGrid(
         stepSize=angStep, collisionBuffer=collisionBuffer,
@@ -127,7 +127,7 @@ def test_reverseSmoothMDP(plot=False):
     greed = 0.8
     phobia = 0.2
     downsample = int(numpy.floor(100 / angStep))
-    xPos, yPos = utils.hexFromDia(35, pitch=22.4)
+    xPos, yPos = utils.hexFromDia(25, pitch=22.4)
     xPos, yPos = utils.hexFromDia(17, pitch=22.4)
     seed = 1
     cb = 2.5
