@@ -198,45 +198,93 @@ double dist3D_Segment_to_Segment(
 //     Input:  a Point P and a Segment S (in any dimension)
 //     Return: the shortest squared distance from P to S
 // dist_Point_to_Segment( Point P, Segment S)
+// double dist3D_Point_to_Segment( vec3 Point, vec3 Seg_P0, vec3 Seg_P1)
+// {
+//     vec3 d, Pb;
+//     vec3 v = sub3(Seg_P1, Seg_P0);
+//     vec3 w = sub3(Point, Seg_P0);
+//     vec3 x = sub3(Point, Seg_P1);
+//     double d1, d2, d3, minDist;
+
+//     double c1 = dot3(w,v);
+//     if ( c1 <= 0 ){
+//         d = sub3(Point, Seg_P0);
+//         return dot3(d,d);
+//     }
+
+//     double c2 = dot3(v,v);
+//     if ( c2 <= c1 ){
+//         d = sub3(Point, Seg_P1);
+//         return dot3(d,d);
+//     }
+//     double b = c1 / c2;
+//     vec3 tmp = multScalar3(v, b);
+//     Pb = add3(Seg_P0, tmp);
+
+//     // this routine has some numerical instability
+//     // this probably insn't the best fix but it seems
+//     // to behave?
+//     d1 = dot3(Point,Pb);
+//     d2 = dot3(x,x);
+//     d3 = dot3(w,w);
+//     minDist = d1;
+//     if (d2 < minDist){
+//         minDist = d2;
+//     }
+//     if (d3 < minDist){
+//         minDist = d3;
+//     }
+
+//     return minDist;
+// }
+
+// dist_Point_to_Segment(): get the distance of a point to a segment
+//     Input:  a Point P and a Segment S (in any dimension)
+//     Return: the shortest squared distance from P to S
+// dist_Point_to_Segment( Point P, Segment S)
 double dist3D_Point_to_Segment( vec3 Point, vec3 Seg_P0, vec3 Seg_P1)
 {
-    vec3 d, Pb;
+    vec3 tmp, Pb;
     vec3 v = sub3(Seg_P1, Seg_P0);
     vec3 w = sub3(Point, Seg_P0);
-    vec3 x = sub3(Point, Seg_P1);
-    double d1, d2, d3, minDist;
+    // double d1, d2, d3, minDist;
 
     double c1 = dot3(w,v);
     if ( c1 <= 0 ){
-        d = sub3(Point, Seg_P0);
-        return dot3(d,d);
+        tmp = sub3(Point, Seg_P0);
+        return dot3(tmp, tmp);
     }
 
     double c2 = dot3(v,v);
     if ( c2 <= c1 ){
-        d = sub3(Point, Seg_P1);
-        return dot3(d,d);
+        tmp = sub3(Point, Seg_P1);
+        return dot3(tmp, tmp);
     }
+
     double b = c1 / c2;
-    vec3 tmp = multScalar3(v, b);
+    tmp = multScalar3(v, b);
     Pb = add3(Seg_P0, tmp);
+    tmp = sub3(Point, Pb);
+    return dot3(tmp, tmp);
+
 
     // this routine has some numerical instability
     // this probably insn't the best fix but it seems
     // to behave?
-    d1 = dot3(Point,Pb);
-    d2 = dot3(x,x);
-    d3 = dot3(w,w);
-    minDist = d1;
-    if (d2 < minDist){
-        minDist = d2;
-    }
-    if (d3 < minDist){
-        minDist = d3;
-    }
+    // d1 = dot3(Point,Pb);
+    // d2 = dot3(x,x);
+    // d3 = dot3(w,w);
+    // minDist = d1;
+    // if (d2 < minDist){
+    //     minDist = d2;
+    // }
+    // if (d3 < minDist){
+    //     minDist = d3;
+    // }
 
-    return minDist;
+    // return minDist;
 }
+
 
 
 // Ramer-Douglas-Peucker for segmentizing paths!

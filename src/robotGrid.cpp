@@ -169,14 +169,17 @@ void RobotGrid::initGrid(){
         // add GFAs (potential to collide with)
         for (auto gfaPair : gfaDict){
             auto gfa = gfaPair.second;
+            vec3 ppoint = {r1->xPos, r1->yPos, r1->elementHeight};
             auto dist2 = dist3D_Point_to_Segment(
-                {r1->xPos, r1->yPos, r1->elementHeight},
+                ppoint,
                 gfa->collisionSegWokXYZ[0],
                 gfa->collisionSegWokXYZ[1]
             );
             auto dist = sqrt(dist2);
             minSep = r1->alphaLen + r1->betaLen + r1->collisionBuffer + gfa->collisionBuffer;
+            // std::cout << "dist2 " << dist2 << " dist " << dist << " minSep " << minSep <<std::endl;
             if (dist < minSep) {
+                // std::cout << "adding gfa " << gfa->id << " as neighbor to robot " << r1->id << std::endl;
                 r1->addGFANeighbor(gfa->id);
             }
         }

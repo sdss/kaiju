@@ -3,6 +3,6 @@
 
 
 GFA::GFA(int id, std::array<vec3, 2> collisionSegWokXYZ, double collisionBuffer)
-    : id(id), collisionSegWokXYZ(xyzWok), collisionBuffer(collisionBuffer) {
+    : id(id), collisionSegWokXYZ(collisionSegWokXYZ), collisionBuffer(collisionBuffer) {
 }
 

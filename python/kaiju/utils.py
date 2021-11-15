@@ -139,10 +139,11 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
         fPoint = Point(fiducial.xyzWok[0], fiducial.xyzWok[1]).buffer(fiducial.collisionBuffer) #, cap_style=1)
         patch = PolygonPatch(fPoint, fc="cyan", ec="black", alpha=0.8, zorder=10)
         ax.add_patch(patch)
-    for gfaSeg in rg.gfaList:
+    for gfa in rg.gfaDict.values():
+
         gLine = LineString(
-            [(gfaSeg[0][0], gfaSeg[0][1]), (gfaSeg[1][0], gfaSeg[1][1])]
-        ).buffer(rg.gfaCollisionBuffer, cap_style=1)
+            [gfa.collisionSegWokXYZ[0], gfa.collisionSegWokXYZ[1]]
+        ).buffer(gfa.collisionBuffer, cap_style=1)
         patch = PolygonPatch(gLine, fc="cyan", ec="black", alpha=0.5, zorder=10)
         ax.add_patch(patch)
 

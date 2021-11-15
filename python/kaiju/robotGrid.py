@@ -970,7 +970,7 @@ class RobotGridCalib(RobotGrid):
                 bossBetaXY=[row.bossX, row.bossY],
                 apBetaXY=[row.apX, row.apY],
                 collisionSegBetaXY=None,
-                collisionBuffer=2
+                # collisionBuffer=2
             )
 
         for ii, row in fiducialCoords.iterrows():

@@ -31,8 +31,7 @@ Robot::Robot(
     yPos = basePos[1];
     minReach = metBetaXY[0] - alphaLen; // close enough
     maxReach = metBetaXY[0] + alphaLen;
-    //!!!! cs check !!!!//
-    // betaLen = collisionSegBetaXY[1][0];
+    betaLen = collisionSegBetaXY[1][0];
 
 
     hasBoss = true; // break this out into a config/constructor?
