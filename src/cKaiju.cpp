@@ -30,6 +30,11 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("collisionBuffer", &Fiducial::collisionBuffer)
         .def_readwrite("id", &Fiducial::id);
 
+    py::class_<GFA, std::shared_ptr<GFA>>(m, "GFA", py::dynamic_attr())
+        .def_readwrite("collisionSegWokXYZ", &GFA::collisionSegWokXYZ)
+        .def_readwrite("collisionBuffer", &GFA::collisionBuffer)
+        .def_readwrite("id", &GFA::id);
+
     py::class_<Target, std::shared_ptr<Target>>(m, "Target", py::dynamic_attr())
         .def_readwrite("xWok", &Target::x)
         .def_readwrite("yWok", &Target::y)
@@ -56,6 +61,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("robotNeighbors", &Robot::robotNeighbors)
         .def_readwrite("scoreVec", &Robot::scoreVec)
         .def_readwrite("fiducialNeighbors", &Robot::fiducialNeighbors)
+        .def_readwrite("gfaNeighbors", &Robot::gfaNeighbors)
         .def_readwrite("angStep", &Robot::angStep)
         .def_readwrite("collisionBuffer", &Robot::collisionBuffer)
         .def_readwrite("lastStepNum", &Robot::lastStepNum)
@@ -89,7 +95,6 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("assignedTargetID", &Robot::assignedTargetID)
         .def_readwrite("alphaPath", &Robot::alphaPath)
         .def_readwrite("betaPath", &Robot::betaPath)
-        // .def_readwrite("onTargetVec", &Robot::onTargetVec)
         .def_readwrite("smoothedAlphaPath", &Robot::smoothedAlphaPath)
         .def_readwrite("smoothedBetaPath", &Robot::smoothedBetaPath)
         .def_readwrite("simplifiedAlphaPath", &Robot::simplifiedAlphaPath)
@@ -114,11 +119,8 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("setXYUniform", &Robot::setXYUniform)
         .def("randomXYUniform", &Robot::randomXYUniform)
         .def("alphaBetaFromWokXYZ", &Robot::alphaBetaFromWokXYZ)
-        // .def("setAlphaBetaRand", &Robot::setAlphaBetaRand)
-        // .def("isCollided", &Robot::isCollided)
         .def("setFiberToWokXYZ", &Robot::setFiberToWokXYZ)
         .def("score", &Robot::score)
-        // .def("decollide", &Robot::decollide)
         .def("getMaxReach", &Robot::getMaxReach)
         .def("isAssigned", &Robot::isAssigned);
 
@@ -137,8 +139,6 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("greed", &RobotGrid::greed)
         .def_readwrite("phobia", &RobotGrid::phobia)
         .def_readwrite("angStep", &RobotGrid::angStep)
-        .def_readwrite("gfaList", &RobotGrid::gfaList)
-        .def_readwrite("gfaCollisionBuffer", &RobotGrid::gfaCollisionBuffer)
         .def_readwrite("collisionBuffer", &RobotGrid::collisionBuffer)
         .def_readwrite("smoothCollisions", &RobotGrid::smoothCollisions)
         .def_readwrite("didFail", &RobotGrid::didFail)
@@ -146,6 +146,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("nRobots", &RobotGrid::nRobots)
         .def_readwrite("fiducialDict", &RobotGrid::fiducialDict)
         .def_readwrite("targetDict", &RobotGrid::targetDict)
+        .def_readwrite("gfaDict", &RobotGrid::gfaDict)
         .def_readwrite("maxPathSteps", &RobotGrid::maxPathSteps)
         .def_readwrite("maxDisplacement", &RobotGrid::maxDisplacement)
         .def("throwAway", &RobotGrid::throwAway)
@@ -158,16 +159,15 @@ PYBIND11_MODULE(cKaiju, m) {
                 "bossBetaXY"_a, "apBetaXY"_a,
                 "collisionSegBetaXY"_a,
                "hasApogee"_a = true)
-        // .def("addRobot", &RobotGrid::addRobot,
-        //     "robotID"_a, "holeID"_a, "xPos"_a, "yPos"_a, "hasApogee"_a = true)
+
         .def("addFiducial", &RobotGrid::addFiducial,
-            "fiducialID"_a, "xyzWok"_a, "collisionBuffer"_a = 1.5)
+            "fiducialID"_a, "xyzWok"_a, "collisionBuffer"_a = 2.5)
+        .def("addGFA", &RobotGrid::addGFA,
+            "gfaID"_a, "collisionSegWokXYZ"_a, "collisionBuffer"_a = 2.5)
         .def("addTarget", &RobotGrid::addTarget,
             "targetID"_a, "xyzWok"_a, "fiberType"_a, "priority"_a = 0)
-        // .def("addTarget", &RobotGrid::addTarget,
-        //     "targetID"_a, "x"_a, "y"_a, "fiberType"_a, "priority"_a = 0)
+
         .def("initGrid", &RobotGrid::initGrid)
-        // .def("optimizeTargets", &RobotGrid::optimizeTargets)
         .def("decollideGrid", &RobotGrid::decollideGrid)
         .def("decollideRobot", &RobotGrid::decollideRobot)
         .def("homeRobot", &RobotGrid::homeRobot)
@@ -175,28 +175,25 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("smoothPaths", &RobotGrid::smoothPaths)
         .def("verifySmoothed", &RobotGrid::verifySmoothed)
         .def("setCollisionBuffer", &RobotGrid::setCollisionBuffer)
-        // .def("pathGen", &RobotGrid::pathGen)
         .def("pathGenGreedy", &RobotGrid::pathGenGreedy)
         .def("pathGenMDP", &RobotGrid::pathGenMDP)
         .def("pathGenEscape", &RobotGrid::pathGenEscape)
-        // .def("setTargetList", &RobotGrid::setTargetList)
-        // .def("addTargetList", &RobotGrid::addTargetList)
+
         .def("targetlessRobots", &RobotGrid::targetlessRobots)
         .def("unreachableTargets", &RobotGrid::unreachableTargets)
         .def("assignedTargets", &RobotGrid::assignedTargets)
         .def("getRobot", &RobotGrid::getRobot)
         .def("clearTargetDict", &RobotGrid::clearTargetDict)
-        // .def("isValidRobotTarget", &RobotGrid::isValidRobotTarget)
         .def("unassignTarget", &RobotGrid::unassignTarget)
         .def("unassignRobot", &RobotGrid::unassignRobot)
         .def("isValidAssignment", &RobotGrid::isValidAssignment,
             "robotID"_a, "targID"_a)
         .def("assignRobot2Target", &RobotGrid::assignRobot2Target,
             "robotID"_a, "targID"_a)
-        // .def("pairwiseSwap", &RobotGrid::pairwiseSwap)
         .def("unassignedRobots", &RobotGrid::unassignedRobots)
         .def("robotColliders", &RobotGrid::robotColliders)
         .def("fiducialColliders", &RobotGrid::fiducialColliders)
+        .def("gfaColliders", &RobotGrid::gfaColliders)
         .def("isCollidedWithAssigned", &RobotGrid::isCollidedWithAssigned)
         .def("wouldCollideWithAssigned", &RobotGrid::wouldCollideWithAssigned)
         .def("isCollided", &RobotGrid::isCollided);
