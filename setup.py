@@ -48,7 +48,8 @@ def getSources():
         'src/robotGrid.cpp',
         'src/utils.cpp',
         'src/target.cpp',
-        'src/fiducial.cpp'
+        'src/fiducial.cpp',
+        'src/gfa.cpp'
     ]
 
 
