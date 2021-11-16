@@ -548,15 +548,23 @@ bool RobotGrid::isValidAssignment(int robotID, long targetID){
     double savedAlpha = robot->alpha;
     double savedBeta = robot->beta;
     robot->setAlphaBeta(ab[0], ab[1]);
+    bool returnValue = true;
+
     auto collidedFiducials = fiducialColliders(robotID);
     if (collidedFiducials.size() != 0){
         // this target interferes with a fiducial which is immobile
         robot->setAlphaBeta(savedAlpha, savedBeta);
-        return false;
+        returnValue = false;
+    }
+    auto collidedGFAs = gfaColliders(robotID);
+    if (collidedGFAs.size() != 0){
+        // this target interferes with a GFA which is immobile
+        robot->setAlphaBeta(savedAlpha, savedBeta);
+        returnValue = false;
     }
     // reset alpha beta
     robot->setAlphaBeta(savedAlpha, savedBeta);
-    return true;
+    return returnValue;
 }
 
 
@@ -577,21 +585,27 @@ bool RobotGrid::isCollided(int robotID){
     return false;
 }
 
-std::tuple<bool, bool, std::vector<int>> RobotGrid::isCollidedWithAssigned(int robotID){
-  bool collided, fiducial_collided;
-  std::vector<int> assignedRobotsColliding;
-  auto robotsColliding = robotColliders(robotID);
-  if (robotsColliding.size() != 0){
-    for (auto robotColliding : robotsColliding) {
-      if(robotDict[robotColliding]->isAssigned()) {
-	assignedRobotsColliding.push_back(robotColliding);
-      }
+std::tuple<bool, bool, bool, std::vector<int>> RobotGrid::isCollidedWithAssigned(int robotID){
+    bool collided, fiducial_collided, gfa_collided;
+    std::vector<int> assignedRobotsColliding;
+    auto robotsColliding = robotColliders(robotID);
+    if (robotsColliding.size() != 0){
+        for (auto robotColliding : robotsColliding) {
+            if(robotDict[robotColliding]->isAssigned()) {
+	           assignedRobotsColliding.push_back(robotColliding);
+            }
+        }
     }
-  }
-  auto fiducialsColliding = fiducialColliders(robotID);
-  collided = (fiducialsColliding.size() != 0) || (assignedRobotsColliding.size() != 0);
-  fiducial_collided = (fiducialsColliding.size() != 0);
-  return std::make_tuple(collided, fiducial_collided, assignedRobotsColliding);
+    auto fiducialsColliding = fiducialColliders(robotID);
+    auto gfasColliding = gfaColliders(robotID);
+
+    fiducial_collided = (fiducialsColliding.size() != 0);
+    gfa_collided = (gfasColliding.size() != 0);
+
+    collided = (fiducial_collided || gfa_collided || (assignedRobotsColliding.size() != 0));
+
+
+    return std::make_tuple(collided, fiducial_collided, gfa_collided, assignedRobotsColliding);
 }
 
 void RobotGrid::homeRobot(int robotID){
@@ -600,32 +614,32 @@ void RobotGrid::homeRobot(int robotID){
 		robot->setAlphaBeta(0., 180.);
 }
 
-std::tuple<bool, bool, std::vector<int>> RobotGrid::wouldCollideWithAssigned(int robotID, long targID){
-  long currentTargetID;
-  int currentRobotID;
-  std::tuple<bool, bool, std::vector<int>> result;
-  
-  auto robot = robotDict[robotID];
-  if(robot->isAssigned())
-    currentTargetID = robot->assignedTargetID;
-  else
-    currentTargetID = -1;
-  
-  currentRobotID = targetDict[targID]->assignedRobotID;
+std::tuple<bool, bool, bool, std::vector<int>> RobotGrid::wouldCollideWithAssigned(int robotID, long targID){
+    long currentTargetID;
+    int currentRobotID;
+    std::tuple<bool, bool, bool, std::vector<int>> result;
 
-  assignRobot2Target(robotID, targID);
-  result = isCollidedWithAssigned(robotID);
-  
-  if(currentTargetID >= 0)
+    auto robot = robotDict[robotID];
+    if(robot->isAssigned())
+    currentTargetID = robot->assignedTargetID;
+    else
+    currentTargetID = -1;
+
+    currentRobotID = targetDict[targID]->assignedRobotID;
+
+    assignRobot2Target(robotID, targID);
+    result = isCollidedWithAssigned(robotID);
+
+    if(currentTargetID >= 0)
     assignRobot2Target(robotID, currentTargetID);
-  else
+    else
     unassignRobot(robotID);
-  
-  if(currentRobotID >= 0)
+
+    if(currentRobotID >= 0)
     assignRobot2Target(currentRobotID, targID);
-  
-  return result;
-}
+
+    return result;
+    }
 
 
 bool RobotGrid::neighborEncroachment(std::shared_ptr<Robot> robot1){
