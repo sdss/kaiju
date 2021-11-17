@@ -2,7 +2,8 @@
 
 Changelog
 =========
-* **1.2.0a** Add GFA avoidance, modify API for robotGrid.isCollidedWithAssigned to return info about GFAs
+* **1.2.0a0** Add GFA avoidance.  Modify API for robotGrid.isCollidedWithAssigned, and RobotGrid.wouldCollideWithAssigned, now returning info about GFAs.  Move collsion buffer out of RobotGrid to Robot
+(allows for unique collision buffer for each robot, fiducal, GFA)
 
 
 * **1.1.0**  Add coordio dependency, implement handling for calibration offsets.

@@ -13,8 +13,8 @@ const double alphaLenRough = 7.4;
 const double betaLenRough = 15;
 
 
-RobotGrid::RobotGrid(double angStep, double collisionBuffer, double epsilon, int seed)
-    : angStep(angStep), collisionBuffer(collisionBuffer), epsilon(epsilon), seed(seed)
+RobotGrid::RobotGrid(double angStep, double epsilon, int seed)
+    : angStep(angStep), epsilon(epsilon), seed(seed)
 {
     srand(seed);
 
@@ -28,55 +28,6 @@ RobotGrid::RobotGrid(double angStep, double collisionBuffer, double epsilon, int
             perturbArray.push_back({ii*angStep, jj*angStep});
         }
     }
-
-    // hardcoded and slow, for apo flat wok only!!!
-//     std::array<vec3, 2> gfa1, gfa2, gfa3, gfa4, gfa5, gfa6;
-
-//     gfaCollisionBuffer = 2;
-
-//     vec3 gfa1a = {-267.49, 89.15, 143.1};
-//     vec3 gfa1b = {-210.95, 187.08, 143.1};
-
-//     vec3 gfa2a = {-56.54, 276.23, 143.1};
-//     vec3 gfa2b = {56.54, 276.23, 143.1};
-
-//     vec3 gfa3a = {210.95, 187.07, 143.1};
-//     vec3 gfa3b = {267.49, 89.15, 143.1};
-
-//     vec3 gfa4a = {267.49, -89.15, 143.1};
-//     vec3 gfa4b = {210.95, -187.08, 143.1};
-
-//     vec3 gfa5a = {56.54, -276.23, 143.1};
-//     vec3 gfa5b = {-56.54, -276.23, 143.1};
-
-//     vec3 gfa6a = {-210.95, -187.07, 143.1};
-//     vec3 gfa6b = {-267.49, -89.15, 143.1};
-
-//     gfa1[0] = gfa1a;
-//     gfa1[1] = gfa1b;
-
-//     gfa2[0] = gfa2a;
-//     gfa2[1] = gfa2b;
-
-//     gfa3[0] = gfa3a;
-//     gfa3[1] = gfa3b;
-
-//     gfa4[0] = gfa4a;
-//     gfa4[1] = gfa4b;
-
-//     gfa5[0] = gfa5a;
-//     gfa5[1] = gfa5b;
-
-//     gfa6[0] = gfa6a;
-//     gfa6[1] = gfa6b;
-
-//     gfaList[0] = gfa1;
-//     gfaList[1] = gfa2;
-//     gfaList[2] = gfa3;
-//     gfaList[3] = gfa4;
-//     gfaList[4] = gfa5;
-//     gfaList[5] = gfa6;
-
 }
 
 void RobotGrid::addRobot(
@@ -85,7 +36,7 @@ void RobotGrid::addRobot(
     double betaOffDeg, double elementHeight, double scaleFac, vec2 metBetaXY,
     vec2 bossBetaXY, vec2 apBetaXY,
     std::array<vec2, 2> collisionSegBetaXY,
-    bool hasApogee
+    bool hasApogee, double collisionBuffer, bool lefthanded
 ){
     // ensure robot id doesn't already exist
     if (initialized){
@@ -100,9 +51,9 @@ void RobotGrid::addRobot(
         betaOffDeg, elementHeight, scaleFac, metBetaXY,
         bossBetaXY, apBetaXY,
         collisionSegBetaXY, angStep,
-        hasApogee
+        hasApogee, collisionBuffer, lefthanded
     );
-    robotDict[robotID]->setCollisionBuffer(collisionBuffer);
+    // robotDict[robotID]->setCollisionBuffer(collisionBuffer);
 }
 
 void RobotGrid::addTarget(long targetID, vec3 xyzWok, FiberType fiberType, double priority){
@@ -211,10 +162,25 @@ std::shared_ptr<Robot> RobotGrid::getRobot(int robotID){
 }
 
 void RobotGrid::setCollisionBuffer(double newBuffer){
-    collisionBuffer = newBuffer;
     for (auto rPair : robotDict){
         auto r = rPair.second;
         r->setCollisionBuffer(newBuffer);
+    }
+}
+
+void RobotGrid::shrinkCollisionBuffer(double absShrink){
+    for (auto rPair : robotDict){
+        auto r = rPair.second;
+        double oldBuffer = r->collisionBuffer;
+        r->setCollisionBuffer(oldBuffer - absShrink);
+    }
+}
+
+void RobotGrid::growCollisionBuffer(double absGrow){
+    for (auto rPair : robotDict){
+        auto r = rPair.second;
+        double oldBuffer = r->collisionBuffer;
+        r->setCollisionBuffer(oldBuffer + absGrow);
     }
 }
 
@@ -241,8 +207,7 @@ void RobotGrid::decollideGrid(){
     }
 
     if (getNCollisions()){
-        std::cout << "cannot decolide grid" << std::endl;
-        throw std::runtime_error("Unable do decollide robot!!!");
+        throw std::runtime_error("Unable to decollide this pathologic grid!!!");
     }
 
 }
@@ -646,7 +611,6 @@ bool RobotGrid::neighborEncroachment(std::shared_ptr<Robot> robot1){
     // score, separation2
     // look ahead and see robots getting close
     double dist2;
-    double minDist = 2*collisionBuffer + 3*maxDisplacement;
 
     // turn off neighbor encroachment if robot is disables
     if (robot1->isOffline){
@@ -657,6 +621,7 @@ bool RobotGrid::neighborEncroachment(std::shared_ptr<Robot> robot1){
     for (auto otherRobotID : robot1->robotNeighbors){
         auto robot2 = robotDict[otherRobotID];
         // squared distance returned
+        double minDist = robot1->collisionBuffer + robot2->collisionBuffer + 3*maxDisplacement;
         dist2 = dist3D_Segment_to_Segment(
                 robot2->collisionSegWokXYZ[0], robot2->collisionSegWokXYZ[1],
                 robot1->collisionSegWokXYZ[0], robot1->collisionSegWokXYZ[1]
@@ -684,9 +649,11 @@ std::vector<int> RobotGrid::robotColliders(int robotID){
                 robot2->collisionSegWokXYZ[0], robot2->collisionSegWokXYZ[1],
                 robot1->collisionSegWokXYZ[0], robot1->collisionSegWokXYZ[1]
             );
-        dist = sqrt(dist2);
+        collideDist2 = (robot1->collisionBuffer + robot2->collisionBuffer + maxDisplacement)
+                       * (robot1->collisionBuffer + robot2->collisionBuffer + maxDisplacement);
+        // dist = sqrt(dist2);
         // collideDist2 = (2*collisionBuffer)*(2*collisionBuffer);
-        if (dist < (2*collisionBuffer + maxDisplacement)){
+        if (dist2 < collideDist2){
             // std::cout << "dist " << dist2 - collide_dist_squared << std::endl;
             collidingNeighbors.push_back(robot2->id);
         }
@@ -1154,8 +1121,9 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
             );
 
             localEnergy += 1/dist2;
-
-            if (dist2 < (2*collisionBuffer+maxDisplacement)*(2*collisionBuffer+maxDisplacement)){
+            double collideDist2 = (robot->collisionBuffer + otherRobot->collisionBuffer + maxDisplacement) *
+                                  (robot->collisionBuffer + otherRobot->collisionBuffer + maxDisplacement);
+            if (dist2 < collideDist2){
                 // this is not a viable move option
                 // go on to next try
                 didCollide = true;

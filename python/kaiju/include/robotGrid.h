@@ -14,7 +14,7 @@ public:
     AlgType algType;
     int nRobots;
     double epsilon;
-    double collisionBuffer;
+    // double collisionBuffer;
     double angStep;
     double greed;
     double phobia;
@@ -31,13 +31,14 @@ public:
     std::map<long, std::shared_ptr<Target>> targetDict;
     std::vector<vec2> perturbArray; // alpha/beta perturbations
 
-    RobotGrid (double angStep = 1, double collisionBuffer = 2, double epsilon = 2, int seed = 0);
+    RobotGrid (double angStep = 1, double epsilon = 2, int seed = 0);
     void addRobot(
         int robotID, std::string holeID, vec3 basePos, vec3 iHat, vec3 jHat,
         vec3 kHat, vec3 dxyz, double alphaLen, double alphaOffDeg,
         double betaOffDeg, double elementHeight, double scaleFac, vec2 metBetaXY,
         vec2 bossBetaXY, vec2 apBetaXY,
-        std::array<vec2, 2> collisionSegBetaXY, bool hasApogee = true
+        std::array<vec2, 2> collisionSegBetaXY, bool hasApogee = true, double collisionBuffer = 2.0,
+        bool lefthanded = false
     );
     void addTarget(long targetID, vec3 xyzWok, FiberType fiberType, double priority = 0);
     void addFiducial(int fiducialID, vec3 xyzWok, double collisionBuffer = 2.5);
@@ -54,7 +55,10 @@ public:
     void smoothPaths(int points);
     void verifySmoothed();
 
+    // only modifies robot collision buffers
     void setCollisionBuffer(double newBuffer);
+    void shrinkCollisionBuffer(double absShrink);
+    void growCollisionBuffer(double absGrow);
 
     std::shared_ptr<Robot> getRobot(int robotID);
     std::vector<int> targetlessRobots(); // returns robotIDs

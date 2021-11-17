@@ -12,9 +12,10 @@ def test_offlineRobots(plot=False):
     # xPos, yPos = utils.hexFromDia(35, pitch=22.4)
     seed = 6
     rg = RobotGridCalib(
-        stepSize=angStep, collisionBuffer=collisionBuffer,
+        stepSize=angStep,
         epsilon=epsilon, seed=seed
     )
+    rg.setCollisionBuffer(collisionBuffer)
 
 
     for rID in rg.robotDict:

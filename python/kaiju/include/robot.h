@@ -76,7 +76,7 @@ public:
             double betaOffDeg, double elementHeight, double scaleFac, vec2 metBetaXY,
             vec2 bossBetaXY, vec2 apBetaXY,
             std::array<vec2, 2> collisionSegBetaXY, double angStep = 1,
-            bool hasApogee = true, bool lefthanded = false
+            bool hasApogee = true, double collisionBuffer = 2.0, bool lefthanded = false
     );
     void setAlphaBeta (double alpha, double beta);
     void setDestinationAlphaBeta(double alpha, double beta);

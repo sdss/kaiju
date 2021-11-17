@@ -119,7 +119,7 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
 
         topCollideLine = LineString(
             [(alphaX, alphaY), (betaX, betaY)]
-        ).buffer(rg.collisionBuffer, cap_style=1)
+        ).buffer(robot.collisionBuffer, cap_style=1)
         topcolor = 'blue'
         edgecolor = 'black'
         if not robot.isAssigned():
@@ -256,58 +256,6 @@ def hexFromDia(nDia, pitch=22.4, rotAngle=0):
     ind = numpy.lexsort((xAll, yAll))
     return xAll[ind], yAll[ind]
 
-# def robotGridFromFilledHex(stepSize=1, collisionBuffer=2, seed=0, rotAngle=0):
-#     gridFile = os.path.join(os.environ["KAIJU_DIR"], "etc", "fps_filledHex.txt")
-#     # Row   Col     X (mm)  Y (mm)          Assignment
-#     #
-#     #-13   0 -145.6000 -252.1866  BA
-#     #-13   1 -123.2000 -252.1866  BA
-#     bossXY = []
-#     baXY = []
-#     fiducialXY = []
-#     cos = numpy.cos(numpy.radians(rotAngle))
-#     sin = numpy.sin(numpy.radians(rotAngle))
-#     rotMat = numpy.array([
-#         [cos, sin],
-#         [-sin, cos]
-#     ])
-#     with open(gridFile, "r") as f:
-#         lines = f.readlines()
-#     for line in lines:
-#         line = line.strip()
-#         line = line.split("#")[0]
-#         if not line:
-#             continue
-#         row, col, x, y, fType = line.split()
-#         x = float(x)
-#         y = float(y)
-#         if rotAngle:
-#             x, y = numpy.dot([x,y], rotMat)
-#         coords = [x, y]
-#         if fType == "BA":
-#             baXY.append(coords)
-#         elif fType == "BOSS":
-#             bossXY.append(coords)
-#         else:
-#             fiducialXY.append(coords)
-
-
-#     epsilon = stepSize * 2.2
-
-#     rg = RobotGrid(stepSize, collisionBuffer, epsilon, seed)
-#     robotID = 0
-#     hasApogee = False
-#     for b in bossXY:
-#         rg.addRobot(robotID, str(robotID), b[0], b[1], hasApogee)
-#         robotID += 1
-#     hasApogee = True
-#     for ba in baXY:
-#         rg.addRobot(robotID, str(robotID), ba[0], ba[1], hasApogee)
-#         robotID += 1
-#     for fiducialID, fiducial in enumerate(fiducialXY):
-#         rg.addFiducial(fiducialID, fiducial[0], fiducial[1])
-#     rg.initGrid()
-#     return rg
 
 
 

@@ -20,9 +20,9 @@ from coordio.defaults import IHAT, JHAT, KHAT, calibration
 import pandas as pd
 
 
-positionerTable = calibration.positionerTable
-wokCoords = calibration.wokCoords
-fiducialCoords = calibration.fiducialCoords
+# positionerTable = calibration.positionerTable
+# wokCoords = calibration.wokCoords
+# fiducialCoords = calibration.fiducialCoords
 
 # __all__ = ['RobotGrid', 'RobotGridFilledHex']
 # default orientation of positioner to wok
@@ -49,10 +49,19 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
     ----------
 
     stepSize : float, np.float32
-        step size for paths (degrees), default 1.
+        step size for paths (degrees), default 0.1.
 
-    collisionBuffer : float, np.float32
-        half-width of beta arm, including buffer (mm), default 2.0
+    epsilon : float, or None
+        distance metric for path simplification, smaller
+        values yeild more points, default is stepsize * 2.2
+
+    seed : int
+        random seed for grid
+
+    scaleFac : float
+        multiplicative scale factor to model thermal expansion of wok,
+        default is 1
+
 
     Attributes:
     ----------
@@ -60,9 +69,6 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
     stepSize : float, np.float32
         step size for paths (degrees). A maximum perturbation allowed for either
         alpha or beta axes
-
-    collisionBuffer : float, np.float32
-        half-width of beta arm, including buffer (mm)
 
     epsilon : float
         smoothing parameter used in the RDP path simplification.  Smaller values
@@ -91,18 +97,17 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         path generation failed, not all robots reached target
 
     nSteps : int
-        steps taken to
+        steps taken to generate a path
 
     """
     def __init__(
-        self, stepSize=1., collisionBuffer=2.0,
+        self, stepSize=0.1,
         epsilon=None, seed=0, scaleFac=1):
 
         np.random.seed(0) # for seedifying stuff out here in python
 
         self.stepSize = stepSize
         self.scaleFac = scaleFac
-        self.collisionBuffer = collisionBuffer
         if epsilon is None:
             self.epsilon = stepSize * 2.2
         else:
@@ -110,8 +115,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         self.seed = seed
         self.totalReplaced = 0 # hack for now until it goes into the C++
         self.runtime = 0 # hack for now until
-        super().__init__(self.stepSize, self.collisionBuffer,
-                         self.epsilon, self.seed)
+        super().__init__(self.stepSize, self.epsilon, self.seed)
         self._load_grid()
         return
 
@@ -208,7 +212,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         cb = self.collisionBuffer
         self.smoothPaths(smoothPoints)
         self.simplifyPaths()
-        self.setCollisionBuffer(cb - collisionShrink)
+        self.shrinkCollisionBuffer(collisionShrink)
         self.verifySmoothed()
         self.setCollisionBuffer(cb)
 
@@ -264,7 +268,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         metBetaXY=coordio.defaults.MET_BETA_XY,
         bossBetaXY=coordio.defaults.BOSS_BETA_XY,
         apBetaXY=coordio.defaults.AP_BETA_XY,
-        collisionSegBetaXY=None
+        collisionSegBetaXY=None, collisionBuffer=2, lefthanded=False
     ):
 
         if collisionSegBetaXY is None:
@@ -277,8 +281,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
             # to allow "corner brushes"?
             # cornerProtection = 0.3  # mm
             cornerProtection = 0.5
-            r = self.collisionBuffer
-            dxTip = np.sqrt(r**2 + (tipFlat/2)**2) - cornerProtection
+            dxTip = np.sqrt(collisionBuffer**2 + (tipFlat/2)**2) - cornerProtection
             #dxPost = r - betaPost
             dxPost = 0
             collisionSegBetaXY = [
@@ -295,7 +298,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
             list(kHat), list(dxyz), alphaLen, alphaOffDeg,
             betaOffDeg, elementHeight, self.scaleFac, list(metBetaXY),
             list(bossBetaXY), list(apBetaXY), collisionSegBetaXY,
-            hasApogee
+            hasApogee, collisionBuffer, lefthanded
         )
 
     def addFiducial(self, fiducialID, xyzWok, collisionBuffer=1.5):
@@ -360,7 +363,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         Dark blue are assigned robots.
         Red are collided robots
         Light blue are unassigned robots
-"""
+        """
         plt.figure(figsize=(10, 10))
         ax = plt.gca()
 
@@ -372,7 +375,6 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         plt.xlim(np.array([-1., 1.]) * rr)
         plt.ylim(np.array([-1., 1.]) * rr)
         return
-
 
     def tofits(self, filename=None):
         """Write robot information to FITS file
@@ -388,7 +390,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
 
         HDU1 contains the robot information
         HDU2 contains the target information
-"""
+        """
         robot_array = self.robot_array()
         target_array = self.target_array()
         fitsio.write(filename, robot_array, clobber=True)
@@ -408,7 +410,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         --------
 
         Assumes the format written out by tofits()
-"""
+        """
         robot_array = fitsio.read(filename, ext=1)
         target_array = fitsio.read(filename, ext=2)
         self.clearTargetList()
@@ -597,10 +599,15 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         using __dict__ but haven't figured it out yet
         """
 
+        # get collision buffer from the first robot
+        # no longer lives on the RobotGrid
+        # note robots may have unique collision buffer sizes now...
+        cb = list(self.robotDict.items())[0].collisionBuffer
+
         r = {}
         r["nRobots"] = self.nRobots
         r["epsilon"] = self.epsilon
-        r["collisionBuffer"] = self.collisionBuffer
+        r["collisionBuffer"] = cb
         r["angStep"] = self.angStep
         r["didFail"] = self.didFail
         r["nSteps"] = self.nSteps
@@ -699,7 +706,6 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         else:
             return json.dumps(d)
 
-
     def robot_dict(self):
         """Create dictionary with robot information
 
@@ -708,7 +714,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
 
         Each value in dictionary contains a list with an element per robot.
         Fiducial information is not included.
-"""
+        """
         robot_dict = dict()
         rd = self.robotDict
         ks = rd.keys()
@@ -749,7 +755,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         --------
 
         Each value in dictionary contains a list with an element per target.
-"""
+        """
         ks = list(self.targetDict.keys())
         nks = len(ks)
         target_dict = dict()
@@ -775,7 +781,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
 
         Probably this should just return the jsons and not the "robot_obj ="
         and "target_obj =" parts.
-"""
+        """
         robot_dict = self.robot_dict()
         target_dict = self.target_dict()
         json_str = '{'
@@ -792,7 +798,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
 
         filebase : str
             base of html and json to write to
-"""
+        """
         fieldfile = filebase + '.json'
         fp = open(fieldfile, "w")
         fp.write(self.json())
@@ -898,7 +904,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
 
         Does not clearTargetList() first, so will add targets to
         existing list.
-"""
+        """
         for it in np.arange(len(target_array)):
             ft = target_array['fiberType'][it].decode().strip()
             fiberType = str2FiberType[ft]
@@ -929,7 +935,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         consistent with the robot_array information. It double
         checks that any information in robot_array is consistent
         with this robotGrid.
-"""
+        """
         for ir, r in enumerate(robot_array):
             if(r['isAssigned']):
                 indx = r['assignedTargetID']
@@ -945,10 +951,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
                     raise RuntimeError("Inconsistency in robot file in column {n}".format(n=n))
         return
 
-
-class RobotGridCalib(RobotGrid):
-
-    def _load_grid(self):
+    def _load_from_tables(self, positionerTable, wokCoords, fiducialCoords):
 
         df = pd.merge(positionerTable, wokCoords, on="holeID").reset_index()
 
@@ -970,7 +973,7 @@ class RobotGridCalib(RobotGrid):
                 bossBetaXY=[row.bossX, row.bossY],
                 apBetaXY=[row.apX, row.apY],
                 collisionSegBetaXY=None,
-                # collisionBuffer=2
+                collisionBuffer=2
             )
 
         for ii, row in fiducialCoords.iterrows():
@@ -981,6 +984,7 @@ class RobotGridCalib(RobotGrid):
             )
 
         # gfa locations hard-coded for now
+        # eventually read from a table
         gfaList = [
             [
                 [-267.49, 89.15, coordio.defaults.POSITIONER_HEIGHT],
@@ -1014,101 +1018,34 @@ class RobotGridCalib(RobotGrid):
         self.initGrid()
 
 
-class RobotGridAPO(RobotGrid):
-    """APO grid class for robots in FPS
-
-    Parameters:
-    ----------
-
-    stepSize : float, np.float32
-        step size for paths (degrees), default 1.
-
-    collisionBuffer : float, np.float32
-        half-width of beta arm, including buffer (mm), default 2.0
-
-    Attributes:
-    ----------
-
-    stepSize : float, np.float32
-        step size for paths (degrees). A maximum perturbation allowed for either
-        alpha or beta axes
-
-    collisionBuffer : float, np.float32
-        half-width of beta arm, including buffer (mm)
-
-    epsilon : float
-        smoothing parameter used in the RDP path simplification.  Smaller values
-        mean smaller deviations from the rough path are allowed.
-
-    seed : int
-        seed for random number generator when used
-
-    robotDict : dictionary of Robot class objects
-        all robots
-
-    nRobots : int
-        number of robots
-
-    fiducialDict : dictionary of Fiducial objects
-        positions of fiducials
-
-    targetDict : dictionary of Target class objects
-        targets in field, with ID as keys
-
-    smoothCollisions : int
-        number of collisions detected after attempted path smoothing, should
-        be zero when things work out
-
-    didFail : bool
-        path generation failed, not all robots reached target
-
-    nSteps : int
-        steps taken to
-
-"""
+class RobotGridCalib(RobotGrid):
 
     def _load_grid(self):
-        """Load filled hex grid of robot locations"""
-        gridFile = os.path.join(KAIJU_ETC_DIR, "fps_DesignReference.txt")
+        self._load_from_tables(
+            calibration.positionerTable,
+            calibration.wokCoords,
+            calibration.fiducialCoords
+        )
 
 
-        robotID = 1
-        fiducialID = 1
-        with open(gridFile, "r") as f:
-            lines = f.readlines()
-        for line in lines:
-            line = line.strip()
-            line = line.split("#")[0]
-            if not line:
-                continue
-            row, col, x, y, fType = line.split()
-            # make col 1 indexed to match pdf maps
-            # and wok hole naming convention
-            col = "C" + str(int(col) + 1)
-            if row == "0" or row.startswith("-"):
-                row = "R" + row
-            else:
-                row = "R+" + row
+class RobotGridNominal(RobotGrid):
+    # constructed from a "perfect" grid
+    # useful for testing because calib grid will change overtime
+    # this is a flat wok model, with GFAs
+    def _load_grid(self):
 
-            holeName = row + col
+        positionerTable = pd.read_csv(
+            os.path.join(KAIJU_ETC_DIR, "positionerTable.csv")
+        )
 
-            if fType == "BA":
-                self.addRobot(robotID, holeName, [float(x), float(y), 0], hasApogee=True)
-                robotID += 1
-            elif fType == "BOSS":
-                self.addRobot(robotID, holeName, [float(x), float(y), 0], hasApogee=False)
-                robotID += 1
-            elif fType == "Fiducial":
-                self.addFiducial(fiducialID, [float(x), float(y), coordio.defaults.POSITIONER_HEIGHT], self.collisionBuffer)
-                fiducialID += 1
-            else:
-                # ignore other elements (like empty holes)
-                pass
+        wokCoords = pd.read_csv(
+            os.path.join(KAIJU_ETC_DIR, "wokCoords.csv")
+        )
 
-        self.initGrid()
+        fiducialCoords = pd.read_csv(
+            os.path.join(KAIJU_ETC_DIR, "fiducialCoords.csv")
+        )
 
-        return()
+        self._load_from_tables(positionerTable, wokCoords, fiducialCoords)
 
 
-class RobotGridLCO(RobotGridAPO):
-    pass

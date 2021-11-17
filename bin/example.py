@@ -21,7 +21,8 @@ epsilon = stepSize * 2.2
 internalBuffer = 1.5
 collisionBuffer = 0.25
 
-rg = cKaiju.RobotGrid(stepSize, collisionBuffer, epsilon, 0)
+rg = cKaiju.RobotGrid(stepSize, epsilon, 0)
+rg.setCollisionBuffer(collisionBuffer)
 xPos, yPos = utils.hexFromDia(nDia, pitch=22.4)
 for ii, (xp,yp) in enumerate(zip(xPos,yPos)):
     rg.addRobot(ii, xp, yp)

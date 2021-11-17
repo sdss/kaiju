@@ -1,5 +1,5 @@
 
-from kaiju.robotGrid import RobotGridAPO
+from kaiju.robotGrid import RobotGridNominal
 from kaiju import utils
 import psutil
 import os
@@ -20,7 +20,8 @@ def test_memory():
     # watch memory...
     # xPos, yPos = utils.hexFromDia(19, pitch=22.4)
     for seed in range(nGrids):
-        rg = RobotGridAPO(angStep, collisionBuffer, seed)
+        rg = RobotGridNominal(angStep, seed)
+        rg.setCollisionBuffer(collisionBuffer)
         # for robotID, (x, y) in enumerate(zip(xPos, yPos)):
         #     rg.addRobot(robotID, str(robotID), [x, y,  hasApogee)
         #     # rg.robotDict[robotID].setTargetAlphaBeta(0, 180)

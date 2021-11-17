@@ -52,7 +52,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def(py::init<int, std::string, vec3, vec3, vec3, vec3,
                         vec3, double, double, double,
                         double, double, vec2, vec2, vec2,
-                        std::array<vec2, 2>, double, bool>())
+                        std::array<vec2, 2>, double, bool, double>())
         .def_readwrite("alpha", &Robot::alpha, R"pbdoc(
             Robot's alpha position (degrees).
             )pbdoc")
@@ -131,15 +131,15 @@ PYBIND11_MODULE(cKaiju, m) {
 
             A class for holding a grid of robots.
         )pbdoc")
-        .def(py::init<double, double, double, int>(),
-            "angStep"_a=1, "collisionBuffer"_a = 2, "epsilon"_a = 2, "seed"_a = 0)
+        .def(py::init<double, double, int>(),
+            "angStep"_a=0.1, "epsilon"_a = 2, "seed"_a = 0)
         .def_readwrite("algType", &RobotGrid::algType)
         .def_readwrite("seed", &RobotGrid::seed)
         .def_readwrite("robotDict", &RobotGrid::robotDict)
         .def_readwrite("greed", &RobotGrid::greed)
         .def_readwrite("phobia", &RobotGrid::phobia)
         .def_readwrite("angStep", &RobotGrid::angStep)
-        .def_readwrite("collisionBuffer", &RobotGrid::collisionBuffer)
+        // .def_readwrite("collisionBuffer", &RobotGrid::collisionBuffer)
         .def_readwrite("smoothCollisions", &RobotGrid::smoothCollisions)
         .def_readwrite("didFail", &RobotGrid::didFail)
         .def_readwrite("nSteps", &RobotGrid::nSteps)
@@ -158,7 +158,8 @@ PYBIND11_MODULE(cKaiju, m) {
                 "betaOffDeg"_a, "elementHeight"_a, "scaleFac"_a, "metBetaXY"_a,
                 "bossBetaXY"_a, "apBetaXY"_a,
                 "collisionSegBetaXY"_a,
-               "hasApogee"_a = true)
+               "hasApogee"_a = true, "collisionBuffer"_a=2.0,
+               "lefthanded"_a = false)
 
         .def("addFiducial", &RobotGrid::addFiducial,
             "fiducialID"_a, "xyzWok"_a, "collisionBuffer"_a = 2.5)
@@ -175,6 +176,8 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("smoothPaths", &RobotGrid::smoothPaths)
         .def("verifySmoothed", &RobotGrid::verifySmoothed)
         .def("setCollisionBuffer", &RobotGrid::setCollisionBuffer)
+        .def("shrinkCollisionBuffer", &RobotGrid::shrinkCollisionBuffer)
+        .def("growCollisionBuffer", &RobotGrid::growCollisionBuffer)
         .def("pathGenGreedy", &RobotGrid::pathGenGreedy)
         .def("pathGenMDP", &RobotGrid::pathGenMDP)
         .def("pathGenEscape", &RobotGrid::pathGenEscape)

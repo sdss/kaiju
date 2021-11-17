@@ -1,4 +1,4 @@
-#include <iostream>
+    #include <iostream>
 #include <time.h>       /* time */
 #include <cmath>
 #include <thread>
@@ -17,13 +17,13 @@ Robot::Robot(
     int id, std::string holeID, vec3 basePos, vec3 iHat, vec3 jHat, vec3 kHat,
     vec3 dxyz, double alphaLen, double alphaOffDeg, double betaOffDeg,
     double elementHeight, double scaleFac, vec2 metBetaXY, vec2 bossBetaXY, vec2 apBetaXY,
-    std::array<vec2, 2> collisionSegBetaXY, double angStep, bool hasApogee, bool lefthanded
+    std::array<vec2, 2> collisionSegBetaXY, double angStep, bool hasApogee, double collisionBuffer, bool lefthanded
     ):
     id(id), holeID(holeID), basePos(basePos), iHat(iHat), jHat(jHat),
     kHat(kHat), dxyz(dxyz), alphaLen(alphaLen), alphaOffDeg(alphaOffDeg),
     betaOffDeg(betaOffDeg), elementHeight(elementHeight), scaleFac(scaleFac), metBetaXY(metBetaXY),
     bossBetaXY(bossBetaXY), apBetaXY(apBetaXY),
-    collisionSegBetaXY(collisionSegBetaXY), angStep(angStep), hasApogee(hasApogee),
+    collisionSegBetaXY(collisionSegBetaXY), angStep(angStep), hasApogee(hasApogee), collisionBuffer(collisionBuffer),
     lefthanded(lefthanded)
 {
 
