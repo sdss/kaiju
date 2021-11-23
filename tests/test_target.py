@@ -48,7 +48,6 @@ def test_addTarget():
     assert True
 
 def generateTargs(nTargs, fiberType):
-    # rg = utils.robotGridFromFilledHex()
     rg = RobotGridNominal()
     # put in range -300 300
     randomX = numpy.random.random_sample(nTargs)*650 - 325

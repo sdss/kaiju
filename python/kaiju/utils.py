@@ -45,8 +45,14 @@ def plotTraj(r, figprefix="traj_", dpi=500):
     ax[0].plot(rpb[:,0], rpb[:,1], linewidth=0.2, label="rough beta", alpha=0.8)
     ax[0].plot(spa[:,0], spa[:,1], 'k-', linewidth=0.2, label="smooth alpha")
     ax[0].plot(spb[:,0], spb[:,1], 'k-', linewidth=0.2, label="smooth beta")
-    ax[0].plot(aRDP[:,0], aRDP[:,1], 'oc-', linewidth=0.2, markeredgewidth=0.4, fillstyle="none", markersize=2, label="RDP alpha", alpha=0.7)
-    ax[0].plot(bRDP[:,0], bRDP[:,1], 'oc-', linewidth=0.2, markeredgewidth=0.4, fillstyle="none", markersize=2, label="RDP beta", alpha=0.7)
+    ax[0].plot(
+        aRDP[:,0], aRDP[:,1], 'oc-', linewidth=0.2, markeredgewidth=0.4,
+        fillstyle="none", markersize=2, label="RDP alpha", alpha=0.7
+    )
+    ax[0].plot(
+        bRDP[:,0], bRDP[:,1], 'oc-', linewidth=0.2, markeredgewidth=0.4,
+        fillstyle="none", markersize=2, label="RDP beta", alpha=0.7
+    )
     ax[0].legend()
 
     ax[1].plot(vSteps, av, linewidth=0.2, label="alphaVel", alpha=0.4)
@@ -62,7 +68,11 @@ def plotTraj(r, figprefix="traj_", dpi=500):
     plt.close()
 
 
-def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=False, xlim=None, ylim=None, highlightRobot=None, returnax=False):
+def plotOne(
+    step, robotGrid=None, figname=None, isSequence=True,
+    plotTargets=False, xlim=None, ylim=None,
+    highlightRobot=None, returnax=False
+):
     global rg
     if hasattr(step, "__len__"):
         fig = step[1]
@@ -115,7 +125,10 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
             betaX = betaPoint[0]
             betaY = betaPoint[1]
             onTarget = robot.score() == 0
-        plt.plot([basePos[0], alphaX], [basePos[1], alphaY], color='black', linewidth=2, alpha=0.5)
+        plt.plot(
+            [basePos[0], alphaX], [basePos[1], alphaY],
+            color='black', linewidth=2, alpha=0.5
+        )
 
         topCollideLine = LineString(
             [(alphaX, alphaY), (betaX, betaY)]
@@ -133,10 +146,17 @@ def plotOne(step, robotGrid=None, figname=None, isSequence=True, plotTargets=Fal
             topcolor = "orange"
         if robot.isOffline:
             topcolor = "black"
-        patch = PolygonPatch(topCollideLine, fc=topcolor, ec=edgecolor, alpha=0.5, zorder=10)
+        patch = PolygonPatch(
+            topCollideLine, fc=topcolor, ec=edgecolor, alpha=0.5, zorder=10
+        )
         ax.add_patch(patch)
+
     for fiducialID, fiducial in rg.fiducialDict.items():
-        fPoint = Point(fiducial.xyzWok[0], fiducial.xyzWok[1]).buffer(fiducial.collisionBuffer) #, cap_style=1)
+
+        fPoint = Point(
+            fiducial.xyzWok[0], fiducial.xyzWok[1]
+        ).buffer(fiducial.collisionBuffer) #, cap_style=1)
+
         patch = PolygonPatch(fPoint, fc="cyan", ec="black", alpha=0.8, zorder=10)
         ax.add_patch(patch)
     for gfa in rg.gfaDict.values():

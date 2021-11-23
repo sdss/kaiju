@@ -255,15 +255,8 @@ int RobotGrid::getNCollisions(){
 }
 
 void RobotGrid::clearPaths(){
-    if (!initialized){
-        throw std::runtime_error("Initialize RobotGrid before pathGen");
-    }
     for (auto rPair : robotDict){
         auto r = rPair.second;
-        // verify that a target alpha beta has been set
-        if (!r->hasDestinationAlphaBeta){
-            throw std::runtime_error("One or more robots have not received target alpha/beta");
-        }
         // clear any existing path
         r->alphaPath.clear();
         r->betaPath.clear();
@@ -292,6 +285,17 @@ void RobotGrid::clearPaths(){
 void RobotGrid::pathGenMDP(double setGreed, double setPhobia){
     // path gen 2 steps towards alpha beta target
     // move greed and phobia to constructor?
+    if (!initialized){
+        throw std::runtime_error("Initialize RobotGrid before pathGen");
+    }
+    for (auto rPair : robotDict){
+        auto r = rPair.second;
+        // verify that a target alpha beta has been set
+        if (!r->hasDestinationAlphaBeta){
+            throw std::runtime_error("One or more robots have not received target alpha/beta");
+        }
+    }
+
     greed = setGreed;
     phobia = setPhobia;
     algType = MDP;
@@ -329,6 +333,16 @@ void RobotGrid::pathGenMDP(double setGreed, double setPhobia){
 
 void RobotGrid::pathGenGreedy(){
     // path gen 2 steps towards alpha beta target
+    if (!initialized){
+        throw std::runtime_error("Initialize RobotGrid before pathGen");
+    }
+    for (auto rPair : robotDict){
+        auto r = rPair.second;
+        // verify that a target alpha beta has been set
+        if (!r->hasDestinationAlphaBeta){
+            throw std::runtime_error("One or more robots have not received target alpha/beta");
+        }
+    }
     clearPaths();
     didFail = true;
     greed = 1;
@@ -362,6 +376,11 @@ void RobotGrid::pathGenGreedy(){
 }
 
 void RobotGrid::pathGenEscape(double deg2move){
+
+    // path gen 2 steps towards alpha beta target
+    if (!initialized){
+        throw std::runtime_error("Initialize RobotGrid before pathGen");
+    }
 
     clearPaths();
     int ii;
@@ -846,6 +865,7 @@ void RobotGrid::stepDecollide(std::shared_ptr<Robot> robot, int stepNum){
         double nextBeta = currBeta + dAlphaBeta[1];
 
         vec2 nextAlphaBeta = handleLimits(currAlpha, currBeta, nextAlpha, nextBeta);
+
         nextAlpha = nextAlphaBeta[0];
         nextBeta =nextAlphaBeta[1];
 
@@ -886,9 +906,7 @@ void RobotGrid::stepDecollide(std::shared_ptr<Robot> robot, int stepNum){
 
 double RobotGrid::minCollideDist(int robotID){
 
-    // so scope really fucked me on this one?
-    // lots of returns fixed it.
-    double dist2, collideDist2;
+    double dist2, dist;
     // check collisions with neighboring robots
     double minDist = 1e9;  // to be minimized
     auto robot1 = robotDict[robotID];
@@ -902,9 +920,9 @@ double RobotGrid::minCollideDist(int robotID){
                 robot2->collisionSegWokXYZ[0], robot2->collisionSegWokXYZ[1],
                 robot1->collisionSegWokXYZ[0], robot1->collisionSegWokXYZ[1]
             );
-
-        if (dist2 < minDist){
-            minDist = dist2;
+        dist = sqrt(dist2) - robot2->collisionBuffer - robot1->collisionBuffer;
+        if (dist < minDist){
+            minDist = dist;
         }
     }
 
@@ -915,12 +933,26 @@ double RobotGrid::minCollideDist(int robotID){
                 fiducial->xyzWok, robot1->collisionSegWokXYZ[0],
                 robot1->collisionSegWokXYZ[1]
                 );
-        if (dist2 < minDist){
-            minDist = dist2;
+        dist = sqrt(dist2) - fiducial->collisionBuffer - robot1->collisionBuffer;
+        if (dist < minDist){
+            minDist = dist;
         }
-
-
     }
+
+    for (auto gfaID : robot1->gfaNeighbors){
+        auto gfa = gfaDict[gfaID];
+        // squared distance
+        dist2 = dist3D_Segment_to_Segment(
+                gfa->collisionSegWokXYZ[0], gfa->collisionSegWokXYZ[1],
+                robot1->collisionSegWokXYZ[0], robot1->collisionSegWokXYZ[1]
+                );
+        dist = sqrt(dist2) - gfa->collisionBuffer - robot1->collisionBuffer;
+        if (dist < minDist){
+            minDist = dist;
+        }
+    }
+
+
     return minDist;
 }
 
