@@ -2,7 +2,7 @@ import pytest
 import numpy
 import time
 
-from kaiju.robotGrid import RobotGrid, RobotGridAPO
+from kaiju.robotGrid import RobotGrid, RobotGridNominal
 from kaiju import utils
 
 # nDia = 15
@@ -18,10 +18,11 @@ def test_hexDeadlockedPath(plot=False):
     cb = 2.5
     angStep = 1
     downsample = int(numpy.floor(3 / angStep))
-    rg = RobotGrid(angStep, cb, seed=seed)
+    rg = RobotGrid(angStep, seed=seed)
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
         rg.addRobot(robotID, str(robotID), [x,y,0], hasApogee)
         rg.robotDict[robotID].setDestinationAlphaBeta(0, 180)
+    rg.setCollisionBuffer(cb)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
@@ -46,10 +47,11 @@ def test_pathGen(plot=False):
     collisionBuffer = 2
     # epsilon = angStep * 2
     downsample = int(numpy.floor(3 / angStep))
-    rg = RobotGrid(angStep, collisionBuffer, seed=seed)
+    rg = RobotGrid(angStep, seed=seed)
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
         rg.addRobot(robotID, str(robotID), [x, y, 0], hasApogee)
         rg.robotDict[robotID].setDestinationAlphaBeta(0, 180)
+    rg.setCollisionBuffer(collisionBuffer)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
@@ -73,7 +75,7 @@ def test_pathGen(plot=False):
     rg.verifySmoothed()
     assert rg.smoothCollisions > 100
     print(rg.smoothCollisions)
-    rg.setCollisionBuffer(collisionBuffer - collisionShrink)
+    rg.shrinkCollisionBuffer(collisionShrink)
     rg.verifySmoothed()
     # assert rg.smoothCollisions == 0
     print(rg.smoothCollisions)
@@ -82,47 +84,9 @@ def test_pathGen(plot=False):
         utils.plotPaths(rg, downsample=downsample, filename="pathGen.mp4")
 
 
-# def test_filledHexDeadlockedPath(plot=False):
-#     seed = 1
-#     rg = utils.robotGridFromFilledHex(angStep, collisionBuffer, seed)
-#     for rID in rg.robotDict:
-#         robot = rg.getRobot(rID)
-#         robot.setXYUniform()
-#         robot.setDestinationAlphaBeta(0, 180)
-#     assert rg.getNCollisions() > 20
-#     if plot:
-#         utils.plotOne(0, rg, figname="filledHexDeadlockedInitial.png", isSequence=False)
-#     rg.decollideGrid()
-#     if plot:
-#         utils.plotOne(0, rg, figname="filledHexDeadlockedDecollided.png", isSequence=False)
-#     assert rg.getNCollisions() == 0
-#     rg.pathGenGreedy()
-#     if plot:
-#         utils.plotPaths(rg, filename="filledHexDeadlocked.mp4")
-#     assert rg.didFail
-
-# def test_filledHexPath(plot=False):
-#     seed = 9
-#     rg = utils.robotGridFromFilledHex(angStep, collisionBuffer, seed)
-#     for rID in rg.robotDict:
-#         robot = rg.getRobot(rID)
-#         robot.setXYUniform()
-#         robot.setDestinationAlphaBeta(0, 180)
-#     assert rg.getNCollisions() > 20
-#     if plot:
-#         utils.plotOne(0, rg, figname="filledHexInitial.png", isSequence=False)
-#     rg.decollideGrid()
-#     if plot:
-#         utils.plotOne(0, rg, figname="filledHexDecollided.png", isSequence=False)
-#     assert rg.getNCollisions() == 0
-#     rg.pathGenGreedy()
-#     if plot:
-#         utils.plotPaths(rg, filename="filledHex.mp4")
-#     assert not rg.didFail
-
 
 def test_withDefulatArgs(plot=False):
-    rg = RobotGridAPO() # this is the test, that no args still works
+    rg = RobotGridNominal() # this is the test, that no args still works
 
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)

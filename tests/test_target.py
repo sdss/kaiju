@@ -4,7 +4,7 @@ import numpy
 import matplotlib.pyplot as plt
 
 from kaiju.cKaiju import BossFiber, ApogeeFiber, MetrologyFiber
-from kaiju.robotGrid import RobotGrid, RobotGridAPO
+from kaiju.robotGrid import RobotGrid, RobotGridNominal
 from kaiju import utils
 
 import coordio
@@ -12,6 +12,7 @@ import coordio
 fpZ = coordio.defaults.POSITIONER_HEIGHT
 
 def test_nonInit():
+    print("test nonInit")
     rg = RobotGrid()
     rxyz = [0,0,0]
     rg.addRobot(robotID=1, holeID="none", basePos=rxyz)
@@ -24,6 +25,7 @@ def test_nonInit():
 
 
 def test_doubleTargetID():
+    print("test doubleTargetID")
     rg = RobotGrid()
     rg.addRobot(robotID=1, holeID="none", basePos=[0,0,0])
     rg.addFiducial(fiducialID=1, xyzWok=[22.4,0,fpZ])
@@ -35,6 +37,7 @@ def test_doubleTargetID():
 
 
 def test_addTarget():
+    print("test addTarget")
     rg = RobotGrid()
     rg.addRobot(robotID=1, holeID="none", basePos=[0,0,0])
     rg.addFiducial(fiducialID=1, xyzWok=[22.4, 0, fpZ])
@@ -45,8 +48,7 @@ def test_addTarget():
     assert True
 
 def generateTargs(nTargs, fiberType):
-    # rg = utils.robotGridFromFilledHex()
-    rg = RobotGridAPO()
+    rg = RobotGridNominal()
     # put in range -300 300
     randomX = numpy.random.random_sample(nTargs)*650 - 325
     randomY = numpy.random.random_sample(nTargs)*560 - 280
@@ -79,6 +81,7 @@ def plotTargs(rg, figname):
 
 
 def test_tonsOBosstargs(plot=False):
+    print("test tonsOboss")
     nTargs = 100000
     rg = generateTargs(nTargs, BossFiber)
     unreachableTargets = rg.unreachableTargets()
@@ -89,16 +92,18 @@ def test_tonsOBosstargs(plot=False):
 
 
 def test_tonsOAptargs(plot=False):
+    print("test tonsOAp")
     nTargs = 100000
     rg = generateTargs(nTargs, ApogeeFiber)
     unreachableTargets = rg.unreachableTargets()
     unFrac = len(unreachableTargets)/nTargs
-    assert numpy.abs(unFrac - 0.30379) < 0.01
+    assert numpy.abs(unFrac - 0.31379) < 0.01
     if plot:
         plotTargs(rg, "tonOAp.png")
 
 
 def test_validRobots(plot=False):
+    print("test valid robots")
     nTargs = 50000
     rg = generateTargs(nTargs, BossFiber)
     assert len(rg.targetlessRobots()) == 0
@@ -122,14 +127,17 @@ def test_validRobots(plot=False):
 
 def test_targetAssign(plot=False):
     # rg = utils.robotGridFromFilledHex()
-    rg = RobotGridAPO()
+    print("test target assign")
+    rg = RobotGridNominal()
     for robot in rg.robotDict.values():
         robot.setXYUniform()
     rg.decollideGrid()
     if plot:
         utils.plotOne(0, rg, figname="beforeAssign.png", isSequence=False)#, highlightRobot=205)
     # find boss target positions for all robots
+    rids = []
     for rID, robot in rg.robotDict.items():
+        rids.append(rID)
         xyzTarg = robot.bossWokXYZ
         # give the target the same id as the robot
         rg.addTarget(rID, xyzTarg, BossFiber)
@@ -144,17 +152,17 @@ def test_targetAssign(plot=False):
     assert len(targetlessRobots) == 0
 
     # unassign target 100
-    rg.unassignTarget(100)
-    assert rg.robotDict[100].isAssigned() == False
-    assert rg.targetDict[100].isAssigned() == False
+    rg.unassignTarget(rids[0])
+    assert rg.robotDict[rids[0]].isAssigned() == False
+    assert rg.targetDict[rids[0]].isAssigned() == False
 
-    rg.unassignTarget(99)
-    assert rg.robotDict[99].isAssigned() == False
-    assert rg.targetDict[99].isAssigned() == False
+    rg.unassignTarget(rids[1])
+    assert rg.robotDict[rids[1]].isAssigned() == False
+    assert rg.targetDict[rids[1]].isAssigned() == False
 
     assignedTargets = rg.assignedTargets()
-    assert (99 in assignedTargets) == False
-    assert (100 in assignedTargets) == False
+    assert (rids[1] in assignedTargets) == False
+    assert (rids[0] in assignedTargets) == False
 
     if plot:
         utils.plotOne(0, rg, figname="afterAssign.png", isSequence=False)
@@ -168,10 +176,10 @@ test targets at full extension?
 """
 if __name__ == "__main__":
     # test_validRobots(plot=True)
-    # test_tonsOBosstargs(plot=True)
+    test_tonsOBosstargs(plot=True)
     # test_tonsOAptargs(plot=True)
     # test_nonInit()
     # test_doubleTargetID()
     # test_tonsOBosstargs(plot=True)
     # test_tonsOAptargs(plot=True)
-    test_targetAssign(plot=True)
+    # test_targetAssign(plot=True)

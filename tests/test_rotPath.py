@@ -15,15 +15,16 @@ hasApogee = True
 
 
 def test_forwardGreedy(plot=False):
-    xPos, yPos = utils.hexFromDia(35, pitch=22.4)
+    xPos, yPos = utils.hexFromDia(25, pitch=22.4)
     seed = 1
     rg = RobotGrid(
-        stepSize=angStep, collisionBuffer=collisionBuffer,
+        stepSize=angStep,
         epsilon=epsilon, seed=seed
     )
 
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
         rg.addRobot(robotID, str(robotID), [x, y, 0], hasApogee)
+    rg.setCollisionBuffer(collisionBuffer)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
@@ -41,15 +42,16 @@ def test_forwardGreedy(plot=False):
         utils.plotPaths(rg, filename="forwardGreedy.mp4")
 
 def test_reverseGreedy(plot=False):
-    xPos, yPos = utils.hexFromDia(35, pitch=22.4)
+    xPos, yPos = utils.hexFromDia(25, pitch=22.4)
     seed = 1
     rg = RobotGrid(
-        stepSize=angStep, collisionBuffer=collisionBuffer,
+        stepSize=angStep,
         epsilon=epsilon, seed=seed
     )
 
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
         rg.addRobot(robotID, str(robotID), [x, y, 0], hasApogee)
+    rg.setCollisionBuffer(collisionBuffer)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
@@ -66,15 +68,16 @@ def test_reverseGreedy(plot=False):
         utils.plotPaths(rg, filename="reverseGreedy.mp4")
 
 def test_forwardMDP(plot=False):
-    xPos, yPos = utils.hexFromDia(35, pitch=22.4)
+    xPos, yPos = utils.hexFromDia(25, pitch=22.4)
     seed = 1
     rg = RobotGrid(
-        stepSize=angStep, collisionBuffer=collisionBuffer,
+        stepSize=angStep,
         epsilon=epsilon, seed=seed
     )
 
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
         rg.addRobot(robotID, str(robotID), [x, y, 0], hasApogee)
+    rg.setCollisionBuffer(collisionBuffer)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
@@ -98,15 +101,16 @@ def test_reverseMDP(plot=False):
     phobia = 0.1
     angStep = 1
     downsample = int(numpy.floor(3 / angStep))
-    xPos, yPos = utils.hexFromDia(35, pitch=22.4)
+    xPos, yPos = utils.hexFromDia(25, pitch=22.4)
     seed = 1
     rg = RobotGrid(
-        stepSize=angStep, collisionBuffer=collisionBuffer,
+        stepSize=angStep,
         epsilon=epsilon, seed=seed
     )
 
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
         rg.addRobot(robotID, str(robotID), [x, y, 0], hasApogee)
+    rg.setCollisionBuffer(collisionBuffer)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
@@ -126,22 +130,21 @@ def test_reverseMDP(plot=False):
 def test_reverseSmoothMDP(plot=False):
     greed = 0.8
     phobia = 0.2
-    downsample = int(numpy.floor(100 / angStep))
-    xPos, yPos = utils.hexFromDia(35, pitch=22.4)
+    downsample = int(numpy.floor(150 / angStep))
     xPos, yPos = utils.hexFromDia(17, pitch=22.4)
     seed = 1
     cb = 2.5
     cs = 0.04
     step = 0.1          # degrees per step in kaiju's rough path
-    smoothPts = 5           # width of velocity smoothing window
-    eps = angStep * 1
+    smoothPts = 10           # width of velocity smoothing window
+    eps = step * 2.2
     rg = RobotGrid(
-        stepSize=step, collisionBuffer=cb,
+        stepSize=step,
         epsilon=eps, seed=seed
     )
 
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
-        rg.addRobot(robotID, str(robotID), [x, y, 0], hasApogee)
+        rg.addRobot(robotID, str(robotID), [x, y, 0], hasApogee, collisionBuffer=cb)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
@@ -158,10 +161,12 @@ def test_reverseSmoothMDP(plot=False):
     print("pathgen took", time.time()-tstart)
     rg.smoothPaths(smoothPts)
     rg.simplifyPaths()
-    rg.setCollisionBuffer(collisionBuffer - cs)
+    rg.shrinkCollisionBuffer(cs)
     rg.verifySmoothed()
 
+
     assert rg.smoothCollisions == 0
+    print("n smooth collisions", rg.smoothCollisions)
 
     if plot:
         for r in rg.robotDict.values():
@@ -181,12 +186,13 @@ def test_setMDP(plot=False):
     downsample = int(numpy.floor(3 / angStep))
     for seed in range(100):
         rg = RobotGrid(
-            stepSize=angStep, collisionBuffer=collisionBuffer,
+            stepSize=angStep,
             epsilon=epsilon, seed=seed
         )
 
         for robotID, (x, y) in enumerate(zip(xPos, yPos)):
             rg.addRobot(robotID, str(robotID), [x, y, 0], hasApogee)
+        rg.setCollisionBuffer(collisionBuffer)
         rg.initGrid()
         for rID in rg.robotDict:
             robot = rg.getRobot(rID)
@@ -222,11 +228,12 @@ def test_initialConfigs(plot=False):
     phobia = 0.2
     downsample = int(numpy.floor(10 / angStep))
     rg = RobotGrid(
-        stepSize=angStep, collisionBuffer=collisionBuffer,
+        stepSize=angStep,
         epsilon=epsilon, seed=1
     )
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
         rg.addRobot(robotID, str(robotID), [x, y, 0], hasApogee)
+    rg.setCollisionBuffer(collisionBuffer)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
@@ -254,12 +261,13 @@ def test_tofile(plot=False):
     phobia = 0.2
     downsample = int(numpy.floor(3 / angStep))
     rg = RobotGrid(
-        stepSize=angStep, collisionBuffer=collisionBuffer,
+        stepSize=angStep,
         epsilon=epsilon, seed=1
     )
 
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
         rg.addRobot(robotID, str(robotID), [x, y, 0], hasApogee)
+    rg.setCollisionBuffer(collisionBuffer)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
@@ -304,12 +312,13 @@ def test_fatty(plot=False):
     collisionBuffer = 4
     downsample = int(numpy.floor(3 / angStep))
     rg = RobotGrid(
-        stepSize=angStep, collisionBuffer=collisionBuffer,
+        stepSize=angStep,
         epsilon=epsilon, seed=1
     )
 
     for robotID, (x, y) in enumerate(zip(xPos, yPos)):
         rg.addRobot(robotID, str(robotID), [x, y, 0], hasApogee)
+    rg.setCollisionBuffer(collisionBuffer)
     rg.initGrid()
     for rID in rg.robotDict:
         robot = rg.getRobot(rID)
@@ -328,7 +337,8 @@ def test_fatty(plot=False):
         utils.plotPaths(rg, downsample=downsample, filename="fatty.mp4")
 
 if __name__ == "__main__":
-    test_forwardGreedy(plot=True)
+    # test_forwardGreedy(plot=True)
+    test_reverseSmoothMDP(plot=True)
     # test_reverseGreedy(plot=True)
     # test_forwardMDP(plot=True)
     # test_initialConfigs(plot=True)

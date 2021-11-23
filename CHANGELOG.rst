@@ -2,6 +2,10 @@
 
 Changelog
 =========
+* **1.2.0-alpha.0** Add GFA avoidance.  Modify API for robotGrid.isCollidedWithAssigned, and RobotGrid.wouldCollideWithAssigned, now returning info about GFAs.  Move collsion buffer out of RobotGrid to Robot
+(allows for unique collision buffer for each robot, fiducal, GFA)
+
+
 * **1.1.0**  Add coordio dependency, implement handling for calibration offsets.
 
 * **1.0.0**  Using Rick's new designReference file specifying locations of robots and fiducials.  Alpha zero modified to point the correct direction with respect to the hexagonal grid.

@@ -7,5 +7,5 @@ public:
     double x,y;
     vec3 xyzWok;
     double collisionBuffer;
-    Fiducial(int id, vec3 xyzWok, double collisionBuffer = 1.5);
+    Fiducial(int id, vec3 xyzWok, double collisionBuffer = 2.5);
 };

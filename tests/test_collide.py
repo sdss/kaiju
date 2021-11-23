@@ -1,19 +1,28 @@
 import pytest
 
 import kaiju
-from kaiju.robotGrid import RobotGridAPO
+from kaiju.robotGrid import RobotGridNominal
 from kaiju import utils
 
 
 def test_collide(plot=False):
     # should make a grid
-    rg = RobotGridAPO()
-    rg.robotDict[61].setAlphaBeta(90,
-                                  0)
-    rg.robotDict[296].setAlphaBeta(270,
-                                   0)
-    assert rg.isCollided(61)
-    assert rg.isCollided(296)
+    rg = RobotGridNominal()
+    collidedRobotIDs = []
+    for rid, r in rg.robotDict.items():
+      if r.holeID == "R-13C1":
+        r.setAlphaBeta(90,0)
+        collidedRobotIDs.append(rid)
+      elif r.holeID == "R-13C2":
+        collidedRobotIDs.append(rid)
+        r.setAlphaBeta(270, 0)
+      else:
+        r.setAlphaBeta(90,180)
+
+    for rid in collidedRobotIDs:
+      assert rg.isCollided(rid)
+
+    assert rg.getNCollisions() == 2
 
     if plot:
       utils.plotOne(0, rg, figname="test_collide.png", isSequence=False, xlim=[-30, 30], ylim=[-30, 30])

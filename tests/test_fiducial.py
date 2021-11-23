@@ -13,7 +13,8 @@ def test_uniqueFiducial():
     hasApogee = True
     fiducialID = 1
     seed = 0
-    rg = RobotGrid(angStep, collisionBuffer, epsilon, seed)
+    rg = RobotGrid(angStep, epsilon, seed)
+    rg.setCollisionBuffer(collisionBuffer)
     rg.addFiducial(fiducialID, [0, 0, 0])
     with pytest.raises(RuntimeError) as excinfo:
         rg.addFiducial(fiducialID, [30, 0, 0])
@@ -28,7 +29,8 @@ def test_fiducial(plot=False):
     robotID = 1
     fiducialID = 10
     seed = 0
-    rg = RobotGrid(angStep, collisionBuffer, epsilon, seed)
+    rg = RobotGrid(angStep, epsilon, seed)
+    rg.setCollisionBuffer(collisionBuffer)
     rg.addRobot(robotID, str(robotID), [0, 0, 0], hasApogee)
     rg.addFiducial(fiducialID, [22.4, 0, coordio.defaults.POSITIONER_HEIGHT], fiducialCollisionBuffer)
     rg.initGrid()
@@ -56,7 +58,8 @@ def grow(plot=False):
     fiducialID = 10
     seed = 0
     for cb in [1.5, 2, 2.5, 3]:
-        rg = RobotGrid(angStep, cb, epsilon, seed)
+        rg = RobotGrid(angStep, epsilon, seed)
+        rg.setCollisionBuffer(cb)
         rg.addRobot(robotID, str(robotID), [0, 0, 0], hasApogee)
         rg.addFiducial(fiducialID, [22.4, 0, coordio.defaults.POSITIONER_HEIGHT], fiducialCollisionBuffer)
         rg.initGrid()

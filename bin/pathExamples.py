@@ -17,12 +17,14 @@ totalRobots = 0
 maxPts = []
 
 for seed in range(15):
-    rg = cKaiju.RobotGrid(nDia, stepSize, collisionBuffer, epsilon, seed)
+    rg = cKaiju.RobotGrid(nDia, stepSize, epsilon, seed)
+    rg.setCollisionBuffer(collisionBuffer)
+
     totalRobots += rg.nRobots
     rg.decollide()
     rg.pathGen()
 
-    rg.setCollisionBuffer(collisionBuffer - b_smooth)
+    rg.shrinkCollisionBuffer(b_smooth)
     rg.smoothPaths()
     rg.verifySmoothed()
 
