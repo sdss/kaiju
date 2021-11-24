@@ -70,8 +70,8 @@ def plotTraj(r, figprefix="traj_", dpi=500):
 
 def plotOne(
     step, robotGrid=None, figname=None, isSequence=True,
-    plotTargets=False, xlim=None, ylim=None,
-    highlightRobot=None, returnax=False
+    plotTargets=False, plotRobotIDs=False, dpi=100,
+    xlim=None, ylim=None, highlightRobot=None, returnax=False
 ):
     global rg
     if hasattr(step, "__len__"):
@@ -150,6 +150,17 @@ def plotOne(
             topCollideLine, fc=topcolor, ec=edgecolor, alpha=0.5, zorder=10
         )
         ax.add_patch(patch)
+        if plotRobotIDs:
+            strID = "%i"%robot.id
+            xm = (alphaX + betaX)/2
+            ym = (alphaY + betaY)/2
+            dx = alphaX-betaX
+            dy = alphaY-betaY
+            rot = numpy.degrees(numpy.arctan2(dy, dx))
+            if alphaX < betaX:
+                rot += 180
+            props = {"ha": "center", "va": "center", "fontsize": 2}
+            ax.text(xm, ym, strID, props, rotation=rot)
 
     for fiducialID, fiducial in rg.fiducialDict.items():
 
@@ -180,7 +191,7 @@ def plotOne(
 
     if figname is None:
         figname = "step_%04d.png"%(fig)
-    plt.savefig(figname, dpi=100)
+    plt.savefig(figname, dpi=dpi)
     plt.close()
 
 def plotPaths(robotGrid, downsample=None, filename=None):

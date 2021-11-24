@@ -1017,6 +1017,52 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
 
         self.initGrid()
 
+    def plot_state(
+            self, highlightRobot=None, plotRobotIDs=True,
+            returnax=True, figname="kaijuGrid.png"
+        ):
+        """Plot the current state of the robot grid
+
+        Unassigned robots are skyblue
+        Robots at their destination are gold
+        Robots that are kaiju-collided are red
+        Offline robots are black
+
+        Parameters
+        ------------
+        highlightRobot : int, or None
+            Robot id to highlight in Orange
+
+        plotRobotIDs : bool
+            If True, plot the robotIDs
+
+        returnax : bool
+            If True, return the matplotlib axis (no figure is written to disk)
+
+        figname : str
+            If returnax is False, write the image to disk with this path.
+            Defaults to kaijuGrid.png.
+
+        Returns
+        ---------
+        ax : matplotlib axes instance if returnax is True
+
+        """
+        from kaiju.utils import plotOne
+        if returnax:
+            ax = plotOne(
+                step=0, robotGrid=self, isSequence=False,
+                plotRobotIDs=plotRobotIDs,
+                highlightRobot=highlightRobot, returnax=True
+            )
+            return ax
+        else:
+            plotOne(
+                step=0, robotGrid=self, figname=figname, isSequence=False,
+                plotRobotIDs=plotRobotIDs,
+                highlightRobot=highlightRobot
+            )
+
 
 class RobotGridCalib(RobotGrid):
 
