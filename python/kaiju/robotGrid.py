@@ -209,12 +209,11 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         # pathDelay = 1  # seconds
         ###########
 
-        cb = self.collisionBuffer
         self.smoothPaths(smoothPoints)
         self.simplifyPaths()
         self.shrinkCollisionBuffer(collisionShrink)
         self.verifySmoothed()
-        self.setCollisionBuffer(cb)
+        self.growCollisionBuffer(collisionShrink)
 
         toDestination = {}
         fromDestination = {}
