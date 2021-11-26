@@ -104,7 +104,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         self, stepSize=0.1,
         epsilon=None, seed=0, scaleFac=1):
 
-        np.random.seed(0) # for seedifying stuff out here in python
+        np.random.seed(seed) # for seedifying stuff out here in python
 
         self.stepSize = stepSize
         self.scaleFac = scaleFac
