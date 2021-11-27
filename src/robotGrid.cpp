@@ -236,6 +236,13 @@ void RobotGrid::verifySmoothed(){
             r->setAlphaBeta(r->interpSimplifiedAlphaPath[ii][1], r->interpSimplifiedBetaPath[ii][1]);
             // std::cout << " robot id " << r.id << std::endl;
         }
+        for (auto rPair : robotDict){
+            auto r = rPair.second;
+            if (isCollided(r->id)){
+                smoothCollidedRobots.insert(r->id);
+            }
+            // std::cout << " robot id " << r.id << std::endl;
+        }
         smoothCollisions += getNCollisions();
     }
 }

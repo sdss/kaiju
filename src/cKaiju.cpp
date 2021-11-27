@@ -141,6 +141,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("angStep", &RobotGrid::angStep)
         // .def_readwrite("collisionBuffer", &RobotGrid::collisionBuffer)
         .def_readwrite("smoothCollisions", &RobotGrid::smoothCollisions)
+        .def_readwrite("smoothCollidedRobots", &RobotGrid::smoothCollidedRobots)
         .def_readwrite("didFail", &RobotGrid::didFail)
         .def_readwrite("nSteps", &RobotGrid::nSteps)
         .def_readwrite("nRobots", &RobotGrid::nRobots)

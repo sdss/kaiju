@@ -1,4 +1,5 @@
 #pragma once
+#include <set>
 #include "robot.h"
 #include "target.h"
 #include "fiducial.h"
@@ -23,6 +24,7 @@ public:
     int seed;
     int maxPathSteps;
     int smoothCollisions;
+    std::set<int> smoothCollidedRobots;
     bool initialized = false;
     double maxDisplacement;
     std::map<int, std::shared_ptr<Robot>> robotDict;
