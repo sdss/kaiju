@@ -64,7 +64,7 @@ def plotTraj(r, figprefix="traj_", dpi=500):
     # plt.legend()
 
 
-    plt.savefig(figprefix+"robot_%s.png"%r.id, dpi=dpi)
+    plt.savefig(figprefix+"robot_%s.pdf"%r.id, dpi=dpi)
     plt.close()
 
 
