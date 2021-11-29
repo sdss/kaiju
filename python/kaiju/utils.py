@@ -151,7 +151,7 @@ def plotOne(
         )
         ax.add_patch(patch)
         if plotRobotIDs:
-            strID = ("%i"%robot.id).zfill(4)
+            strID = "P" + ("%i"%robot.id).zfill(4)
             xm = (alphaX + betaX)/2
             ym = (alphaY + betaY)/2
             dx = alphaX-betaX

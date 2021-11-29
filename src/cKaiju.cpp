@@ -198,6 +198,12 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("robotColliders", &RobotGrid::robotColliders)
         .def("fiducialColliders", &RobotGrid::fiducialColliders)
         .def("gfaColliders", &RobotGrid::gfaColliders)
+
+        .def("getCollidedRobotRobotList", &RobotGrid::getCollidedRobotRobotList)
+        .def("getCollidedRobotFiducialList", &RobotGrid::getCollidedRobotRobotList)
+        .def("getCollidedRobotGFAList", &RobotGrid::getCollidedRobotRobotList)
+        .def("getCollidedRobotList", &RobotGrid::getCollidedRobotRobotList)
+
         .def("isCollidedWithAssigned", &RobotGrid::isCollidedWithAssigned)
         .def("wouldCollideWithAssigned", &RobotGrid::wouldCollideWithAssigned)
         .def("isCollided", &RobotGrid::isCollided);

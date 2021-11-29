@@ -736,6 +736,57 @@ std::vector<int> RobotGrid::gfaColliders(int robotID){
 
 }
 
+std::vector<int> RobotGrid::getCollidedRobotRobotList(){
+    std::vector<int> robotIDList;
+    for (auto rPair : robotDict){
+        auto robotID = rPair.first;
+        auto colliders = robotColliders(robotID);
+        if (!colliders.empty()){
+            robotIDList.push_back(robotID);
+        }
+    }
+    return robotIDList;
+}
+
+
+std::vector<int> RobotGrid::getCollidedRobotFiducialList(){
+    std::vector<int> robotIDList;
+    for (auto rPair : robotDict){
+        auto robotID = rPair.first;
+        auto colliders = fiducialColliders(robotID);
+        if (!colliders.empty()){
+            robotIDList.push_back(robotID);
+        }
+    }
+    return robotIDList;
+
+}
+
+std::vector<int> RobotGrid::getCollidedRobotGFAList(){
+    std::vector<int> robotIDList;
+    for (auto rPair : robotDict){
+        auto robotID = rPair.first;
+        auto colliders = gfaColliders(robotID);
+        if (!colliders.empty()){
+            robotIDList.push_back(robotID);
+        }
+    }
+    return robotIDList;
+}
+
+
+std::vector<int> RobotGrid::getCollidedRobotList(){
+    std::vector<int> robotIDList;
+    for (auto rPair : robotDict){
+        auto robotID = rPair.first;
+        if (isCollided(robotID)){
+            robotIDList.push_back(robotID);
+        }
+    }
+    return robotIDList;
+}
+
+
 bool RobotGrid::throwAway(int robotID){
     // return true if worked
     // robot gets new alpha beta position

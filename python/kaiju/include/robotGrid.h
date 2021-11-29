@@ -25,6 +25,7 @@ public:
     int maxPathSteps;
     int smoothCollisions;
     std::set<int> smoothCollidedRobots;
+
     bool initialized = false;
     double maxDisplacement;
     std::map<int, std::shared_ptr<Robot>> robotDict;
@@ -82,6 +83,12 @@ public:
     std::vector<int> robotColliders(int robotID);
     std::vector<int> fiducialColliders(int robotID);
     std::vector<int> gfaColliders(int robotID);
+
+    std::vector<int> getCollidedRobotRobotList();
+    std::vector<int> getCollidedRobotFiducialList();
+    std::vector<int> getCollidedRobotGFAList();
+    std::vector<int> getCollidedRobotList();
+
     bool neighborEncroachment(std::shared_ptr<Robot> r1);
 
     void decollideRobot(int robotID);
