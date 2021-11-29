@@ -1019,7 +1019,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
 
     def plot_state(
             self, highlightRobot=None, plotRobotIDs=True,
-            returnax=True, figname="kaijuGrid.png"
+            returnax=True, figname="kaijuGrid.pdf"
         ):
         """Plot the current state of the robot grid
 
@@ -1030,7 +1030,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
 
         Parameters
         ------------
-        highlightRobot : int, or None
+        highlightRobot : int, list, or None
             Robot id to highlight in Orange
 
         plotRobotIDs : bool

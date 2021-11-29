@@ -84,11 +84,13 @@ def plotOne(
         rg = robotGrid
     plt.figure(figsize=(10,10))
     ax = plt.gca()
+    ax.set_facecolor('lightgray')
     maxX = 0
     maxY = 0
     for robotID, robot in rg.robotDict.items():
         # account for xy calibration offsets in base
         # pos of robot in wok space
+        hatch = None
         wokBase = coordio.libcoordio.tangentToWok(
             [0,0,0],
             robot.basePos,
@@ -142,12 +144,19 @@ def plotOne(
         if not isSequence and rg.isCollided(robotID):
             # collision trumps not assigned
             topcolor = "red"
-        if highlightRobot == robotID:
-            topcolor = "orange"
+        if highlightRobot is not None:
+            if highlightRobot == robotID:
+                topcolor = "violet"
+                # edgecolor = "red"
+                hatch=None
+            elif robotID in highlightRobot:
+                topcolor = "violet"
+                # edgecolor = "red"
+                hatch = None
         if robot.isOffline:
             topcolor = "black"
         patch = PolygonPatch(
-            topCollideLine, fc=topcolor, ec=edgecolor, alpha=0.5, zorder=10
+            topCollideLine, fc=topcolor, ec=edgecolor, hatch=hatch, alpha=0.5, zorder=10
         )
         ax.add_patch(patch)
         if plotRobotIDs:
@@ -168,14 +177,14 @@ def plotOne(
             fiducial.xyzWok[0], fiducial.xyzWok[1]
         ).buffer(fiducial.collisionBuffer) #, cap_style=1)
 
-        patch = PolygonPatch(fPoint, fc="cyan", ec="black", alpha=0.8, zorder=10)
+        patch = PolygonPatch(fPoint, fc="aquamarine", ec="black", alpha=0.8, zorder=10)
         ax.add_patch(patch)
     for gfa in rg.gfaDict.values():
 
         gLine = LineString(
             [gfa.collisionSegWokXYZ[0], gfa.collisionSegWokXYZ[1]]
         ).buffer(gfa.collisionBuffer, cap_style=1)
-        patch = PolygonPatch(gLine, fc="cyan", ec="black", alpha=0.5, zorder=10)
+        patch = PolygonPatch(gLine, fc="aquamarine", ec="black", alpha=0.5, zorder=10)
         ax.add_patch(patch)
 
     if xlim is not None:

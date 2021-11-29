@@ -402,10 +402,59 @@ void RobotGrid::pathGenEscape(double deg2move){
 
 
     }
+    // hack in destinations for all robots
+    // so didFail is not false
+    for (auto rPair : robotDict){
+        auto r = rPair.second;
+        r->setDestinationAlphaBeta(r->alpha, r->beta);
+    }
 
     nSteps = ii;
 }
 
+
+void RobotGrid::pathGenEscapeOne(double deg2move, int robotID){
+
+    // path gen 2 steps towards alpha beta target
+    if (!initialized){
+        throw std::runtime_error("Initialize RobotGrid before pathGen");
+    }
+
+    // hack in destinations for all robots
+    // so robots will not move (except for the desired robot)
+    for (auto rPair : robotDict){
+        auto r = rPair.second;
+        r->setDestinationAlphaBeta(r->alpha, r->beta);
+    }
+
+    clearPaths();
+    int ii;
+    double steps2move = deg2move / angStep;
+    for (ii=0; ii<steps2move; ii++){
+
+        for (auto rPair : robotDict){
+            auto r = rPair.second;
+            if (rPair.first == robotID){
+                stepDecollide(r, ii);
+            }
+            else {
+                // doesn't actually move because destinations
+                // have been set to current positions
+                // this just fills out the arrays
+                stepGreedy(r, ii);
+            }
+        }
+    }
+
+    // hack in destination for single robot that moved
+
+    auto r = robotDict.at(robotID);
+    // auto rAlpha = r->alpha;
+    // auto rBeta = r->beta;
+    r->setDestinationAlphaBeta(r->alpha, r->beta);
+    nSteps = ii;
+
+}
 
 
 void RobotGrid::clearTargetDict(){

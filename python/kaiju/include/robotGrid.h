@@ -101,5 +101,6 @@ public:
     void stepDecollide(std::shared_ptr<Robot>, int stepNum);
     double minCollideDist(int robotID);
     void pathGenEscape(double deg2move);
+    void pathGenEscapeOne(double deg2move, int robotID);
 
 };

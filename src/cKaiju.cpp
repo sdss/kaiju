@@ -182,7 +182,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("pathGenGreedy", &RobotGrid::pathGenGreedy)
         .def("pathGenMDP", &RobotGrid::pathGenMDP)
         .def("pathGenEscape", &RobotGrid::pathGenEscape)
-
+        .def("pathGenEscapeOne", &RobotGrid::pathGenEscapeOne)
         .def("targetlessRobots", &RobotGrid::targetlessRobots)
         .def("unreachableTargets", &RobotGrid::unreachableTargets)
         .def("assignedTargets", &RobotGrid::assignedTargets)
@@ -200,9 +200,9 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("gfaColliders", &RobotGrid::gfaColliders)
 
         .def("getCollidedRobotRobotList", &RobotGrid::getCollidedRobotRobotList)
-        .def("getCollidedRobotFiducialList", &RobotGrid::getCollidedRobotRobotList)
-        .def("getCollidedRobotGFAList", &RobotGrid::getCollidedRobotRobotList)
-        .def("getCollidedRobotList", &RobotGrid::getCollidedRobotRobotList)
+        .def("getCollidedRobotFiducialList", &RobotGrid::getCollidedRobotFiducialList)
+        .def("getCollidedRobotGFAList", &RobotGrid::getCollidedRobotGFAList)
+        .def("getCollidedRobotList", &RobotGrid::getCollidedRobotList)
 
         .def("isCollidedWithAssigned", &RobotGrid::isCollidedWithAssigned)
         .def("wouldCollideWithAssigned", &RobotGrid::wouldCollideWithAssigned)
