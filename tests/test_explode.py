@@ -20,7 +20,7 @@ def test_explode(plot=False):
 
     assert rg.getNCollisions() == 0
     tstart = time.time()
-    rg.pathGenEscape(100)
+    rg.pathGenExplode(100)
     print("pathgen took", time.time()-tstart)
 
     if plot:

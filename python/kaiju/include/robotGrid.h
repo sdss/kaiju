@@ -52,7 +52,7 @@ public:
     std::vector<int> deadlockedRobots(); // robots not on target
     void clearPaths();
 
-    void pathGenGreedy(); // stepRotational with encroachment
+    void pathGenGreedy(bool stopIfDeadlock); // stepRotational with encroachment
     void pathGenMDP(double greed, double phobia); // Markov Decision Process
     void simplifyPaths();
     void smoothPaths(int points);
@@ -100,7 +100,7 @@ public:
     void stepBeta(std::shared_ptr<Robot> r1, int stepNum);
     void stepDecollide(std::shared_ptr<Robot>, int stepNum);
     double minCollideDist(int robotID);
-    void pathGenEscape(double deg2move);
-    void pathGenEscapeOne(double deg2move, int robotID);
+    void pathGenExplode(double deg2move);
+    void pathGenExplodeOne(double deg2move, int robotID);
 
 };

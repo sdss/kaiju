@@ -3,6 +3,7 @@
 // #include <Eigen/Dense>
 #include <algorithm>    // std::random_shuffle
 #include <chrono>       // std::chrono::system_clock
+#include <numeric>
 #include "utils.h"
 #include "robotGrid.h"
 
@@ -314,6 +315,8 @@ void RobotGrid::pathGenMDP(double setGreed, double setPhobia){
         robotIDs.push_back(rPair.first);
     }
 
+
+
     for (ii=0; ii<maxPathSteps; ii++){
         std::random_shuffle(robotIDs.begin(), robotIDs.end());
         bool allAtTarget = true;
@@ -338,11 +341,15 @@ void RobotGrid::pathGenMDP(double setGreed, double setPhobia){
     nSteps = ii+1;
 }
 
-void RobotGrid::pathGenGreedy(){
-    // path gen 2 steps towards alpha beta target
+void RobotGrid::pathGenGreedy(bool stopIfDeadlock){
+    // path gen greedy steps towards alpha beta target
     if (!initialized){
         throw std::runtime_error("Initialize RobotGrid before pathGen");
     }
+    if (getNCollisions() > 0){
+        throw std::runtime_error("Grid is Kaiju-collided, cannot generate paths");
+    }
+
     for (auto rPair : robotDict){
         auto r = rPair.second;
         // verify that a target alpha beta has been set
@@ -356,20 +363,46 @@ void RobotGrid::pathGenGreedy(){
     phobia = 0;
     algType = Greedy;
     int ii;
+
+
+
     for (ii=0; ii<maxPathSteps; ii++){
 
+        bool keepGoing;
         bool allAtTarget = true;
+        if (stopIfDeadlock){
+            keepGoing = false;
+        }
+        else {
+            keepGoing = true;
+        }
 
         for (auto rPair : robotDict){
             auto r = rPair.second;
 
             stepGreedy(r, ii);
-            r->scoreVec.push_back(r->score());
-            if (r->score()!=0) {
-                // could just check the last elemet in onTargetVec? same thing.
-                // or use robot->score
+            double robotScore = r->score();
+            r->scoreVec.push_back(robotScore);
+            if (robotScore!=0) {
+
                 allAtTarget = false;
+
+                // inspect the score vec, if it is changing
+                // if it's value has decreased over the last
+                // 10 steps, keep going
+                if (stopIfDeadlock){
+                    if (ii < 12){
+                        keepGoing = true;
+                    }
+                    else {
+                        double historicScore = r->scoreVec[ii-10];
+                        if (robotScore/historicScore < 0.99){
+                            keepGoing = true;
+                        }
+                    }
+                }
             }
+
         }
 
         if (allAtTarget){
@@ -377,12 +410,20 @@ void RobotGrid::pathGenGreedy(){
             didFail = false;
             break;
         }
+
+        if (!keepGoing){
+            // std::cout << "stopped due to deadlock" << std::endl;
+            break;
+        }
+
+        // next check whether or not we're deadlocked
+
     }
 
     nSteps = ii+1;
 }
 
-void RobotGrid::pathGenEscape(double deg2move){
+void RobotGrid::pathGenExplode(double deg2move){
 
     // path gen 2 steps towards alpha beta target
     if (!initialized){
@@ -403,17 +444,17 @@ void RobotGrid::pathGenEscape(double deg2move){
 
     }
     // hack in destinations for all robots
-    // so didFail is not false
     for (auto rPair : robotDict){
         auto r = rPair.second;
         r->setDestinationAlphaBeta(r->alpha, r->beta);
     }
 
     nSteps = ii;
+    didFail = false;
 }
 
 
-void RobotGrid::pathGenEscapeOne(double deg2move, int robotID){
+void RobotGrid::pathGenExplodeOne(double deg2move, int robotID){
 
     // path gen 2 steps towards alpha beta target
     if (!initialized){
@@ -453,6 +494,7 @@ void RobotGrid::pathGenEscapeOne(double deg2move, int robotID){
     // auto rBeta = r->beta;
     r->setDestinationAlphaBeta(r->alpha, r->beta);
     nSteps = ii;
+    didFail = false;
 
 }
 
