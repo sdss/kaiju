@@ -149,7 +149,7 @@ def plotOne(
                 topcolor = "violet"
                 # edgecolor = "red"
                 hatch=None
-            elif robotID in highlightRobot:
+            elif hasattr(highlightRobot, "__len__") and robotID in highlightRobot:
                 topcolor = "violet"
                 # edgecolor = "red"
                 hatch = None
