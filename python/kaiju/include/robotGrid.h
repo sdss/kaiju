@@ -52,7 +52,7 @@ public:
     std::vector<int> deadlockedRobots(); // robots not on target
     void clearPaths();
 
-    void pathGenGreedy(bool stopIfDeadlock); // stepRotational with encroachment
+    void pathGenGreedy(bool stopIfDeadlock, bool ignoreInitialCollisions); // stepRotational with encroachment
     void pathGenMDP(double greed, double phobia); // Markov Decision Process
     void simplifyPaths();
     void smoothPaths(int points);

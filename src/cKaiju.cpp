@@ -179,7 +179,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("setCollisionBuffer", &RobotGrid::setCollisionBuffer)
         .def("shrinkCollisionBuffer", &RobotGrid::shrinkCollisionBuffer)
         .def("growCollisionBuffer", &RobotGrid::growCollisionBuffer)
-        .def("pathGenGreedy", &RobotGrid::pathGenGreedy, "stopIfDeadlock"_a = false)
+        .def("pathGenGreedy", &RobotGrid::pathGenGreedy, "stopIfDeadlock"_a = false, "ignoreInitialCollisions"_a = false)
         .def("pathGenMDP", &RobotGrid::pathGenMDP)
         .def("pathGenExplode", &RobotGrid::pathGenExplode)
         .def("pathGenExplodeOne", &RobotGrid::pathGenExplodeOne)
