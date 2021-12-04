@@ -2,9 +2,11 @@
 
 Changelog
 =========
+
+* **1.2.0-alpha.1** Add options to ``pathGenGreedy`` to exit early in case of deadlock and to allow path generation to start from an collided state. Add an option to explode a single robot at a time.
+
 * **1.2.0-alpha.0** Add GFA avoidance.  Modify API for robotGrid.isCollidedWithAssigned, and RobotGrid.wouldCollideWithAssigned, now returning info about GFAs.  Move collsion buffer out of RobotGrid to Robot
 (allows for unique collision buffer for each robot, fiducal, GFA)
-
 
 * **1.1.0**  Add coordio dependency, implement handling for calibration offsets.
 
