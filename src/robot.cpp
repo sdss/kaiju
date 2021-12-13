@@ -149,6 +149,61 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
     );
 }
 
+bool Robot::isValidDither(vec2 newAlphaBeta){
+    // check that there is no alpha or beta wrapping happening
+    if (std::isnan(newAlphaBeta[0]) or std::isnan(newAlphaBeta[1])){
+        return false;
+    }
+    if (std::abs(newAlphaBeta[0] - alpha) > 90){
+        return false;
+    }
+    if (std::abs(newAlphaBeta[1] - beta) > 90){
+        return false;
+    }
+
+    return true;
+
+
+
+}
+
+vec2 Robot::uniformDither(double radius){ //, FiberType fiberType){
+    // warning no collisions are checked in this!
+    vec3 fibWokXYZ;
+    vec2 xyTangentNew, xyTangentBase, fiberBaseXY, dxy, ab;
+
+
+    fibWokXYZ = apWokXYZ;
+    fiberBaseXY = apBetaXY;
+
+    auto tangentXYZ = wokToTangent(
+        fibWokXYZ, basePos, iHat, jHat, kHat, elementHeight, scaleFac,
+        dxyz[0], dxyz[1], dxyz[2]
+    );
+
+    xyTangentBase[0] = tangentXYZ[0];
+    xyTangentBase[1] = tangentXYZ[1];
+
+    dxy = sampleAnnulus(0, radius);
+    xyTangentNew[0] = xyTangentBase[0] + dxy[0];
+    xyTangentNew[1] = xyTangentBase[1] + dxy[1];
+
+    ab = tangentToPositioner(
+        xyTangentNew, fiberBaseXY, alphaLen, alphaOffDeg, betaOffDeg, lefthanded
+    );
+
+    while (!isValidDither(ab)){
+        dxy = sampleAnnulus(0, radius);
+        xyTangentNew[0] = xyTangentBase[0] + dxy[0];
+        xyTangentNew[1] = xyTangentBase[1] + dxy[1];
+
+        ab = tangentToPositioner(
+            xyTangentNew, fiberBaseXY, alphaLen, alphaOffDeg, betaOffDeg, lefthanded
+        );
+    }
+
+    return ab;
+}
 
 vec2 Robot::randomXYUniform(){
 	vec2 xy = sampleAnnulus(minReach, maxReach);

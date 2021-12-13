@@ -89,6 +89,8 @@ public:
     void addGFANeighbor(int fiducialID);
 
     void setXYUniform();
+    bool isValidDither(vec2 newAlphaBeta);
+    vec2 uniformDither(double radius);
     vec2 randomXYUniform();
     void simplifyPath(double epsilon);
     void smoothVelocity(int points);

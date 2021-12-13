@@ -118,6 +118,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("setDestinationAlphaBeta", &Robot::setDestinationAlphaBeta)
         .def("setXYUniform", &Robot::setXYUniform)
         .def("randomXYUniform", &Robot::randomXYUniform)
+        .def("uniformDither", &Robot::uniformDither)
         .def("alphaBetaFromWokXYZ", &Robot::alphaBetaFromWokXYZ)
         .def("setFiberToWokXYZ", &Robot::setFiberToWokXYZ)
         .def("score", &Robot::score)
