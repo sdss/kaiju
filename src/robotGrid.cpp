@@ -1123,13 +1123,12 @@ void RobotGrid::stepGreedy(std::shared_ptr<Robot> robot, int stepNum){
     betaPathPoint[0] = stepNum;
 
 
-    if (robot->score()==0){
-        // at target don't move
+    if (stepNum==0 || robot->score()==0){
+        // at target or on first step, don't move
         alphaPathPoint[1] = currAlpha;
         betaPathPoint[1] = currBeta;
         robot->alphaPath.push_back(alphaPathPoint);
         robot->betaPath.push_back(betaPathPoint);
-        // robot->onTargetVec.push_back(true);
 
         // note make collision segment just two points
 
@@ -1233,8 +1232,8 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
     betaPathPoint[0] = stepNum;
 
 
-    if (robot->score()==0 and !neighborEncroachment(robot)){
-        // done folding no one knocking don't move
+    if (stepNum==0 || (robot->score()==0 && !neighborEncroachment(robot))){
+        // either at first step, or done folding no one knocking don't move
         alphaPathPoint[1] = currAlpha;
         betaPathPoint[1] = currBeta;
         robot->alphaPath.push_back(alphaPathPoint);
