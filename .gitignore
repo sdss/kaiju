@@ -4,3 +4,6 @@ build/*
 .python-version
 .eggs
 .so
+
+src/conv.cpp
+python/kaiju/include/coordio.h

@@ -1,12 +1,12 @@
-from glob import glob
 import os
-import re
-import subprocess
 import sys
+import urllib.request
 
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext as _build_ext
 
+
+COORDIO_BASE = 'https://raw.githubusercontent.com/sdss/coordio/master/'
 
 class getPybindInclude(object):
     """Helper class to determine the pybind11 include path
@@ -49,7 +49,8 @@ def getSources():
         'src/utils.cpp',
         'src/target.cpp',
         'src/fiducial.cpp',
-        'src/gfa.cpp'
+        'src/gfa.cpp',
+        'src/conv.cpp'
     ]
 
 
@@ -57,77 +58,42 @@ extra_compile_args = ["--std=c++11", "-fPIC", "-v", "-O3"]
 extra_link_args = []
 if sys.platform == 'darwin':
     extra_compile_args += ['-stdlib=libc++', '-mmacosx-version-min=10.9']
-    extra_link_args = ["-v", '-mmacosx-version-min=10.9']
+    extra_link_args = ["-v", '-mmacosx-version-min=10.9', '-L.']
 
     from distutils import sysconfig
     vars = sysconfig.get_config_vars()
     vars['LDSHARED'] = vars['LDSHARED'].replace('-bundle', '-dynamiclib')
 
-module = Extension(
-    'kaiju.cKaiju',
-    include_dirs=getIncludes(),
-    extra_compile_args=extra_compile_args,
-    extra_link_args=extra_link_args,
-    sources=getSources()
-)
+extensions = [
+    Extension(
+        'kaiju.cKaiju',
+        include_dirs=getIncludes(),
+        extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args,
+        sources=getSources())
+]
 
 
-# We need a custom build extension class because we need to inspect the
-# coordio library after setup_requires has installed id.
+# cKaiju relies on some funcitons defined in libcoordio in coordio. Since linking against
+# that library directly is painful, we just download the latest files from GitHub
+# and add them to cKaiju ...
 class build_ext(_build_ext):
 
     def run(self):
+
+        DIRNAME = os.path.dirname(__file__)
+
+        with urllib.request.urlopen(COORDIO_BASE + 'src/coordio/include/coordio.h') as r:
+            data = r.read()
+            with open(os.path.join(DIRNAME, 'python/kaiju/include/coordio.h'), 'wb') as f:
+                f.write(data)
+
+        with urllib.request.urlopen(COORDIO_BASE + 'cextern/conv.cpp') as r:
+            data = r.read()
+            with open(os.path.join(DIRNAME, 'src/conv.cpp'), 'wb') as f:
+                f.write(data)
+
         super().run()
-
-        # On macOS we need to rename the path to the libcoordio library in cKaiju
-        # after it has been linked.
-        if sys.platform == 'darwin':
-            libs = list(glob('python/kaiju/cKaiju*.so'))
-            if len(libs) == 0:
-                libs = list(glob('build/**/kaiju/cKaiju*.so'))
-                if len(libs) == 0:
-                    return
-
-            kaiju_lib = libs[0]
-            otool_data = subprocess.run(f'otool -L {kaiju_lib}',
-                                        capture_output=True, shell=True)
-
-            reg = re.compile(r'\n\s*(.+libcoordio.+?)\s+.+\n', re.MULTILINE)
-            libcoordio_path_current = reg.search(otool_data.stdout.decode()).groups()[0]
-
-            from coordio import libcoordio
-            libcoordio_path = libcoordio.__file__
-
-            subprocess.run(f'install_name_tool -change {libcoordio_path_current} '
-                           f'{libcoordio_path} {kaiju_lib}', shell=True)
-
-    def finalize_options(self):
-        _build_ext.finalize_options(self)
-
-        # JSG: this is a bit of a hack but what we need is not very standard.
-        # We want to link against libcoordio which is located in the
-        # site-packages/coordio directory. We need to provide the full path
-        # (since Python calls it libcoorio.something.architecture.so) and
-        # we also need to set the rpath in cKaiju so that it knows how to
-        # find it in runtime without having to override LD_LIBRARY_PATH.
-        # We also need to tell the linker where to find the library with -L.
-        # Finally, we need to tell the compiler where the headers for
-        # libcoordio are.
-
-        import coordio
-
-        coordio_base = os.path.abspath(os.path.dirname(coordio.__file__))
-
-        coordio_include = os.path.join(coordio_base, "include")
-        self.extensions[0].include_dirs.append(coordio_include)
-
-        from coordio import libcoordio
-        libcoordio_path = libcoordio.__file__
-
-        self.extensions[0].extra_link_args += [
-            libcoordio_path,  # This is equivalent to -l but with full path.
-            '-Wl,-rpath,' + coordio_base,
-            '-L' + coordio_base]
 
 
 def runSetup(packages, requirements):
@@ -146,7 +112,7 @@ def runSetup(packages, requirements):
         include_package_data=True,
         url="https://github.com/sdss/kaiju",
         keywords="astronomy software",
-        ext_modules=[module],
+        ext_modules=extensions,
         install_requires=requirements,
         setup_requires=[
             "sdss-coordio>=1.2.0",
