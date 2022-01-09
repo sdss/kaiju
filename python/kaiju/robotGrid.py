@@ -1074,6 +1074,27 @@ class RobotGridCalib(RobotGrid):
         )
 
 
+class RobotGridAPO(RobotGrid):
+
+    def _load_grid(self):
+
+        self._load_from_tables(
+            calibration.positionerTable.loc["APO"],
+            calibration.wokCoords.loc["APO"],
+            calibration.fiducialCoords.loc["APO"]
+        )
+
+
+class RobotGridLCO(RobotGrid):
+
+    def _load_grid(self):
+        self._load_from_tables(
+            calibration.positionerTable.loc["LCO"],
+            calibration.wokCoords.loc["LCO"],
+            calibration.fiducialCoords.loc["LCO"]
+        )
+
+
 class RobotGridNominal(RobotGrid):
     # constructed from a "perfect" grid
     # useful for testing because calib grid will change overtime
