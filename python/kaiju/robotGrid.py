@@ -256,9 +256,9 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
             toDestination[r.id] = armPathToDest
             fromDestination[r.id] = armPathFromDest
 
-        self.shrinkCollisionBuffer(collisionShrink)
-        self.verifySmoothed(len(steps))
-        self.growCollisionBuffer(collisionShrink)
+        # self.shrinkCollisionBuffer(collisionShrink)
+        # self.verifySmoothed(len(steps))
+        # self.growCollisionBuffer(collisionShrink)
 
         return toDestination, fromDestination
 
