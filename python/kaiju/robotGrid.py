@@ -213,6 +213,10 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         fromDestination = {}
 
         for r in self.robotDict.values():
+            # if robot is offline, don't get a path for it
+            if r.isOffline:
+                continue
+
             ap = [x[1] for x in r.alphaPath]
             bp = [x[1] for x in r.betaPath]
             # buffer ends
