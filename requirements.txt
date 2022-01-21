@@ -7,3 +7,4 @@ fitsio>=1.0.5
 sdss-coordio>=1.2.0
 psutil>=5.8.0
 seaborn
+simplify
