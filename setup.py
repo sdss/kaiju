@@ -115,7 +115,7 @@ def runSetup(packages, requirements):
         ext_modules=extensions,
         install_requires=requirements,
         setup_requires=[
-            "sdss-coordio>=1.2.0",
+            "sdss-coordio>=1.2.1",
             "pybind11>=2.2.4"
         ],
         classifiers=[

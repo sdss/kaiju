@@ -3,6 +3,8 @@
 Changelog
 =========
 
+* **1.2.2** Add APO/LCO specific versions for a ``robotGrid``.
+
 * **1.2.1** Download libcoordio source files when building.
 
 * **1.2.0** Implement dither method for robots. Add options to ``pathGenGreedy`` to exit early in case of deadlock and to allow path generation to start from an collided state. Add an option to explode a single robot at a time. Add GFA avoidance.  Modify API for robotGrid.isCollidedWithAssigned, and RobotGrid.wouldCollideWithAssigned, now returning info about GFAs.  Move collsion buffer out of RobotGrid to Robot (allows for unique collision buffer for each robot, fiducal, GFA).
