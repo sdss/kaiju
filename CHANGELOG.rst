@@ -3,6 +3,8 @@
 Changelog
 =========
 
+* **1.2.3** Rework smoothing strategy.
+
 * **1.2.2** Add APO/LCO specific versions for a ``robotGrid``.
 
 * **1.2.1** Download libcoordio source files when building.
