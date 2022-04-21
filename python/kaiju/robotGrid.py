@@ -18,6 +18,8 @@ from shapely.geometry import LineString
 import coordio
 from coordio.defaults import IHAT, JHAT, KHAT, calibration
 import pandas as pd
+from scipy.signal import savgol_filter
+from simplification.cutil import simplify_coords
 
 
 # positionerTable = calibration.positionerTable
@@ -167,7 +169,118 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
             self.decollideGrid()
         return self.getPathPair()
 
+
     def getPathPair(
+        self, speed=2, smoothPoints=5, collisionShrink=0.05, pathDelay=1,
+        epsilon=None
+    ):
+        """
+        Get paths in format that jaeger expects.  No checking is done, so
+        whoever calls this should check things on the RobotGrid
+        and decide what to do next.
+
+        Parameters
+        -----------
+        speed: float
+            RPM at output, how fast robots move, max speed is 3
+        smoothPoints: int
+            window width for smoothing a path's velocity profile,
+            in units of steps.  Smooths out fast switching between forward
+            and reverse moves on the axes.
+        collisionShrink: float
+            mm, how much to decrease the collision buffer to allow
+            for smoothing
+        pathDely: float
+            seconds, how far in the future to put the first point, this
+            allows a robot to "catch up" to the expected starting point
+            for the path, if it's not there already.
+
+        Returns
+        ---------
+        toDestination: dict
+            alpha/beta points in time for all robots.  Path begins at robot
+            grid's initialized state, moving toward destination state.
+
+        fromDestination: dict
+            alpha/beta points in time for all robots.  Path begins at robot
+            grid's destination state, moving toward the initialized state.
+            This is just simply a reversed version of toDestination.
+        """
+        if epsilon is None:
+            epsilon = self.epsilon
+
+        toDestination = {}
+        fromDestination = {}
+
+        for r in self.robotDict.values():
+            # if robot is offline, don't get a path for it
+            if r.isOffline:
+                continue
+
+            ap = [x[1] for x in r.alphaPath]
+            bp = [x[1] for x in r.betaPath]
+            # buffer ends
+            ap = np.array([[ap[0]]*smoothPoints + ap + [ap[-1]]*smoothPoints]).flatten()
+            bp = np.array([[bp[0]]*smoothPoints + bp + [bp[-1]]*smoothPoints]).flatten()
+            steps = np.arange(len(ap))
+            # smooth
+            aps = savgol_filter(ap, smoothPoints, polyorder=3)
+            bps = savgol_filter(bp, smoothPoints, polyorder=3)
+            # import pdb; pdb.set_trace()
+            # simplify
+            apss = simplify_coords(np.array([steps, aps]).T, epsilon)
+            bpss = simplify_coords(np.array([steps, bps]).T, epsilon)
+            # linearly interpolate back to original density
+            # (for collision checking after smoothing/simplifying)
+            apssi = np.interp(steps, apss[:,0], apss[:,1])
+            bpssi = np.interp(steps, bpss[:,0], bpss[:,1])
+            # set on the robot object for checking for collisions
+            r.interpSimplifiedAlphaPath = [[t,x] for t,x in zip(steps, apssi)]
+            r.interpSimplifiedBetaPath = [[t,x] for t,x in zip(steps, bpssi)]
+
+
+            armPathToDest = {}
+            armPathFromDest = {}
+
+            for axis, data in zip(["alpha", "beta"], [apss, bpss]):
+                # to destination path
+                times = data[:, 0] * self.stepSize / (speed * 360 / 60.)
+                angle = data[:, 1]
+                armPathToDest[axis] = [(pos, time + pathDelay) for pos, time in zip(angle, times)]
+
+                # from destination path, a reverse of the same thing
+                timesR = np.abs(times - times[-1])[::-1]
+                angleR = angle[::-1]
+                armPathFromDest[axis] = [(pos, time + pathDelay) for pos, time in zip(angleR, timesR)]
+
+            toDestination[r.id] = armPathToDest
+            fromDestination[r.id] = armPathFromDest
+
+        # self.shrinkCollisionBuffer(collisionShrink)
+        # self.verifySmoothed(len(steps))
+        # self.growCollisionBuffer(collisionShrink)
+
+        return toDestination, fromDestination
+
+
+        #     alphaPaths.append(ap)
+        #     betaPaths.append(bp)
+
+        # alphaPaths = np.array(alphaPaths)
+        # betaPaths = np.array(betaPaths)
+        # # smooth them
+        # alphaSmooth = savgol_filter(alphaPaths, smoothPoints, polyorder=3, axis=1)
+        # betaSmooth = savgol_filter(betaPaths, smoothPoints, polyorder=3, axis=1)
+
+        # steps = numpy.arrange(alphaSmooth.shape[1])
+        # # could potentially multiprocess this...
+        # for ii, robotID in enumerate(robotIDs):
+        #     _alphaSmooth = alphaSmooth[ii]
+        #     _betaSmooth = betaSmooth[ii]
+        #     alphaSimp =
+
+
+    def _getPathPair(
         self, speed=2, smoothPoints=5, collisionShrink=0.05, pathDelay=1
     ):
         """
@@ -212,7 +325,8 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         self.smoothPaths(smoothPoints)
         self.simplifyPaths()
         self.shrinkCollisionBuffer(collisionShrink)
-        self.verifySmoothed()
+        self.verifySmoothed(self.nSteps)
+        # print("got %i smoothed collisions in getPathPair"%self.smoothCollisions)
         self.growCollisionBuffer(collisionShrink)
 
         toDestination = {}

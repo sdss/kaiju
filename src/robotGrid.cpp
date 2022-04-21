@@ -229,9 +229,9 @@ void RobotGrid::simplifyPaths(){
     }
 }
 
-void RobotGrid::verifySmoothed(){
+void RobotGrid::verifySmoothed(int totalSteps){
     smoothCollisions = 0;
-    for (int ii = 0; ii < nSteps; ii++){
+    for (int ii = 0; ii < totalSteps; ii++){
         for (auto rPair : robotDict){
             auto r = rPair.second;
             r->setAlphaBeta(r->interpSimplifiedAlphaPath[ii][1], r->interpSimplifiedBetaPath[ii][1]);

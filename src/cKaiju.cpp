@@ -145,6 +145,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("smoothCollidedRobots", &RobotGrid::smoothCollidedRobots)
         .def_readwrite("didFail", &RobotGrid::didFail)
         .def_readwrite("nSteps", &RobotGrid::nSteps)
+        // .def_readwrite("nStepsSmoothed", &RobotGrid::nStepsSmoothed)
         .def_readwrite("nRobots", &RobotGrid::nRobots)
         .def_readwrite("fiducialDict", &RobotGrid::fiducialDict)
         .def_readwrite("targetDict", &RobotGrid::targetDict)

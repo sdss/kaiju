@@ -56,7 +56,7 @@ public:
     void pathGenMDP(double greed, double phobia); // Markov Decision Process
     void simplifyPaths();
     void smoothPaths(int points);
-    void verifySmoothed();
+    void verifySmoothed(int totalSteps);
 
     // only modifies robot collision buffers
     void setCollisionBuffer(double newBuffer);
