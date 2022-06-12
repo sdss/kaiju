@@ -53,7 +53,7 @@ public:
     void clearPaths();
 
     void pathGenGreedy(bool stopIfDeadlock, bool ignoreInitialCollisions); // stepRotational with encroachment
-    void pathGenMDP(double greed, double phobia); // Markov Decision Process
+    void pathGenMDP(double greed, double phobia, bool ignoreInitialCollisions); // Markov Decision Process
     void simplifyPaths();
     void smoothPaths(int points);
     void verifySmoothed(int totalSteps);

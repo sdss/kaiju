@@ -290,11 +290,14 @@ void RobotGrid::clearPaths(){
 
 }
 
-void RobotGrid::pathGenMDP(double setGreed, double setPhobia){
+void RobotGrid::pathGenMDP(double setGreed, double setPhobia, bool ignoreInitialCollisions){
     // path gen 2 steps towards alpha beta target
     // move greed and phobia to constructor?
     if (!initialized){
         throw std::runtime_error("Initialize RobotGrid before pathGen");
+    }
+    if (getNCollisions() > 0 && !ignoreInitialCollisions){
+        throw std::runtime_error("Grid is Kaiju-collided, cannot generate paths");
     }
     for (auto rPair : robotDict){
         auto r = rPair.second;
