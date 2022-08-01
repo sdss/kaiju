@@ -1291,9 +1291,16 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
         nextBeta =nextAlphaBeta[1];
 
         robot->setAlphaBeta(nextAlpha, nextBeta);
+        if (isCollided(robot->id)){
+            // don't consider this a viable option
+            // move to next option
+            break;
+        }
+
+
+
         // score is min possible steps till goal
         localEnergy = 0;
-        bool didCollide = false;
 
         // compute robot's local energy, and check for collision
         for (auto otherRobotID : robot->robotNeighbors){
@@ -1304,22 +1311,17 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
             );
 
             localEnergy += 1/dist2;
+
             double collideDist2 = (robot->collisionBuffer + otherRobot->collisionBuffer + maxDisplacement) *
                                   (robot->collisionBuffer + otherRobot->collisionBuffer + maxDisplacement);
-            if (dist2 < collideDist2){
-                // this is not a viable move option
-                // go on to next try
-                didCollide = true;
-                if (otherRobot->score() < robot->score()){
-                    otherRobot->nudge = true;
-                }
-            }
-        }
-
-        if (didCollide){
-            // don't consider this a viable option
-            // move to next option
-            break;
+            // if (dist2 < collideDist2){
+            //     // this is not a viable move option
+            //     // go on to next try
+            //     didCollide = true;
+            //     if (otherRobot->score() < robot->score()){
+            //         otherRobot->nudge = true;
+            //     }
+            // }
         }
 
         if (doPhobia){
