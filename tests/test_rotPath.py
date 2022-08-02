@@ -162,7 +162,7 @@ def test_reverseSmoothMDP(plot=False):
     rg.smoothPaths(smoothPts)
     rg.simplifyPaths()
     rg.shrinkCollisionBuffer(cs)
-    rg.verifySmoothed()
+    # rg.verifySmoothed()
 
 
     assert rg.smoothCollisions == 0
