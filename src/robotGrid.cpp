@@ -296,8 +296,15 @@ void RobotGrid::pathGenMDP(double setGreed, double setPhobia, bool ignoreInitial
     if (!initialized){
         throw std::runtime_error("Initialize RobotGrid before pathGen");
     }
+
     if (getNCollisions() > 0 && !ignoreInitialCollisions){
         throw std::runtime_error("Grid is Kaiju-collided, cannot generate paths");
+    }
+    if (setGreed < 0 || setGreed > 1){
+        throw std::runtime_error("Greed must be between 0 and 1");
+    }
+    if (setPhobia < 0 || setPhobia > 1){
+        throw std::runtime_error("Phobia must be between 0 and 1");
     }
     for (auto rPair : robotDict){
         auto r = rPair.second;
@@ -307,8 +314,8 @@ void RobotGrid::pathGenMDP(double setGreed, double setPhobia, bool ignoreInitial
         }
     }
 
-    greed = setGreed;
-    phobia = setPhobia;
+    // greed = setGreed;
+    // phobia = setPhobia;
     algType = MDP;
     clearPaths();
     didFail = true;
@@ -316,6 +323,7 @@ void RobotGrid::pathGenMDP(double setGreed, double setPhobia, bool ignoreInitial
     std::vector<int> robotIDs;
     for (auto rPair : robotDict){
         robotIDs.push_back(rPair.first);
+        rPair.second->setGreedPhobia(setGreed, setPhobia);
     }
 
 
@@ -362,8 +370,8 @@ void RobotGrid::pathGenGreedy(bool stopIfDeadlock, bool ignoreInitialCollisions)
     }
     clearPaths();
     didFail = true;
-    greed = 1;
-    phobia = 0;
+    // greed = 1;
+    // phobia = 0;
     algType = Greedy;
     int ii;
 
@@ -1266,7 +1274,7 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
     // decide whether we're minimizing phobia
     // or minimizing score
 
-    doPhobia = randomSample() < phobia;
+    doPhobia = randomSample() < robot->phobia;
 
 
     for (auto dAlphaBeta : perturbArray){
@@ -1331,7 +1339,7 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
             score = robot->score();
         }
 
-        if (score < bestScore and randomSample() < greed){
+        if (score < bestScore and randomSample() < robot->greed){
         // almost always pick a better score
             bestScore = score;
             bestAlpha = nextAlpha;

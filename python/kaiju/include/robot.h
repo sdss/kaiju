@@ -23,9 +23,11 @@ public:
     bool lefthanded;
     bool nudge = false;
     bool isOffline = false;
-    double xPos, yPos, alpha, beta, destinationAlpha, destinationBeta; //, targetX, targetY;
+    double xPos, yPos, alpha, beta, alphaInit, betaInit, destinationAlpha, destinationBeta; //, targetX, targetY;
     double angStep, minReach, maxReach;
     double collisionBuffer = 0;
+    double greed = 1;
+    double phobia = 0;
     std::vector<double> alphaVel;
     std::vector<double> betaVel;
     std::vector<double> smoothAlphaVel;
@@ -79,6 +81,8 @@ public:
             bool hasApogee = true, double collisionBuffer = 2.0, bool lefthanded = false
     );
     void setAlphaBeta (double alpha, double beta);
+    void saveAlphaBeta();
+    void setGreedPhobia (double greed, double phobia);
     void setDestinationAlphaBeta(double alpha, double beta);
     void setFiberToWokXYZ (vec3 wokXYZ, FiberType fiberType); // xy in focal plane coord sys
 

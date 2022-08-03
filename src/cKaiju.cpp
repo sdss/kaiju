@@ -56,6 +56,8 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("alpha", &Robot::alpha, R"pbdoc(
             Robot's alpha position (degrees).
             )pbdoc")
+        .def_readwrite("greed", &Robot::greed)
+        .def_readwrite("phobia", &Robot::phobia)
         .def_readwrite("isOffline", &Robot::isOffline)
         .def_readwrite("lefthanded", &Robot::lefthanded)
         .def_readwrite("robotNeighbors", &Robot::robotNeighbors)
@@ -137,8 +139,8 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("algType", &RobotGrid::algType)
         .def_readwrite("seed", &RobotGrid::seed)
         .def_readwrite("robotDict", &RobotGrid::robotDict)
-        .def_readwrite("greed", &RobotGrid::greed)
-        .def_readwrite("phobia", &RobotGrid::phobia)
+        // .def_readwrite("greed", &RobotGrid::greed)
+        // .def_readwrite("phobia", &RobotGrid::phobia)
         .def_readwrite("angStep", &RobotGrid::angStep)
         // .def_readwrite("collisionBuffer", &RobotGrid::collisionBuffer)
         .def_readwrite("smoothCollisions", &RobotGrid::smoothCollisions)

@@ -91,6 +91,16 @@ void Robot::setDestinationAlphaBeta(double talpha, double tbeta){
     hasDestinationAlphaBeta = true;
 }
 
+void Robot::setGreedPhobia(double newGreed, double newPhobia){
+    greed = newGreed;
+    phobia = newPhobia;
+}
+
+void Robot::saveAlphaBeta(){
+    alphaInit = alpha;
+    betaInit = beta;
+}
+
 void Robot::setAlphaBeta(double newAlpha, double newBeta){
     vec2 tmp2;
     vec3 tmp3;

@@ -17,8 +17,8 @@ public:
     double epsilon;
     // double collisionBuffer;
     double angStep;
-    double greed;
-    double phobia;
+    // double greed;
+    // double phobia;
     bool didFail;
     int nSteps;
     int seed;
