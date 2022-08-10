@@ -1129,6 +1129,34 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         for ii, collisionSegXYZWok in enumerate(gfaList):
             self.addGFA(ii, collisionSegXYZWok, collisionBuffer=3)
 
+        # loop through grid and find special robots with a fiducial
+        # located down and right that need special attention for
+        # path planning / allowed placement.  These robots have a small
+        # range of alpha/beta that are blocked due to robot range of
+        # motion
+        fcRows = fiducialCoords.row.to_numpy()
+        fcCols = fiducialCoords.col.to_numpy()
+        posIDs = []
+        for fcRow, fcCol in zip(fcRows,fcCols):
+            if np.isnan(fcRow) or np.isnan(fcCol):
+                continue
+            pRow = int(fcRow+1)
+            # not sure why, but positive rows have columns
+            # offset by 1 with respect to negative rows
+            # probably a bug in the config file...
+            if pRow > 0:
+                pCol = int(fcCol-1)
+            else:
+                pCol = int(fcCol)
+            sign = ""
+            if pRow > 0:
+                sign = "+"
+            posIDs.append("R%s%iC%i"%(sign,pRow,pCol))
+
+        for r in self.robotDict.values():
+            if r.holeID in posIDs:
+                r.fiducialWatch = True
+
         self.initGrid()
 
     def plot_state(

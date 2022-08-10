@@ -12,6 +12,15 @@
 // get rid of this hardcoded stuff
 const double alphaLenRough = 7.4;
 const double betaLenRough = 15;
+// certain robots have a restricted range of
+// posible alpha beta values due to fiducials.
+// path planning will never be able to route a robot
+// to some positions even if it is non-fiducial colliding.
+// for these robots (with a fiducial neighbor down and right)
+// beta < fwC0 + alpha*fwC1 is not ever allowed
+// and considered collided (even if it technically isn't)
+const double fwC0 = 41.2853;
+const double fwC1 = -1.3085;
 
 
 RobotGrid::RobotGrid(double angStep, double epsilon, int seed)
@@ -735,7 +744,7 @@ std::tuple<bool, bool, bool, std::vector<int>> RobotGrid::wouldCollideWithAssign
     }
 
 
-bool RobotGrid::neighborEncroachment(std::shared_ptr<Robot> robot1){
+bool RobotGrid::neighborEncroachment(std::shared_ptr<Robot> robot1, double encroachDist = 3){
     // score, separation2
     // look ahead and see robots getting close
     double dist2;
@@ -749,7 +758,7 @@ bool RobotGrid::neighborEncroachment(std::shared_ptr<Robot> robot1){
     for (auto otherRobotID : robot1->robotNeighbors){
         auto robot2 = robotDict[otherRobotID];
         // squared distance returned
-        double minDist = robot1->collisionBuffer + robot2->collisionBuffer + 3*maxDisplacement;
+        double minDist = robot1->collisionBuffer + robot2->collisionBuffer + encroachDist*maxDisplacement;
         dist2 = dist3D_Segment_to_Segment(
                 robot2->collisionSegWokXYZ[0], robot2->collisionSegWokXYZ[1],
                 robot1->collisionSegWokXYZ[0], robot1->collisionSegWokXYZ[1]
@@ -810,6 +819,17 @@ std::vector<int> RobotGrid::fiducialColliders(int robotID){
             collidingNeighbors.push_back(fiducial->id);
         }
     }
+
+    // check for special robots with a fiducial neighbor
+    // (tagged during grid construction) located down and right
+    // for these robots some small range of alpha/beta values are
+    // not allowed
+    if (robot->fiducialWatch){
+        if (robot->beta < fwC0 + robot->alpha*fwC1){
+            collidingNeighbors.push_back(-1);
+        }
+    }
+
     return collidingNeighbors;
 
 }
@@ -1322,14 +1342,6 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
 
             double collideDist2 = (robot->collisionBuffer + otherRobot->collisionBuffer + maxDisplacement) *
                                   (robot->collisionBuffer + otherRobot->collisionBuffer + maxDisplacement);
-            // if (dist2 < collideDist2){
-            //     // this is not a viable move option
-            //     // go on to next try
-            //     didCollide = true;
-            //     if (otherRobot->score() < robot->score()){
-            //         otherRobot->nudge = true;
-            //     }
-            // }
         }
 
         if (doPhobia){
@@ -1370,9 +1382,257 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
     robot->roughBetaX.push_back(temp);
     temp[1] = robot->collisionSegWokXYZ.back()[1]; // yBetaEnd
     robot->roughBetaY.push_back(temp);
-    robot->nudge = false;
 }
 
+
+void RobotGrid::pathGenMDP2(double setGreed, double setPhobia, bool ignoreInitialCollisions){
+    // path gen 2 steps towards alpha beta target
+    // move greed and phobia to constructor?
+    int ii, jj;
+
+    if (!initialized){
+        throw std::runtime_error("Initialize RobotGrid before pathGen");
+    }
+
+    if (getNCollisions() > 0 && !ignoreInitialCollisions){
+        throw std::runtime_error("Grid is Kaiju-collided, cannot generate paths");
+    }
+    if (setGreed < 0 || setGreed > 1){
+        throw std::runtime_error("Greed must be between 0 and 1");
+    }
+    if (setPhobia < 0 || setPhobia > 1){
+        throw std::runtime_error("Phobia must be between 0 and 1");
+    }
+    for (auto rPair : robotDict){
+        auto r = rPair.second;
+        // verify that a target alpha beta has been set
+        if (!r->hasDestinationAlphaBeta){
+            throw std::runtime_error("One or more robots have not received target alpha/beta");
+        }
+    }
+
+    int nTries = 5;
+    // greed = setGreed;
+    // phobia = setPhobia;
+    algType = MDP;
+    std::vector<int> robotIDs;
+    for (auto rPair : robotDict){
+        robotIDs.push_back(rPair.first);
+        rPair.second->setGreedPhobia(setGreed, setPhobia);
+        rPair.second->saveAlphaBeta();
+    }
+
+
+    for (int jj=0; jj<nTries; jj++){
+
+        std::cout << "on path gen iter " << jj << std::endl;
+        clearPaths();
+        didFail = true;
+
+        for (auto rPair2 : robotDict){
+            rPair2.second->setAlphaBeta(rPair2.second->alphaInit, rPair2.second->betaInit);
+        }
+
+
+
+        for (ii=0; ii<maxPathSteps; ii++){
+            std::random_shuffle(robotIDs.begin(), robotIDs.end());
+            bool allAtTarget = true;
+            for (auto robotID : robotIDs){
+                auto r = robotDict[robotID];
+
+                stepMDP2(r, ii);
+                r->scoreVec.push_back(r->score());
+                if (r->score()!=0) {
+                    // could just check the last elemet in onTargetVec? same thing.
+                    // or use robot->score
+                    allAtTarget = false;
+                }
+            }
+
+            if (allAtTarget){
+                didFail = false;
+                break;
+            }
+        }
+
+        if (!didFail){
+            break;
+        }
+
+        // this iteration failed.  find a robot to nudge
+        // then try again
+        for (auto robotID : robotIDs){
+            auto r = robotDict[robotID];
+            if (r->score()!=0 and !r->nudge){
+                r->nudge = true;
+                std::cout << "nudging robot " << robotID << std::endl;
+                break;
+            }
+        }
+
+
+
+    }
+
+    nSteps = ii+1;
+
+}
+
+void RobotGrid::stepMDP2(std::shared_ptr<Robot> robot, int stepNum){
+
+    double score, dist2, localEnergy;
+    double nextAlpha, nextBeta;
+    bool doPhobia;
+    double currAlpha = robot->alpha;
+    double currBeta = robot->beta;
+    double bestAlpha, bestBeta, bestScore;
+    double greed;
+    bestAlpha = currAlpha;
+    bestBeta = currBeta;
+    bestScore = 1e16; // to be minimized
+
+    vec2 alphaPathPoint;
+    vec2 betaPathPoint;
+    vec2 temp;
+
+    alphaPathPoint[0] = stepNum;
+    betaPathPoint[0] = stepNum;
+
+
+    if (stepNum==0 || (robot->score()==0 && !neighborEncroachment(robot, 20))){
+        // either at first step, or done folding no one knocking don't move
+        alphaPathPoint[1] = currAlpha;
+        betaPathPoint[1] = currBeta;
+        robot->alphaPath.push_back(alphaPathPoint);
+        robot->betaPath.push_back(betaPathPoint);
+
+        // note make collision segment just two points
+
+        temp[0] = stepNum;
+        temp[1] = robot->collisionSegWokXYZ[0][0]; // xAlphaEnd
+        robot->roughAlphaX.push_back(temp);
+        temp[1] = robot->collisionSegWokXYZ[0][1]; // yAlphaEnd
+        robot->roughAlphaY.push_back(temp);
+        temp[1] = robot->collisionSegWokXYZ.back()[0]; // xBetaEnd
+        robot->roughBetaX.push_back(temp);
+        temp[1] = robot->collisionSegWokXYZ.back()[1]; // yBetaEnd
+        robot->roughBetaY.push_back(temp);
+
+        return;
+    }
+
+    if ((robot->score()==0) && neighborEncroachment(robot, 20)){
+        robot->nudge = true;
+    }
+
+    robot->lastStepNum = stepNum;
+    // begin looping over all possible moves
+    // shuffle move options to ensure they are visited
+    // in no particular order
+    std::random_shuffle(perturbArray.begin(), perturbArray.end());
+
+    // decide whether we're minimizing phobia
+    // or minimizing score
+
+    doPhobia = false;
+    greed = 1;
+
+    if (robot->nudge && neighborEncroachment(robot, 20)){
+        doPhobia = randomSample() < robot->phobia;
+        greed = robot->greed;
+        // std::cout << robot->id << " entering avoidance tactics!! " <<  greed << std::endl;
+
+    }
+
+
+
+
+    for (auto dAlphaBeta : perturbArray){
+        nextAlpha = currAlpha + dAlphaBeta[0];
+        nextBeta = currBeta + dAlphaBeta[1];
+        // careful not to overshoot
+        if (currAlpha > robot->destinationAlpha and nextAlpha <= robot->destinationAlpha){
+            nextAlpha = robot->destinationAlpha;
+        }
+        if (currAlpha < robot->destinationAlpha and nextAlpha >= robot->destinationAlpha){
+            nextAlpha = robot->destinationAlpha;
+        }
+        if (currBeta > robot->destinationBeta and nextBeta <= robot->destinationBeta){
+            nextBeta = robot->destinationBeta;
+        }
+        if (currBeta < robot->destinationBeta and nextBeta >= robot->destinationBeta){
+            nextBeta = robot->destinationBeta;
+        }
+        // handle limits of travel
+        vec2 nextAlphaBeta = handleLimits(currAlpha, currBeta, nextAlpha, nextBeta);
+        nextAlpha = nextAlphaBeta[0];
+        nextBeta =nextAlphaBeta[1];
+
+        robot->setAlphaBeta(nextAlpha, nextBeta);
+        if (isCollided(robot->id)){
+            // don't consider this a viable option
+            // move to next option
+            break;
+        }
+
+
+
+        // score is min possible steps till goal
+        localEnergy = 0;
+
+        // compute robot's local energy, and check for collision
+        for (auto otherRobotID : robot->robotNeighbors){
+            auto otherRobot = robotDict[otherRobotID];
+            dist2 = dist3D_Segment_to_Segment(
+                otherRobot->collisionSegWokXYZ[0], otherRobot->collisionSegWokXYZ[1],
+                robot->collisionSegWokXYZ[0], robot->collisionSegWokXYZ[1]
+            );
+
+            localEnergy += 1/dist2;
+
+            double collideDist2 = (robot->collisionBuffer + otherRobot->collisionBuffer + maxDisplacement) *
+                                  (robot->collisionBuffer + otherRobot->collisionBuffer + maxDisplacement);
+        }
+
+        if (doPhobia){
+            score = localEnergy;
+        }
+        else {
+            score = robot->score();
+        }
+
+        if (score < bestScore and randomSample() < greed){
+            bestScore = score;
+            bestAlpha = nextAlpha;
+            bestBeta = nextBeta;
+        }
+        else if (score == bestScore and randomSample() > 0.5){
+            // if score is same switch to new
+            // state with 0.5 probability
+            bestScore = score;
+            bestAlpha = nextAlpha;
+            bestBeta = nextBeta;
+        }
+    } // end loop over perturbations
+
+    // set alpha beta to best found option
+    robot->setAlphaBeta(bestAlpha, bestBeta);
+    alphaPathPoint[1] = bestAlpha;
+    betaPathPoint[1] = bestBeta;
+    robot->alphaPath.push_back(alphaPathPoint);
+    robot->betaPath.push_back(betaPathPoint);
+
+    temp[0] = stepNum;
+    temp[1] = robot->collisionSegWokXYZ[0][0]; // xAlphaEnd
+    robot->roughAlphaX.push_back(temp);
+    temp[1] = robot->collisionSegWokXYZ[0][1]; // yAlphaEnd
+    robot->roughAlphaY.push_back(temp);
+    temp[1] = robot->collisionSegWokXYZ.back()[0]; // xBetaEnd
+    robot->roughBetaX.push_back(temp);
+    temp[1] = robot->collisionSegWokXYZ.back()[1]; // yBetaEnd
+    robot->roughBetaY.push_back(temp);
+}
 
 
 

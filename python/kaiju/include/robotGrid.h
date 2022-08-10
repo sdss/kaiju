@@ -54,6 +54,7 @@ public:
 
     void pathGenGreedy(bool stopIfDeadlock, bool ignoreInitialCollisions); // stepRotational with encroachment
     void pathGenMDP(double greed, double phobia, bool ignoreInitialCollisions); // Markov Decision Process
+    void pathGenMDP2(double greed, double phobia, bool ignoreInitialCollisions); // Markov Decision Process
     void simplifyPaths();
     void smoothPaths(int points);
     void verifySmoothed(int totalSteps);
@@ -89,7 +90,7 @@ public:
     std::vector<int> getCollidedRobotGFAList();
     std::vector<int> getCollidedRobotList();
 
-    bool neighborEncroachment(std::shared_ptr<Robot> r1);
+    bool neighborEncroachment(std::shared_ptr<Robot> r1, double encroachDist);
 
     void decollideRobot(int robotID);
     void homeRobot(int robotID);
@@ -97,6 +98,7 @@ public:
 
     void stepGreedy(std::shared_ptr<Robot> r1, int stepNum);
     void stepMDP(std::shared_ptr<Robot> r1, int stepNum);
+    void stepMDP2(std::shared_ptr<Robot> r1, int stepNum);
     void stepBeta(std::shared_ptr<Robot> r1, int stepNum);
     void stepDecollide(std::shared_ptr<Robot>, int stepNum);
     double minCollideDist(int robotID);

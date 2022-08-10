@@ -56,6 +56,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("alpha", &Robot::alpha, R"pbdoc(
             Robot's alpha position (degrees).
             )pbdoc")
+        .def_readwrite("fiducialWatch", &Robot::fiducialWatch)
         .def_readwrite("greed", &Robot::greed)
         .def_readwrite("phobia", &Robot::phobia)
         .def_readwrite("isOffline", &Robot::isOffline)
@@ -185,6 +186,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("growCollisionBuffer", &RobotGrid::growCollisionBuffer)
         .def("pathGenGreedy", &RobotGrid::pathGenGreedy, "stopIfDeadlock"_a = false, "ignoreInitialCollisions"_a = false)
         .def("pathGenMDP", &RobotGrid::pathGenMDP, "greed"_a, "phobia"_a, "ignoreInitialCollisions"_a = false)
+        .def("pathGenMDP2", &RobotGrid::pathGenMDP2, "greed"_a, "phobia"_a, "ignoreInitialCollisions"_a = false)
         .def("pathGenExplode", &RobotGrid::pathGenExplode)
         .def("pathGenExplodeOne", &RobotGrid::pathGenExplodeOne)
         .def("targetlessRobots", &RobotGrid::targetlessRobots)

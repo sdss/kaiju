@@ -23,6 +23,7 @@ public:
     bool lefthanded;
     bool nudge = false;
     bool isOffline = false;
+    bool fiducialWatch = false;
     double xPos, yPos, alpha, beta, alphaInit, betaInit, destinationAlpha, destinationBeta; //, targetX, targetY;
     double angStep, minReach, maxReach;
     double collisionBuffer = 0;
