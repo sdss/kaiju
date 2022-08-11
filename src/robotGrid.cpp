@@ -1462,13 +1462,21 @@ void RobotGrid::pathGenMDP2(double setGreed, double setPhobia, bool ignoreInitia
 
         // this iteration failed.  find a robot to nudge
         // then try again
+        double largestBeta = -999;
+        int robot2nudge;
         for (auto robotID : robotIDs){
             auto r = robotDict[robotID];
             if (r->score()!=0 and !r->nudge){
-                r->nudge = true;
-                std::cout << "nudging robot " << robotID << std::endl;
-                break;
+                if (r->beta > largestBeta){
+                    largestBeta = r->beta;
+                    robot2nudge = r->id;
+                }
             }
+        }
+
+        if (largestBeta > -5){
+            robotDict[robot2nudge]->nudge = true;
+            std::cout << "nudging robot " << robot2nudge << std::endl;
         }
 
 
