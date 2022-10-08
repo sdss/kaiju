@@ -64,10 +64,13 @@ public:
     vec3 apWokXYZ;
 
     std::vector<vec2> alphaPath, betaPath;
+    std::vector<vec2> alphaPathBuffered, betaPathBuffered; // extended from alpha/betaPath in smoothing
     std::vector<vec2> roughAlphaX, roughAlphaY, roughBetaX, roughBetaY; // jiggly
     std::vector<vec2> smoothedAlphaPath, smoothedBetaPath;
     std::vector<vec2> simplifiedAlphaPath, simplifiedBetaPath; // sparse
     std::vector<vec2> interpSimplifiedAlphaPath, interpSimplifiedBetaPath; // dense
+    std::vector<vec2> interpVelocityAlphaPath, interpVelocityBetaPath; // dense
+    std::vector<vec2> interpAccelerationAlphaPath, interpAccelerationBetaPath; // dense
     std::vector<vec2> interpAlphaX, interpAlphaY, interpBetaX, interpBetaY; // smoothed
     std::vector<vec2> interpCollisions; // boolean points for collided or not
     std::vector<int> robotNeighbors; // robot IDs in RobotGrid.robotDict may potentially collide

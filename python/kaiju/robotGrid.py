@@ -170,6 +170,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         return self.getPathPair()
 
 
+
     def getPathPair(
         self, speed=2, smoothPoints=5, collisionShrink=0.05, pathDelay=1,
         epsilon=None
@@ -183,13 +184,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         -----------
         speed: float
             RPM at output, how fast robots move, max speed is 3
-        smoothPoints: int
-            window width for smoothing a path's velocity profile,
-            in units of steps.  Smooths out fast switching between forward
-            and reverse moves on the axes.
-        collisionShrink: float
-            mm, how much to decrease the collision buffer to allow
-            for smoothing
+
         pathDely: float
             seconds, how far in the future to put the first point, this
             allows a robot to "catch up" to the expected starting point
@@ -212,6 +207,10 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         toDestination = {}
         fromDestination = {}
 
+        self.maxSpeed = speed * 360 / 60.
+        _dt = self.stepSize / self.maxSpeed
+        self.maxAccel = 2*self.maxSpeed / _dt
+
         for r in self.robotDict.values():
             # if robot is offline, don't get a path for it
             if r.isOffline:
@@ -226,7 +225,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
             # smooth
             aps = savgol_filter(ap, smoothPoints, polyorder=3)
             bps = savgol_filter(bp, smoothPoints, polyorder=3)
-            # import pdb; pdb.set_trace()
+
             # simplify
             apss = simplify_coords(np.array([steps, aps]).T, epsilon)
             bpss = simplify_coords(np.array([steps, bps]).T, epsilon)
@@ -235,8 +234,31 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
             apssi = np.interp(steps, apss[:,0], apss[:,1])
             bpssi = np.interp(steps, bpss[:,0], bpss[:,1])
             # set on the robot object for checking for collisions
+
+            r.alphaPathBuffered = [[t,x] for t,x in zip(steps, ap)]
+            r.betaPathBuffered = [[t,x] for t,x in zip(steps, bp)]
+
+            r.smoothedAlphaPath = [[t,x] for t,x in zip(steps, aps)]
+            r.smoothedBetaPath = [[t,x] for t,x in zip(steps, bps)]
+
+            r.simplifiedAlphaPath = [[t,x] for t,x in apss]
+            r.simplifiedBetaPath = [[t,x] for t,x in bpss]
+
             r.interpSimplifiedAlphaPath = [[t,x] for t,x in zip(steps, apssi)]
             r.interpSimplifiedBetaPath = [[t,x] for t,x in zip(steps, bpssi)]
+
+            # calculate velocity and acceleration for each arm
+            denseTimes = steps * self.stepSize / (speed * 360 / 60.)
+            alphaVel = np.gradient(apssi)/_dt
+            betaVel = np.gradient(bpssi)/_dt
+            alphaAcc = np.gradient(alphaVel)/_dt
+            betaAcc = np.gradient(betaVel)/_dt
+
+            r.interpVelocityAlphaPath = [[t,x] for t,x in zip(denseTimes, alphaVel)]
+            r.interpVelocityBetaPath = [[t,x] for t,x in zip(denseTimes, betaVel)]
+
+            r.interpAccelerationAlphaPath = [[t,x] for t,x in zip(denseTimes, alphaAcc)]
+            r.interpAccelerationBetaPath = [[t,x] for t,x in zip(denseTimes, betaAcc)]
 
 
             armPathToDest = {}

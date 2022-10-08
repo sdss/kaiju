@@ -1423,7 +1423,7 @@ void RobotGrid::pathGenMDP2(double setGreed, double setPhobia, bool ignoreInitia
     }
 
 
-    for (int jj=0; jj<nTries; jj++){
+    for (jj=0; jj<nTries; jj++){
 
         std::cout << "on path gen iter " << jj << std::endl;
         clearPaths();
@@ -1478,12 +1478,10 @@ void RobotGrid::pathGenMDP2(double setGreed, double setPhobia, bool ignoreInitia
             robotDict[robot2nudge]->nudge = true;
             std::cout << "nudging robot " << robot2nudge << std::endl;
         }
-
-
-
     }
 
     nSteps = ii+1;
+    mdp2iter = jj;
 
 }
 

@@ -14,6 +14,7 @@ class RobotGrid {
 public:
     AlgType algType;
     int nRobots;
+    int mdp2iter; // number of iterations used in mdp2 routine
     double epsilon;
     // double collisionBuffer;
     double angStep;
