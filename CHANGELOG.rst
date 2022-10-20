@@ -2,6 +2,8 @@
 
 Changelog
 =========
+* **1.3.0** Introduce MDP2 path generation strategy, tries iteratively to
+solve paths.
 
 * **1.2.3** Rework smoothing strategy.
 
