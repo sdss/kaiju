@@ -1108,7 +1108,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
                 metBetaXY=[row.metX, row.metY],
                 bossBetaXY=[row.bossX, row.bossY],
                 apBetaXY=[row.apX, row.apY],
-                collisionSegBetaXY=None,
+                collisionSegBetaXY=[[0,0], [6, 0]],
                 collisionBuffer=2
             )
 
@@ -1121,63 +1121,63 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
 
         # gfa locations hard-coded for now
         # eventually read from a table
-        gfaList = [
-            [
-                [-267.49, 89.15, coordio.defaults.POSITIONER_HEIGHT],
-                [-210.95, 187.08, coordio.defaults.POSITIONER_HEIGHT]
-            ],
-            [
-                [-56.54, 276.23, coordio.defaults.POSITIONER_HEIGHT],
-                [56.54, 276.23, coordio.defaults.POSITIONER_HEIGHT]
-            ],
-            [
-                [210.95, 187.07, coordio.defaults.POSITIONER_HEIGHT],
-                [267.49, 89.15, coordio.defaults.POSITIONER_HEIGHT]
-            ],
-            [
-                [267.49, -89.15, coordio.defaults.POSITIONER_HEIGHT],
-                [210.95, -187.08, coordio.defaults.POSITIONER_HEIGHT]
-            ],
-            [
-                [56.54, -276.23, coordio.defaults.POSITIONER_HEIGHT],
-                [-56.54, -276.23, coordio.defaults.POSITIONER_HEIGHT]
-            ],
-            [
-                [-210.95, -187.07, coordio.defaults.POSITIONER_HEIGHT],
-                [-267.49, -89.15, coordio.defaults.POSITIONER_HEIGHT]
-            ]
-        ]
+        # gfaList = [
+        #     [
+        #         [-267.49, 89.15, coordio.defaults.POSITIONER_HEIGHT],
+        #         [-210.95, 187.08, coordio.defaults.POSITIONER_HEIGHT]
+        #     ],
+        #     [
+        #         [-56.54, 276.23, coordio.defaults.POSITIONER_HEIGHT],
+        #         [56.54, 276.23, coordio.defaults.POSITIONER_HEIGHT]
+        #     ],
+        #     [
+        #         [210.95, 187.07, coordio.defaults.POSITIONER_HEIGHT],
+        #         [267.49, 89.15, coordio.defaults.POSITIONER_HEIGHT]
+        #     ],
+        #     [
+        #         [267.49, -89.15, coordio.defaults.POSITIONER_HEIGHT],
+        #         [210.95, -187.08, coordio.defaults.POSITIONER_HEIGHT]
+        #     ],
+        #     [
+        #         [56.54, -276.23, coordio.defaults.POSITIONER_HEIGHT],
+        #         [-56.54, -276.23, coordio.defaults.POSITIONER_HEIGHT]
+        #     ],
+        #     [
+        #         [-210.95, -187.07, coordio.defaults.POSITIONER_HEIGHT],
+        #         [-267.49, -89.15, coordio.defaults.POSITIONER_HEIGHT]
+        #     ]
+        # ]
 
-        for ii, collisionSegXYZWok in enumerate(gfaList):
-            self.addGFA(ii, collisionSegXYZWok, collisionBuffer=3)
+        # for ii, collisionSegXYZWok in enumerate(gfaList):
+        #     self.addGFA(ii, collisionSegXYZWok, collisionBuffer=3)
 
         # loop through grid and find special robots with a fiducial
         # located down and right that need special attention for
         # path planning / allowed placement.  These robots have a small
         # range of alpha/beta that are blocked due to robot range of
         # motion
-        fcRows = fiducialCoords.row.to_numpy()
-        fcCols = fiducialCoords.col.to_numpy()
-        posIDs = []
-        for fcRow, fcCol in zip(fcRows,fcCols):
-            if np.isnan(fcRow) or np.isnan(fcCol):
-                continue
-            pRow = int(fcRow+1)
-            # not sure why, but positive rows have columns
-            # offset by 1 with respect to negative rows
-            # probably a bug in the config file...
-            if pRow > 0:
-                pCol = int(fcCol-1)
-            else:
-                pCol = int(fcCol)
-            sign = ""
-            if pRow > 0:
-                sign = "+"
-            posIDs.append("R%s%iC%i"%(sign,pRow,pCol))
+        # fcRows = fiducialCoords.row.to_numpy()
+        # fcCols = fiducialCoords.col.to_numpy()
+        # posIDs = []
+        # for fcRow, fcCol in zip(fcRows,fcCols):
+        #     if np.isnan(fcRow) or np.isnan(fcCol):
+        #         continue
+        #     pRow = int(fcRow+1)
+        #     # not sure why, but positive rows have columns
+        #     # offset by 1 with respect to negative rows
+        #     # probably a bug in the config file...
+        #     if pRow > 0:
+        #         pCol = int(fcCol-1)
+        #     else:
+        #         pCol = int(fcCol)
+        #     sign = ""
+        #     if pRow > 0:
+        #         sign = "+"
+        #     posIDs.append("R%s%iC%i"%(sign,pRow,pCol))
 
-        for r in self.robotDict.values():
-            if r.holeID in posIDs:
-                r.fiducialWatch = True
+        # for r in self.robotDict.values():
+        #     if r.holeID in posIDs:
+        #         r.fiducialWatch = True
 
         self.initGrid()
 
