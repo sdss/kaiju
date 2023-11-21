@@ -10,7 +10,7 @@ import os
 from .cKaiju import RobotGrid
 import coordio
 
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 
 # internalBuffer = 1.5
 rg = None # need global because C++ obj can't be pickled for multiprocessing
