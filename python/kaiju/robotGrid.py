@@ -1109,14 +1109,14 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
                 bossBetaXY=[row.bossX, row.bossY],
                 apBetaXY=[row.apX, row.apY],
                 collisionSegBetaXY=[[0,0], [6, 0]],
-                collisionBuffer=2
+                collisionBuffer=row.collisionBuffer
             )
 
         for ii, row in fiducialCoords.iterrows():
             self.addFiducial(
                 fiducialID=int(row.id.strip("F")),
                 xyzWok=[row.xWok, row.yWok, row.zWok],
-                collisionBuffer=3
+                collisionBuffer=row.collisionBuffer
             )
 
         # gfa locations hard-coded for now

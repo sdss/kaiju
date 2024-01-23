@@ -9,6 +9,7 @@ import glob
 import os
 from .cKaiju import RobotGrid
 import coordio
+from tqdm import tqdm
 
 # matplotlib.use('Agg')
 
@@ -198,10 +199,16 @@ def plotOne(
     if returnax:
         return ax
 
-    if figname is None:
-        figname = "step_%04d.png"%(fig)
-    plt.savefig(figname, dpi=dpi)
-    plt.close()
+    # try:
+    #     print('making frames dir')
+    #     os.mkdir('frames')
+    # except:
+    #     print('frame dir already exists')
+
+    # if figname is None:
+    #     figname = "frames/step_%04d.png"%(fig)
+    # plt.savefig(figname, dpi=dpi)
+    # plt.close()
 
 def plotPaths(robotGrid, downsample=None, filename=None):
     # figure out how to downsample paths
@@ -220,12 +227,12 @@ def plotPaths(robotGrid, downsample=None, filename=None):
     print("plotting steps", figs[-1])
     # down sample if nframes specified
 
-    p = Pool(cpu_count())
-    p.map(plotOne, stepfigs)
+    # p = Pool(cpu_count())
+    # p.map(plotOne, stepfigs)
 
-    # for stepFig in stepfigs:
-    #     print("stepfig", stepFig)
-    #     plotOne(stepFig)
+    print('making frames...')
+    for stepFig in tqdm(stepfigs):
+        plotOne(stepFig)
 
     fps = 30 # frames per second
     if filename is None:
