@@ -1108,7 +1108,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
                 metBetaXY=[row.metX, row.metY],
                 bossBetaXY=[row.bossX, row.bossY],
                 apBetaXY=[row.apX, row.apY],
-                collisionSegBetaXY=[[0,0], [6, 0]],
+                collisionSegBetaXY=[[0,0], [row.collisionSegBetaLength, 0]],
                 collisionBuffer=row.collisionBuffer
             )
 
