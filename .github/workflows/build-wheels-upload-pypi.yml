@@ -98,7 +98,7 @@ jobs:
           CIBW_MANYLINUX_I686_IMAGE: manylinux2014
           CIBW_BUILD_VERBOSITY: 1
           CIBW_SKIP: '*-musllinux_*'
-          CIBW_ARCHS_LINUX: "auto"
+          CIBW_ARCHS_LINUX: "x86_64"
 
       - name: Show files
         run: ls -lh wheelhouse
