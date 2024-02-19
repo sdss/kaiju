@@ -140,5 +140,9 @@ jobs:
         name: dist
         path: dist
 
+    - name: Show files
+      run: ls -lh dist
+      shell: bash
+
     # - name: upload_to_pypi
     #   uses: pypa/gh-action-pypi-publish@release/v1
