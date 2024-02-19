@@ -8,3 +8,5 @@ sdss-coordio>=1.2.1
 psutil>=5.8.0
 seaborn
 simplification>=0.7.10
+astropy>=6.0.0; python_version >= '3.10'
+astropy>=5.0.0; python_version < '3.10'
