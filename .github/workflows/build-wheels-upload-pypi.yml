@@ -6,8 +6,8 @@ name: build-wheels-upload-pypi
 on:
   push:
     # Run this action on the trigger event when *any* tag is pushed
-    # tags:
-    #    - '*'
+    tags:
+       - '*'
 
 jobs:
 
@@ -144,5 +144,5 @@ jobs:
       run: ls -lh dist
       shell: bash
 
-    # - name: upload_to_pypi
-    #   uses: pypa/gh-action-pypi-publish@release/v1
+    - name: upload_to_pypi
+      uses: pypa/gh-action-pypi-publish@release/v1
