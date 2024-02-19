@@ -3,6 +3,8 @@
 Changelog
 =========
 
+* **1.4.0** Unpin ``simplification`` and ``Shapely`` and allow them to use the latest versions. Added a workflow to build wheels for macOS and Linux on Python 3.9+. This should make Kaiju compatible with 3.11 and 3.12.
+
 * **1.3.1** Require ``shapely<2.0.0`` since that version seems to break ``descartes`` and some of the plotting.
 
 * **1.3.0** Introduce MDP2 path generation strategy, tries iteratively to
