@@ -97,7 +97,7 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           CIBW_MANYLINUX_I686_IMAGE: manylinux2014
           CIBW_BUILD_VERBOSITY: 1
-          CIBW_SKIP: '*-musllinux_* cp310-macosx-*'
+          CIBW_SKIP: '*-musllinux_* cp310-macosx_*'
           CIBW_ARCHS_LINUX: "auto"
 
       - name: Show files
