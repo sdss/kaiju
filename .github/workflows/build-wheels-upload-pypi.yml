@@ -9,6 +9,10 @@ on:
     tags:
        - '*'
 
+permissions:
+  contents: write
+  id-token: write
+
 jobs:
 
   # This action is split into three jobs:
@@ -51,11 +55,12 @@ jobs:
       - name: Check metadata
         run: twine check dist/*
 
-      - name: Upload sdist
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist_source
-          path: dist/*.tar.gz
+      - name: Show files
+        run: ls -lh dist
+        shell: bash
+
+      - name: Upload source to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
 
   build_wheels:
 
@@ -104,50 +109,5 @@ jobs:
         run: ls -lh wheelhouse
         shell: bash
 
-      - name: Upload wheels
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: ./wheelhouse/*.whl
-          overwrite: true
-
-  upload_to_pypi:
-
-    # Finally we collect all out data from the artifacts and put them back to
-    # dist directory for upload. The final step waits for the other jobs to be
-    # finished and starts only if the trigger event of the action was a push
-    # of a tag starting with <v> as version separation. All other jobs run
-    # without heading <v>
-
-    runs-on: [ubuntu-latest]
-    needs: [build_wheels, build_sdist]
-
-    permissions:
-      contents: write
-      id-token: write
-
-    # upload to PyPI on every tag starting with 'v'
-    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/')
-
-    steps:
-    - uses: actions/download-artifact@v4
-      with:
-        name: dist
-        path: dist
-
-    - uses: actions/download-artifact@v4
-      with:
-        name: dist_source
-        path: dist_source
-
-    - name: Show files
-      run: ls -lh dist dist_source
-      shell: bash
-
-    - name: Upload wheels to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-
-    - name: Upload source to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        packages-dir: dist_source/
+      - name: Upload wheels to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
