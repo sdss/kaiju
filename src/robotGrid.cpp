@@ -1575,7 +1575,7 @@ void RobotGrid::stepMDP2(std::shared_ptr<Robot> robot, int stepNum){
         nextAlpha = nextAlphaBeta[0];
         nextBeta =nextAlphaBeta[1];
 
-        robot->setAlphaBeta(nextAlpha, nextBeta);
+        robot->setAlphaBetaFast(nextAlpha, nextBeta);
         if (isCollided(robot->id)){
             // don't consider this a viable option
             // move to next option
@@ -1623,7 +1623,7 @@ void RobotGrid::stepMDP2(std::shared_ptr<Robot> robot, int stepNum){
     } // end loop over perturbations
 
     // set alpha beta to best found option
-    robot->setAlphaBeta(bestAlpha, bestBeta);
+    robot->setAlphaBetaFast(bestAlpha, bestBeta);
     alphaPathPoint[1] = bestAlpha;
     betaPathPoint[1] = bestBeta;
     robot->alphaPath.push_back(alphaPathPoint);

@@ -85,6 +85,7 @@ public:
             bool hasApogee = true, double collisionBuffer = 2.0, bool lefthanded = false
     );
     void setAlphaBeta (double alpha, double beta);
+    void setAlphaBetaFast (double alpha, double beta);
     void saveAlphaBeta();
     void setGreedPhobia (double greed, double phobia);
     void setDestinationAlphaBeta(double alpha, double beta);

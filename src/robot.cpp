@@ -159,6 +159,64 @@ void Robot::setAlphaBeta(double newAlpha, double newBeta){
     );
 }
 
+void Robot::setAlphaBetaFast(double newAlpha, double newBeta){
+    vec2 tmp2;
+    vec3 tmp3;
+
+    alpha = newAlpha;
+    beta = newBeta;
+    vec2 alphaBeta = {newAlpha, newBeta};
+
+    // // metrology fiber
+    // tmp2 = positionerToTangent(
+    //     alphaBeta, metBetaXY, alphaLen, alphaOffDeg, betaOffDeg
+    // );
+    // tmp3 = {tmp2[0], tmp2[1], 0};
+    // metWokXYZ = tangentToWok(
+    //     tmp3, basePos, iHat, jHat, kHat, elementHeight, scaleFac,
+    //     dxyz[0], dxyz[1], dxyz[2]
+    // );
+
+    // // boss fiber
+    // tmp2 = positionerToTangent(
+    //     alphaBeta, bossBetaXY, alphaLen, alphaOffDeg, betaOffDeg
+    // );
+    // tmp3 = {tmp2[0], tmp2[1], 0};
+    // bossWokXYZ = tangentToWok(
+    //     tmp3, basePos, iHat, jHat, kHat, elementHeight, scaleFac,
+    //     dxyz[0], dxyz[1], dxyz[2]
+    // );
+
+    // // apogee fiber
+    // tmp2 = positionerToTangent(
+    //     alphaBeta, apBetaXY, alphaLen, alphaOffDeg, betaOffDeg
+    // );
+    // tmp3 = {tmp2[0], tmp2[1], 0};
+    // apWokXYZ = tangentToWok(
+    //     tmp3, basePos, iHat, jHat, kHat, elementHeight, scaleFac,
+    //     dxyz[0], dxyz[1], dxyz[2]
+    // );
+
+    // collision segment
+    tmp2 = positionerToTangent(
+        alphaBeta, collisionSegBetaXY[0], alphaLen, alphaOffDeg, betaOffDeg
+    );
+    tmp3 = {tmp2[0], tmp2[1], 0};
+    collisionSegWokXYZ[0] = tangentToWok(
+        tmp3, basePos, iHat, jHat, kHat, elementHeight, scaleFac,
+        dxyz[0], dxyz[1], dxyz[2]
+    );
+
+    tmp2 = positionerToTangent(
+        alphaBeta, collisionSegBetaXY[1], alphaLen, alphaOffDeg, betaOffDeg
+    );
+    tmp3 = {tmp2[0], tmp2[1], 0};
+    collisionSegWokXYZ[1] = tangentToWok(
+        tmp3, basePos, iHat, jHat, kHat, elementHeight, scaleFac,
+        dxyz[0], dxyz[1], dxyz[2]
+    );
+}
+
 bool Robot::isValidDither(vec2 newAlphaBeta){
     // check that there is no alpha or beta wrapping happening
     if (std::isnan(newAlphaBeta[0]) or std::isnan(newAlphaBeta[1])){
