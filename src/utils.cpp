@@ -91,18 +91,37 @@ double dist3D_Segment_to_Segment(
     vec3 S1_P0, vec3 S1_P1,
     vec3 S2_P0, vec3 S2_P1)
 {
-    vec3 u, v, w;
+    // vec3 u, v, w;
+
+    // // vector subtraction
+    // u = sub3(S1_P1, S1_P0);
+    // v = sub3(S2_P1, S2_P0);
+    // w = sub3(S1_P0, S2_P0);
+
+    vec2 u, v, w;
 
     // vector subtraction
-    u = sub3(S1_P1, S1_P0);
-    v = sub3(S2_P1, S2_P0);
-    w = sub3(S1_P0, S2_P0);
+    u = {S1_P1[0]-S1_P0[0], S1_P1[1]-S1_P0[1]};
+    v = {S2_P1[0]-S2_P0[0], S2_P1[1]-S2_P0[1]};
+    w = {S1_P0[0]-S2_P0[0], S1_P0[1]-S2_P0[1]};
 
-    double    a = dot3(u,u);         // always >= 0
-    double    b = dot3(u,v);
-    double    c = dot3(v,v);         // always >= 0
-    double    d = dot3(u,w);
-    double    e = dot3(v,w);
+
+    // std::cout << "z coord " << S1_P0[2] << " " << S2_P0[2] << std::endl;
+
+    // double    a = dot3(u,u);         // always >= 0
+    // double    b = dot3(u,v);
+    // double    c = dot3(v,v);         // always >= 0
+    // double    d = dot3(u,w);
+    // double    e = dot3(v,w);
+
+    double    a = u[0]*u[0] + u[1]*u[1];         // always >= 0
+    double    b = u[0]*v[0] + u[1]*v[1];
+    double    c = v[0]*v[0] + v[1]*v[1];         // always >= 0
+    double    d = u[0]*w[0] + u[1]*w[1];
+    double    e = v[0]*w[0] + v[1]*w[1];
+
+
+
     double    D = a*c - b*b;        // always >= 0
     double    sc, sN, sD = D;       // sc = sN / sD, default sD = D >= 0
     double    tc, tN, tD = D;       // tc = tN / tD, default tD = D >= 0
@@ -160,36 +179,42 @@ double dist3D_Segment_to_Segment(
     tc = (std::fabs(tN) < SMALL_NUM ? 0.0 : tN / tD);
 
 
-    vec3 tmp1  = multScalar3(v, tc);
-    vec3 tmp2 = multScalar3(u, sc);
-    tmp1 = sub3(tmp2, tmp1);
-    vec3 dP = add3(w, tmp1);
+    // vec3 tmp1  = multScalar3(v, tc);
+    // vec3 tmp2 = multScalar3(u, sc);
+    // tmp1 = sub3(tmp2, tmp1);
+    // vec3 dP = add3(w, tmp1);
+
+    vec2 tmp1  = {v[0]*tc, v[1]*tc};
+    vec2 tmp2 = {u[0]*sc, u[1]*sc};
+    vec2 tmp3 = {tmp2[0]-tmp1[0], tmp2[1]-tmp1[1]};
+    vec2 dP = {w[0] + tmp3[0], w[1] + tmp3[1]};
 
     // this routine hasn't shown numerical instability
     // but just for paranoia explicitly check endpoints
-    double minDist = dot3(dP,dP);
+    // double minDist = dot3(dP,dP);
+    double minDist = dP[0]*dP[0] + dP[1]*dP[1]; //dot3(dP,dP);
     vec3 x2, x3, x4;
     double dw, dx2, dx3, dx4;
 
-    x2 = sub3(S1_P0, S2_P1);
-    x3 = sub3(S1_P1, S2_P0);
-    x4 = sub3(S1_P1, S2_P1);
-    dw =dot3( w,w);
-    dx2 = dot3(x2,x2);
-    dx3 = dot3(x3,x3);
-    dx4 = dot3(x4,x4);
-    if (dw < minDist){
-        minDist = dw;
-    }
-    if (dx2 < minDist){
-        minDist = dx2;
-    }
-    if (dx3 < minDist){
-        minDist = dx3;
-    }
-    if (dx4 < minDist){
-        minDist = dx4;
-    }
+    // x2 = sub3(S1_P0, S2_P1);
+    // x3 = sub3(S1_P1, S2_P0);
+    // x4 = sub3(S1_P1, S2_P1);
+    // dw =dot3( w,w);
+    // dx2 = dot3(x2,x2);
+    // dx3 = dot3(x3,x3);
+    // dx4 = dot3(x4,x4);
+    // if (dw < minDist){
+    //     minDist = dw;
+    // }
+    // if (dx2 < minDist){
+    //     minDist = dx2;
+    // }
+    // if (dx3 < minDist){
+    //     minDist = dx3;
+    // }
+    // if (dx4 < minDist){
+    //     minDist = dx4;
+    // }
 
     return minDist;   // return the closest distance squared
 }
@@ -244,28 +269,46 @@ double dist3D_Segment_to_Segment(
 // dist_Point_to_Segment( Point P, Segment S)
 double dist3D_Point_to_Segment( vec3 Point, vec3 Seg_P0, vec3 Seg_P1)
 {
-    vec3 tmp, Pb;
-    vec3 v = sub3(Seg_P1, Seg_P0);
-    vec3 w = sub3(Point, Seg_P0);
+    // vec3 tmp, Pb;
+    // vec3 v = sub3(Seg_P1, Seg_P0);
+    // vec3 w = sub3(Point, Seg_P0);
+
+    vec2 tmp, Pb;
+    vec2 v = {Seg_P1[0]-Seg_P0[0], Seg_P1[1]-Seg_P0[1]};
+    vec2 w = {Point[0]-Seg_P0[0], Point[0]-Seg_P0[0]};
     // double d1, d2, d3, minDist;
 
-    double c1 = dot3(w,v);
+    // double c1 = dot3(w,v);
+    double c1 = w[0]*v[0] + w[1]*v[1];
+
     if ( c1 <= 0 ){
-        tmp = sub3(Point, Seg_P0);
-        return dot3(tmp, tmp);
+        // tmp = sub3(Point, Seg_P0);
+        // return dot3(tmp, tmp);
+
+        tmp = {Point[0]-Seg_P0[0], Point[1]-Seg_P0[1]};
+        return tmp[0]*tmp[0] + tmp[1]*tmp[1];
     }
 
-    double c2 = dot3(v,v);
+    // double c2 = dot3(v,v);
+    double c2 = v[0]*v[0] + v[1]*v[1];
     if ( c2 <= c1 ){
-        tmp = sub3(Point, Seg_P1);
-        return dot3(tmp, tmp);
+        // tmp = sub3(Point, Seg_P1);
+        // return dot3(tmp, tmp);
+
+        tmp = {Point[0]-Seg_P1[0], Point[1]-Seg_P1[1]};
+        return tmp[0]*tmp[0] + tmp[1]*tmp[1];
     }
 
     double b = c1 / c2;
-    tmp = multScalar3(v, b);
-    Pb = add3(Seg_P0, tmp);
-    tmp = sub3(Point, Pb);
-    return dot3(tmp, tmp);
+    // tmp = multScalar3(v, b);
+    // Pb = add3(Seg_P0, tmp);
+    // tmp = sub3(Point, Pb);
+    // return dot3(tmp, tmp);
+
+    tmp = {v[0]*b, v[1]*b};
+    Pb = {Seg_P0[0]+tmp[0], Seg_P0[1]+tmp[1]};
+    tmp = {Point[0]-Pb[0], Point[1]-Pb[1]};
+    return tmp[0]*tmp[0] + tmp[1]*tmp[1];
 
 
     // this routine has some numerical instability

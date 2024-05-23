@@ -106,7 +106,7 @@ def runSetup(packages, requirements):
         description="Collision Avoidance for SDSS-V Positioners",
         long_description=open('README.rst').read(),
         packages=packages,
-        cmdclass={'build_ext': build_ext},
+        # cmdclass={'build_ext': build_ext},
         package_dir={'': 'python'},
         package_data={'kaiju': ['python/kaiju/include/*']},
         include_package_data=True,
