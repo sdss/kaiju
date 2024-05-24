@@ -34,9 +34,9 @@ RobotGrid::RobotGrid(double angStep, double epsilon, int seed)
     // construct the perturbation list
     for (int ii=-1; ii<2; ii++){
         for (int jj=-1; jj<2; jj++){
-            if (ii == jj){
-                continue;
-            }
+            // if (ii == jj){
+            //     continue;
+            // }
             perturbArray.push_back({ii*angStep, jj*angStep});
         }
     }
@@ -1582,11 +1582,76 @@ void RobotGrid::stepMDP2(std::shared_ptr<Robot> robot, int stepNum){
         return;
     }
 
-    if ((atDestination) && isEncroaching){
+    if (atDestination && isEncroaching){
         robot->nudge = true;
     }
-
     robot->lastStepNum = stepNum;
+
+    // if this robot is not a nudger, and has no other robots nearby
+    // try a shortcut move to save computing all move options
+    if (!robot->nudge && !isEncroaching){
+        // take alpha step toward destination
+        if (currAlpha > robot->destinationAlpha){
+            nextAlpha = currAlpha - angStep;
+            if (nextAlpha < robot->destinationAlpha){
+                // don't overshoot
+                nextAlpha = robot->destinationAlpha;
+            }
+        } else if (currAlpha < robot->destinationAlpha){
+            nextAlpha = currAlpha + angStep;
+            if (nextAlpha > robot->destinationAlpha){
+                // don't overshoot
+                nextAlpha = robot->destinationAlpha;
+            }
+        } else {
+            // alpha is already at destination, keep it there
+            nextAlpha = robot->destinationAlpha;
+        }
+
+        // take beta step toward destination
+        if (currBeta > robot->destinationBeta){
+            nextBeta = currBeta - angStep;
+            if (nextBeta < robot->destinationBeta){
+                // don't overshoot
+                nextBeta = robot->destinationBeta;
+            }
+        } else if (currBeta < robot->destinationBeta){
+            nextBeta = currBeta + angStep;
+            if (nextBeta > robot->destinationBeta){
+                // don't overshoot
+                nextBeta = robot->destinationBeta;
+            }
+        } else {
+            // Beta is already at destination, keep it there
+            nextBeta = robot->destinationBeta;
+        }
+
+        robot->setAlphaBeta(nextAlpha, nextBeta);
+
+        if (!isCollided(robot->id)){
+            // this move worked, keep it and
+            // exit early
+            // std::cout << "shortcut worked" << std::endl;
+            alphaPathPoint[1] = nextAlpha;
+            betaPathPoint[1] = nextBeta;
+            robot->alphaPath.push_back(alphaPathPoint);
+            robot->betaPath.push_back(betaPathPoint);
+
+            temp[0] = stepNum;
+            temp[1] = robot->collisionSegWokXYZ[0][0]; // xAlphaEnd
+            robot->roughAlphaX.push_back(temp);
+            temp[1] = robot->collisionSegWokXYZ[0][1]; // yAlphaEnd
+            robot->roughAlphaY.push_back(temp);
+            temp[1] = robot->collisionSegWokXYZ.back()[0]; // xBetaEnd
+            robot->roughBetaX.push_back(temp);
+            temp[1] = robot->collisionSegWokXYZ.back()[1]; // yBetaEnd
+            robot->roughBetaY.push_back(temp);
+            return;
+        }
+
+    }
+
+
     // begin looping over all possible moves
     // shuffle move options to ensure they are visited
     // in no particular order
