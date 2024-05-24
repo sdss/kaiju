@@ -193,8 +193,8 @@ double dist3D_Segment_to_Segment(
     // but just for paranoia explicitly check endpoints
     // double minDist = dot3(dP,dP);
     double minDist = dP[0]*dP[0] + dP[1]*dP[1]; //dot3(dP,dP);
-    vec3 x2, x3, x4;
-    double dw, dx2, dx3, dx4;
+    // vec3 x2, x3, x4;
+    // double dw, dx2, dx3, dx4;
 
     // x2 = sub3(S1_P0, S2_P1);
     // x3 = sub3(S1_P1, S2_P0);
