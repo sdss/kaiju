@@ -220,8 +220,11 @@ def plotPaths(robotGrid, downsample=None, filename=None):
     print("plotting steps", figs[-1])
     # down sample if nframes specified
 
-    p = Pool(cpu_count())
-    p.map(plotOne, stepfigs)
+    for stepfig in stepfigs:
+        plotOne(stepfig, robotGrid=rg)
+
+    # p = Pool(cpu_count())
+    # p.map(plotOne, stepfigs)
 
     # for stepFig in stepfigs:
     #     print("stepfig", stepFig)
