@@ -34,7 +34,7 @@ RobotGrid::RobotGrid(double angStep, double epsilon, int seed)
     // construct the perturbation list
     for (int ii=-1; ii<2; ii++){
         for (int jj=-1; jj<2; jj++){
-            // if (ii == jj){
+            // if (ii == jj == 0){
             //     continue;
             // }
             perturbArray.push_back({ii*angStep, jj*angStep});
@@ -1693,17 +1693,28 @@ void RobotGrid::stepMDP2(std::shared_ptr<Robot> robot, int stepNum){
 
         robot->setAlphaBeta(nextAlpha, nextBeta);
 
-        if (isCollided(robot->id)){
-            // don't consider this a viable option
-            // move to next option
+        // check for gfa/fiducial collisions
+
+        auto fiducialsColliding = fiducialColliders(robot->id);
+        if (fiducialsColliding.size() != 0){
+            // std::cout << "fiducial collided" << std::endl;
+            break;
+        }
+        auto gfasColliding = gfaColliders(robot->id);
+        if (gfasColliding.size() != 0){
+            // std::cout << "gfa collided" << std::endl;
             break;
         }
 
-
+        // if (isCollided(robot->id)){
+        //     // don't consider this a viable option
+        //     // move to next option
+        //     break;
+        // }
 
         // score is min possible steps till goal
         localEnergy = 0;
-
+        bool robotCollision = false;
         // compute robot's local energy, and check for collision
         for (auto otherRobotID : robot->robotNeighbors){
             auto otherRobot = robotDict[otherRobotID];
@@ -1716,9 +1727,16 @@ void RobotGrid::stepMDP2(std::shared_ptr<Robot> robot, int stepNum){
 
             double collideDist2 = (robot->collisionBuffer + otherRobot->collisionBuffer + maxDisplacement) *
                                   (robot->collisionBuffer + otherRobot->collisionBuffer + maxDisplacement);
-            // if collided with another robot stop computing things here
-            // and move to the next perturbation
+            if (dist2 < collideDist2){
+                // if collided with another robot stop computing things here
+                // and move to the next perturbation
+                robotCollision = true;
+                break;
+            }
+        }
 
+        if (robotCollision){
+            break;
         }
 
         if (doPhobia){
@@ -1728,18 +1746,23 @@ void RobotGrid::stepMDP2(std::shared_ptr<Robot> robot, int stepNum){
             score = robot->score();
         }
 
-        if (score < bestScore and randomSample() < greed){
+        if (score < bestScore and greed==1){ //randomSample() < greed){
             bestScore = score;
             bestAlpha = nextAlpha;
             bestBeta = nextBeta;
         }
-        else if (score == bestScore and randomSample() > 0.5){
-            // if score is same switch to new
-            // state with 0.5 probability
+        else if (score < bestScore and randomSample() < greed){
             bestScore = score;
             bestAlpha = nextAlpha;
             bestBeta = nextBeta;
         }
+        // else if (score == bestScore and randomSample() > 0.5){
+        //     // if score is same switch to new
+        //     // state with 0.5 probability
+        //     bestScore = score;
+        //     bestAlpha = nextAlpha;
+        //     bestBeta = nextBeta;
+        // }
     } // end loop over perturbations
 
     // set alpha beta to best found option
