@@ -275,7 +275,7 @@ double dist3D_Point_to_Segment( vec3 Point, vec3 Seg_P0, vec3 Seg_P1)
 
     vec2 tmp, Pb;
     vec2 v = {Seg_P1[0]-Seg_P0[0], Seg_P1[1]-Seg_P0[1]};
-    vec2 w = {Point[0]-Seg_P0[0], Point[0]-Seg_P0[0]};
+    vec2 w = {Point[0]-Seg_P0[0], Point[1]-Seg_P0[1]};
     // double d1, d2, d3, minDist;
 
     // double c1 = dot3(w,v);
