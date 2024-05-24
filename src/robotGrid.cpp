@@ -22,7 +22,6 @@ const double betaLenRough = 15;
 const double fwC0 = 41.2853;
 const double fwC1 = -1.3085;
 
-
 RobotGrid::RobotGrid(double angStep, double epsilon, int seed)
     : angStep(angStep), epsilon(epsilon), seed(seed)
 {
@@ -35,6 +34,9 @@ RobotGrid::RobotGrid(double angStep, double epsilon, int seed)
     // construct the perturbation list
     for (int ii=-1; ii<2; ii++){
         for (int jj=-1; jj<2; jj++){
+            if (ii == jj){
+                continue;
+            }
             perturbArray.push_back({ii*angStep, jj*angStep});
         }
     }
@@ -294,6 +296,28 @@ void RobotGrid::clearPaths(){
         r->roughBetaX.clear();
         r->roughBetaY.clear();
         r->scoreVec.clear();
+
+
+        // r->alphaPath.reserve(maxPathSteps);
+        // r->betaPath.reserve(maxPathSteps);
+        // r->simplifiedAlphaPath.reserve(maxPathSteps);
+        // r->simplifiedBetaPath.reserve(maxPathSteps); // sparse
+        // r->interpSimplifiedAlphaPath.reserve(maxPathSteps);
+        // r->interpSimplifiedBetaPath.reserve(maxPathSteps); // dense
+        // r->smoothedAlphaPath.reserve(maxPathSteps);
+        // r->smoothedBetaPath.reserve(maxPathSteps);
+        // r->smoothAlphaVel.reserve(maxPathSteps);
+        // r->smoothBetaVel.reserve(maxPathSteps);
+        // r->interpAlphaX.reserve(maxPathSteps);
+        // r->interpAlphaY.reserve(maxPathSteps);
+        // r->interpBetaX.reserve(maxPathSteps);
+        // r->interpBetaY.reserve(maxPathSteps); // smoothed
+        // r->roughAlphaX.reserve(maxPathSteps);
+        // r->roughAlphaY.reserve(maxPathSteps);
+        // r->roughBetaX.reserve(maxPathSteps);
+        // r->roughBetaY.reserve(maxPathSteps);
+        // r->scoreVec.reserve(maxPathSteps);
+
         // r->onTargetVec.clear();
     }
 
@@ -1385,7 +1409,7 @@ void RobotGrid::stepMDP(std::shared_ptr<Robot> robot, int stepNum){
 }
 
 
-void RobotGrid::pathGenMDP2(double setGreed, double setPhobia, bool ignoreInitialCollisions){
+void RobotGrid::pathGenMDP2(double setGreed, double setPhobia, bool ignoreInitialCollisions, int nTries){
     // path gen 2 steps towards alpha beta target
     // move greed and phobia to constructor?
     int ii, jj;
@@ -1411,7 +1435,7 @@ void RobotGrid::pathGenMDP2(double setGreed, double setPhobia, bool ignoreInitia
         }
     }
 
-    int nTries = 5;
+    // int nTries = 5;
     // greed = setGreed;
     // phobia = setPhobia;
     algType = MDP;
@@ -1440,7 +1464,6 @@ void RobotGrid::pathGenMDP2(double setGreed, double setPhobia, bool ignoreInitia
             bool allAtTarget = true;
             for (auto robotID : robotIDs){
                 auto r = robotDict[robotID];
-
                 stepMDP2(r, ii);
                 r->scoreVec.push_back(r->score());
                 if (r->score()!=0) {
@@ -1478,6 +1501,32 @@ void RobotGrid::pathGenMDP2(double setGreed, double setPhobia, bool ignoreInitia
             robotDict[robot2nudge]->nudge = true;
             std::cout << "nudging robot " << robot2nudge << std::endl;
         }
+
+        // try another method, nudge all robots that didn't make it home
+        // as long as they don't have a nudged neighbor
+        // for (auto robotID : robotIDs){
+        //     auto r = robotDict[robotID];
+        //     if (r->score()!=0){
+        //         // just nudge it
+        //         r->nudge = true;
+        //         std::cout << "nudging robot " << robotID << std::endl;
+        //         // if (!r->nudge){
+        //         //     // check if neighbors are nudged
+        //         //     bool neighborNudged = false;
+        //         //     for (auto otherRobotID : r->robotNeighbors){
+        //         //         auto otherRobot = robotDict[otherRobotID];
+        //         //         if (otherRobot->nudge){
+        //         //             neighborNudged = true;
+        //         //             break;
+        //         //         }
+        //         //     }
+        //         //     if (!neighborNudged){
+        //         //         std::cout << "nudging robot " << robotID << std::endl;
+        //         //         r->nudge = true;
+        //         //     }
+        //         // }
+        //     }
+        // }
     }
 
     nSteps = ii+1;
@@ -1494,6 +1543,8 @@ void RobotGrid::stepMDP2(std::shared_ptr<Robot> robot, int stepNum){
     double currBeta = robot->beta;
     double bestAlpha, bestBeta, bestScore;
     double greed;
+    bool isEncroaching;
+    bool atDestination;
     bestAlpha = currAlpha;
     bestBeta = currBeta;
     bestScore = 1e16; // to be minimized
@@ -1505,8 +1556,11 @@ void RobotGrid::stepMDP2(std::shared_ptr<Robot> robot, int stepNum){
     alphaPathPoint[0] = stepNum;
     betaPathPoint[0] = stepNum;
 
+    isEncroaching = neighborEncroachment(robot, 20);
+    atDestination = robot->score()==0;
 
-    if (stepNum==0 || (robot->score()==0 && !neighborEncroachment(robot, 20))){
+
+    if (stepNum==0 || (atDestination && !isEncroaching)){
         // either at first step, or done folding no one knocking don't move
         alphaPathPoint[1] = currAlpha;
         betaPathPoint[1] = currBeta;
@@ -1528,7 +1582,7 @@ void RobotGrid::stepMDP2(std::shared_ptr<Robot> robot, int stepNum){
         return;
     }
 
-    if ((robot->score()==0) && neighborEncroachment(robot, 20)){
+    if ((atDestination) && isEncroaching){
         robot->nudge = true;
     }
 
@@ -1544,14 +1598,11 @@ void RobotGrid::stepMDP2(std::shared_ptr<Robot> robot, int stepNum){
     doPhobia = false;
     greed = 1;
 
-    if (robot->nudge && neighborEncroachment(robot, 20)){
+    if (robot->nudge && isEncroaching){
         doPhobia = randomSample() < robot->phobia;
         greed = robot->greed;
         // std::cout << robot->id << " entering avoidance tactics!! " <<  greed << std::endl;
-
     }
-
-
 
 
     for (auto dAlphaBeta : perturbArray){
@@ -1576,6 +1627,7 @@ void RobotGrid::stepMDP2(std::shared_ptr<Robot> robot, int stepNum){
         nextBeta =nextAlphaBeta[1];
 
         robot->setAlphaBeta(nextAlpha, nextBeta);
+
         if (isCollided(robot->id)){
             // don't consider this a viable option
             // move to next option
@@ -1599,6 +1651,9 @@ void RobotGrid::stepMDP2(std::shared_ptr<Robot> robot, int stepNum){
 
             double collideDist2 = (robot->collisionBuffer + otherRobot->collisionBuffer + maxDisplacement) *
                                   (robot->collisionBuffer + otherRobot->collisionBuffer + maxDisplacement);
+            // if collided with another robot stop computing things here
+            // and move to the next perturbation
+
         }
 
         if (doPhobia){

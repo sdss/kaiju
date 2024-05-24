@@ -21,7 +21,7 @@ public:
     // double greed;
     // double phobia;
     bool didFail;
-    int nSteps;
+    int nSteps = 0;
     int seed;
     int maxPathSteps;
     int smoothCollisions;
@@ -55,7 +55,7 @@ public:
 
     void pathGenGreedy(bool stopIfDeadlock, bool ignoreInitialCollisions); // stepRotational with encroachment
     void pathGenMDP(double greed, double phobia, bool ignoreInitialCollisions); // Markov Decision Process
-    void pathGenMDP2(double greed, double phobia, bool ignoreInitialCollisions); // Markov Decision Process
+    void pathGenMDP2(double greed, double phobia, bool ignoreInitialCollisions, int nTries); // Markov Decision Process
     void simplifyPaths();
     void smoothPaths(int points);
     void verifySmoothed(int totalSteps);
