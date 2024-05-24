@@ -810,8 +810,8 @@ std::vector<int> RobotGrid::robotColliders(int robotID){
                 robot2->collisionSegWokXYZ[0], robot2->collisionSegWokXYZ[1],
                 robot1->collisionSegWokXYZ[0], robot1->collisionSegWokXYZ[1]
             );
-        collideDist2 = (robot1->collisionBuffer + robot2->collisionBuffer + maxDisplacement)
-                       * (robot1->collisionBuffer + robot2->collisionBuffer + maxDisplacement);
+        collideDist2 = (robot1->collisionBuffer + robot2->collisionBuffer)
+                       * (robot1->collisionBuffer + robot2->collisionBuffer);
         // dist = sqrt(dist2);
         // collideDist2 = (2*collisionBuffer)*(2*collisionBuffer);
         if (dist2 < collideDist2){
