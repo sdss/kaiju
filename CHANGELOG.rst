@@ -3,6 +3,8 @@
 Changelog
 =========
 
+* **1.4.0** Speedups for the MDP2 algorithm.  pathGenMDP now accepts a parameter nTries.  Minimum version of simplification increased'
+
 * **1.3.1** Require ``shapely<2.0.0`` since that version seems to break ``descartes`` and some of the plotting.
 
 * **1.3.0** Introduce MDP2 path generation strategy, tries iteratively to
