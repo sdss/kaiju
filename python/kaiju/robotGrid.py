@@ -1119,37 +1119,37 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
                 collisionBuffer=3
             )
 
-        # gfa locations hard-coded for now
-        # eventually read from a table
-        gfaList = [
-            [
-                [-267.49, 89.15, coordio.defaults.POSITIONER_HEIGHT],
-                [-210.95, 187.08, coordio.defaults.POSITIONER_HEIGHT]
-            ],
-            [
-                [-56.54, 276.23, coordio.defaults.POSITIONER_HEIGHT],
-                [56.54, 276.23, coordio.defaults.POSITIONER_HEIGHT]
-            ],
-            [
-                [210.95, 187.07, coordio.defaults.POSITIONER_HEIGHT],
-                [267.49, 89.15, coordio.defaults.POSITIONER_HEIGHT]
-            ],
-            [
-                [267.49, -89.15, coordio.defaults.POSITIONER_HEIGHT],
-                [210.95, -187.08, coordio.defaults.POSITIONER_HEIGHT]
-            ],
-            [
-                [56.54, -276.23, coordio.defaults.POSITIONER_HEIGHT],
-                [-56.54, -276.23, coordio.defaults.POSITIONER_HEIGHT]
-            ],
-            [
-                [-210.95, -187.07, coordio.defaults.POSITIONER_HEIGHT],
-                [-267.49, -89.15, coordio.defaults.POSITIONER_HEIGHT]
-            ]
-        ]
+        # # gfa locations hard-coded for now
+        # # eventually read from a table
+        # gfaList = [
+        #     [
+        #         [-267.49, 89.15, coordio.defaults.POSITIONER_HEIGHT],
+        #         [-210.95, 187.08, coordio.defaults.POSITIONER_HEIGHT]
+        #     ],
+        #     [
+        #         [-56.54, 276.23, coordio.defaults.POSITIONER_HEIGHT],
+        #         [56.54, 276.23, coordio.defaults.POSITIONER_HEIGHT]
+        #     ],
+        #     [
+        #         [210.95, 187.07, coordio.defaults.POSITIONER_HEIGHT],
+        #         [267.49, 89.15, coordio.defaults.POSITIONER_HEIGHT]
+        #     ],
+        #     [
+        #         [267.49, -89.15, coordio.defaults.POSITIONER_HEIGHT],
+        #         [210.95, -187.08, coordio.defaults.POSITIONER_HEIGHT]
+        #     ],
+        #     [
+        #         [56.54, -276.23, coordio.defaults.POSITIONER_HEIGHT],
+        #         [-56.54, -276.23, coordio.defaults.POSITIONER_HEIGHT]
+        #     ],
+        #     [
+        #         [-210.95, -187.07, coordio.defaults.POSITIONER_HEIGHT],
+        #         [-267.49, -89.15, coordio.defaults.POSITIONER_HEIGHT]
+        #     ]
+        # ]
 
-        for ii, collisionSegXYZWok in enumerate(gfaList):
-            self.addGFA(ii, collisionSegXYZWok, collisionBuffer=3)
+        # for ii, collisionSegXYZWok in enumerate(gfaList):
+        #     self.addGFA(ii, collisionSegXYZWok, collisionBuffer=3)
 
         # loop through grid and find special robots with a fiducial
         # located down and right that need special attention for
