@@ -168,7 +168,7 @@ def plotOne(
             rot = numpy.degrees(numpy.arctan2(dy, dx))
             if alphaX < betaX:
                 rot += 180
-            props = {"ha": "center", "va": "center", "fontsize": 2}
+            props = {"ha": "center", "va": "center", "fontsize": 5}
             ax.text(xm, ym, strID, props, rotation=rot)
 
     for fiducialID, fiducial in rg.fiducialDict.items():
@@ -191,8 +191,8 @@ def plotOne(
         ax.set_xlim(xlim)
     if ylim is not None:
         ax.set_ylim(ylim)
-    ax.set_xlim([-maxX-50, maxX+50])
-    ax.set_ylim([-maxY-50, maxY+50])
+    ax.set_xlim([-maxX-10, maxX+10])
+    ax.set_ylim([-maxY-10, maxY+10])
     ax.set_aspect("equal")
 
     if returnax:

@@ -1449,7 +1449,7 @@ void RobotGrid::pathGenMDP2(double setGreed, double setPhobia, bool ignoreInitia
 
     for (jj=0; jj<nTries; jj++){
 
-        std::cout << "on path gen iter " << jj << std::endl;
+        std::cout << "on path gen iter (specS5)" << jj << std::endl;
         clearPaths();
         didFail = true;
 
@@ -1466,7 +1466,8 @@ void RobotGrid::pathGenMDP2(double setGreed, double setPhobia, bool ignoreInitia
                 auto r = robotDict[robotID];
                 stepMDP2(r, ii);
                 r->scoreVec.push_back(r->score());
-                if (r->score()!=0) {
+                if (r->beta < 100) {
+                // if (r->score()!=0) {
                     // could just check the last elemet in onTargetVec? same thing.
                     // or use robot->score
                     allAtTarget = false;
@@ -1560,7 +1561,8 @@ void RobotGrid::stepMDP2(std::shared_ptr<Robot> robot, int stepNum){
     atDestination = robot->score()==0;
 
 
-    if (stepNum==0 || (atDestination && !isEncroaching)){
+    // ignore encroachment for specS5
+    if (stepNum==0 || atDestination){ // && !isEncroaching)){
         // either at first step, or done folding no one knocking don't move
         alphaPathPoint[1] = currAlpha;
         betaPathPoint[1] = currBeta;
@@ -1582,9 +1584,10 @@ void RobotGrid::stepMDP2(std::shared_ptr<Robot> robot, int stepNum){
         return;
     }
 
-    if (atDestination && isEncroaching){
-        robot->nudge = true;
-    }
+    // ignore encroachment for specS5
+    // if (atDestination && isEncroaching){
+    //     robot->nudge = true;
+    // }
     robot->lastStepNum = stepNum;
 
     // if this robot is not a nudger, and has no other robots nearby
