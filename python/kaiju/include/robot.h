@@ -48,6 +48,7 @@ public:
     double betaOffDeg;
     double elementHeight;
     double scaleFac;
+    double localEnergy;
 
     // these don't ever change
     // specified in beta arm coords
@@ -104,6 +105,7 @@ public:
     void simplifyPath(double epsilon);
     void smoothVelocity(int points);
     void setCollisionBuffer(double newBuffer);
+    void setLocalEnergy(double newLocalEnergy);
     vec2 alphaBetaFromWokXYZ(vec3 wokXYZ, FiberType fiberType);
     vec2 convFiberXY(double x, double y, FiberType fromFiberType, FiberType toFiberType);
     void assignTarget(long targetID);

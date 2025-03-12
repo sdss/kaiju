@@ -121,6 +121,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def_readwrite("interpCollisions", &Robot::interpCollisions)
         .def_readwrite("xPos", &Robot::xPos)
         .def_readwrite("yPos", &Robot::yPos)
+        .def_readwrite("localEnergy", &Robot::localEnergy)
         .def("setAlphaBeta", &Robot::setAlphaBeta, R"pbdoc(
             A doc example
         )pbdoc")

@@ -28,7 +28,8 @@ RobotGrid::RobotGrid(double angStep, double epsilon, int seed)
     srand(seed);
 
     smoothCollisions = 0;
-    maxPathSteps = (int)(ceil(1000.0/angStep));
+    // maxPathSteps = (int)(ceil(1000.0/angStep));
+    maxPathSteps = (int)(ceil(360.0/angStep));
     maxDisplacement = 2*sin(angStep*M_PI/180)*(alphaLenRough+betaLenRough);
 
     // construct the perturbation list
@@ -1466,7 +1467,9 @@ void RobotGrid::pathGenMDP2(double setGreed, double setPhobia, bool ignoreInitia
                 auto r = robotDict[robotID];
                 stepMDP2(r, ii);
                 r->scoreVec.push_back(r->score());
-                if (r->beta < 100) {
+                double le = calcLocalEnergy(robotID);
+                r->setLocalEnergy(le);
+                if (r->beta < 120) {
                 // if (r->score()!=0) {
                     // could just check the last elemet in onTargetVec? same thing.
                     // or use robot->score
@@ -1486,19 +1489,31 @@ void RobotGrid::pathGenMDP2(double setGreed, double setPhobia, bool ignoreInitia
 
         // this iteration failed.  find a robot to nudge
         // then try again
-        double largestBeta = -999;
+        // double largestBeta = -999;
+        // int robot2nudge;
+        // for (auto robotID : robotIDs){
+        //     auto r = robotDict[robotID];
+        //     if (r->score()!=0 and !r->nudge){
+        //         if (r->beta > largestBeta){
+        //             largestBeta = r->beta;
+        //             robot2nudge = r->id;
+        //         }
+        //     }
+        // }
+
+        double largestEnergy = -999;
         int robot2nudge;
         for (auto robotID : robotIDs){
             auto r = robotDict[robotID];
-            if (r->score()!=0 and !r->nudge){
-                if (r->beta > largestBeta){
-                    largestBeta = r->beta;
+            if (!r->nudge){
+                if (r->localEnergy > largestEnergy){
+                    largestEnergy = r->localEnergy;
                     robot2nudge = r->id;
                 }
             }
         }
 
-        if (largestBeta > -5){
+        if (largestEnergy > -5){
             robotDict[robot2nudge]->nudge = true;
             std::cout << "nudging robot " << robot2nudge << std::endl;
         }
@@ -1533,6 +1548,24 @@ void RobotGrid::pathGenMDP2(double setGreed, double setPhobia, bool ignoreInitia
     nSteps = ii+1;
     mdp2iter = jj;
 
+}
+
+double RobotGrid::calcLocalEnergy(int robotID){
+
+    double localEnergy = 0;
+    double dist2;
+    // compute robot's local energy, and check for collision
+    auto robot = robotDict[robotID];
+    for (auto otherRobotID : robot->robotNeighbors){
+        auto otherRobot = robotDict[otherRobotID];
+        dist2 = dist3D_Segment_to_Segment(
+            otherRobot->collisionSegWokXYZ[0], otherRobot->collisionSegWokXYZ[1],
+            robot->collisionSegWokXYZ[0], robot->collisionSegWokXYZ[1]
+        );
+
+        localEnergy += 1/dist2;
+    }
+    return localEnergy;
 }
 
 void RobotGrid::stepMDP2(std::shared_ptr<Robot> robot, int stepNum){
@@ -1737,6 +1770,8 @@ void RobotGrid::stepMDP2(std::shared_ptr<Robot> robot, int stepNum){
                 break;
             }
         }
+        // record local energy on this robot
+        robot->setLocalEnergy(localEnergy);
 
         if (robotCollision){
             break;

@@ -43,6 +43,12 @@ void Robot::setCollisionBuffer(double newBuffer){
     collisionBuffer = newBuffer;
 }
 
+void Robot::setLocalEnergy(double newLocalEnergy){
+    // perhaps modify collision segment based on
+    // collision buffer?
+    localEnergy = newLocalEnergy;
+}
+
 
 void Robot::setFiberToWokXYZ(vec3 wokXYZ, FiberType fiberID){
     // warning doesn't check for collisions

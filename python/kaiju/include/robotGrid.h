@@ -52,6 +52,7 @@ public:
     int getNCollisions();
     std::vector<int> deadlockedRobots(); // robots not on target
     void clearPaths();
+    double calcLocalEnergy(int robotID);
 
     void pathGenGreedy(bool stopIfDeadlock, bool ignoreInitialCollisions); // stepRotational with encroachment
     void pathGenMDP(double greed, double phobia, bool ignoreInitialCollisions); // Markov Decision Process
