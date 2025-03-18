@@ -10,8 +10,8 @@
 // define constants
 
 // get rid of this hardcoded stuff
-const double alphaLenRough = 7.4;
-const double betaLenRough = 15;
+const double alphaLenRough = 1.8;
+const double betaLenRough = 1.8;
 // certain robots have a restricted range of
 // posible alpha beta values due to fiducials.
 // path planning will never be able to route a robot
@@ -29,7 +29,7 @@ RobotGrid::RobotGrid(double angStep, double epsilon, int seed)
 
     smoothCollisions = 0;
     // maxPathSteps = (int)(ceil(1000.0/angStep));
-    maxPathSteps = (int)(ceil(360.0/angStep));
+    maxPathSteps = (int)(ceil(360.0/angStep)); // worked pretty well for desi
     maxDisplacement = 2*sin(angStep*M_PI/180)*(alphaLenRough+betaLenRough);
 
     // construct the perturbation list
@@ -849,11 +849,11 @@ std::vector<int> RobotGrid::fiducialColliders(int robotID){
     // (tagged during grid construction) located down and right
     // for these robots some small range of alpha/beta values are
     // not allowed
-    if (robot->fiducialWatch){
-        if (robot->beta < fwC0 + robot->alpha*fwC1){
-            collidingNeighbors.push_back(-1);
-        }
-    }
+    // if (robot->fiducialWatch){
+    //     if (robot->beta < fwC0 + robot->alpha*fwC1){
+    //         collidingNeighbors.push_back(-1);
+    //     }
+    // }
 
     return collidingNeighbors;
 
@@ -988,10 +988,7 @@ std::vector<int> RobotGrid::deadlockedRobots(){
             }
         }
         else {
-            if (robot->score() != 0){
-                deadlockedRobotIDs.push_back(robot->id);
-            }
-            else if (neighborEncroachment(robot)){
+            if (robot->beta < 120){
                 deadlockedRobotIDs.push_back(robot->id);
             }
         }
@@ -1501,22 +1498,56 @@ void RobotGrid::pathGenMDP2(double setGreed, double setPhobia, bool ignoreInitia
         //     }
         // }
 
-        double largestEnergy = -999;
+        // if (largestBeta > -5){
+        //     robotDict[robot2nudge]->nudge = true;
+        //     std::cout << "nudging robot " << robot2nudge << std::endl;
+        // }
+        if (jj==0){
+            // try again with auto nudges in place
+            continue;
+        }
+        // if (jj==1){
+        //     break;
+        // }
+
+        double largestBeta = -999;
         int robot2nudge;
         for (auto robotID : robotIDs){
             auto r = robotDict[robotID];
-            if (!r->nudge){
-                if (r->localEnergy > largestEnergy){
-                    largestEnergy = r->localEnergy;
+            if (neighborEncroachment(r, 5) and !r->nudge){
+                if (r->beta > largestBeta){
+                    largestBeta = r->beta;
                     robot2nudge = r->id;
                 }
             }
         }
 
-        if (largestEnergy > -5){
+        if (largestBeta > -5){
             robotDict[robot2nudge]->nudge = true;
-            std::cout << "nudging robot " << robot2nudge << std::endl;
+            // std::cout << "nudging robot " << robot2nudge << std::endl;
         }
+
+
+        // search for robots that have encroachment, nudge the one
+        // with the largest beta (mostly folded)
+
+        // double largestEnergy = -999;
+        // int robot2nudge;
+        // for (auto robotID : robotIDs){
+        //     auto r = robotDict[robotID];
+        //     if (!r->nudge){
+        //         if (r->localEnergy > largestEnergy){
+        //             largestEnergy = r->localEnergy;
+        //             robot2nudge = r->id;
+        //         }
+        //     }
+        // }
+
+        // if (largestEnergy > -5){
+        //     robotDict[robot2nudge]->nudge = true;
+        //     std::cout << "nudging robot " << robot2nudge << std::endl;
+        // }
+
 
         // try another method, nudge all robots that didn't make it home
         // as long as they don't have a nudged neighbor
@@ -1590,12 +1621,12 @@ void RobotGrid::stepMDP2(std::shared_ptr<Robot> robot, int stepNum){
     alphaPathPoint[0] = stepNum;
     betaPathPoint[0] = stepNum;
 
-    isEncroaching = neighborEncroachment(robot, 20);
+    isEncroaching = neighborEncroachment(robot, 10);
     atDestination = robot->score()==0;
 
 
     // ignore encroachment for specS5
-    if (stepNum==0 || atDestination){ // && !isEncroaching)){
+    if (stepNum==0 || (atDestination && !isEncroaching)){
         // either at first step, or done folding no one knocking don't move
         alphaPathPoint[1] = currAlpha;
         betaPathPoint[1] = currBeta;
@@ -1618,9 +1649,10 @@ void RobotGrid::stepMDP2(std::shared_ptr<Robot> robot, int stepNum){
     }
 
     // ignore encroachment for specS5
-    // if (atDestination && isEncroaching){
-    //     robot->nudge = true;
-    // }
+    if (atDestination && isEncroaching && !robot->nudge){
+        // std::cout << "auto nudging robot " << robot->id << std::endl;
+        robot->nudge = true;
+    }
     robot->lastStepNum = stepNum;
 
     // if this robot is not a nudger, and has no other robots nearby
@@ -1731,16 +1763,16 @@ void RobotGrid::stepMDP2(std::shared_ptr<Robot> robot, int stepNum){
 
         // check for gfa/fiducial collisions
 
-        auto fiducialsColliding = fiducialColliders(robot->id);
-        if (fiducialsColliding.size() != 0){
-            // std::cout << "fiducial collided" << std::endl;
-            break;
-        }
-        auto gfasColliding = gfaColliders(robot->id);
-        if (gfasColliding.size() != 0){
-            // std::cout << "gfa collided" << std::endl;
-            break;
-        }
+        // auto fiducialsColliding = fiducialColliders(robot->id);
+        // if (fiducialsColliding.size() != 0){
+        //     // std::cout << "fiducial collided" << std::endl;
+        //     break;
+        // }
+        // auto gfasColliding = gfaColliders(robot->id);
+        // if (gfasColliding.size() != 0){
+        //     // std::cout << "gfa collided" << std::endl;
+        //     break;
+        // }
 
         // if (isCollided(robot->id)){
         //     // don't consider this a viable option
