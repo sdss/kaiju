@@ -1023,12 +1023,12 @@ vec2 handleLimits(double currAlpha, double currBeta, double nextAlpha, double ne
         nextBeta = currBeta; // don't move further the wrong direction
     }
 
-    else if (currBeta > 360 && nextBeta > currBeta){
+    else if (currBeta > 180 && nextBeta > currBeta){
         nextBeta = currBeta;
     }
     // robots currently in bounds
-    else if (nextBeta > 360){
-        nextBeta = 360;
+    else if (nextBeta > 180){
+        nextBeta = 180;
     }
     else if (nextBeta < 0){
         nextBeta = 0;
