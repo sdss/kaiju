@@ -1466,8 +1466,8 @@ void RobotGrid::pathGenMDP2(double setGreed, double setPhobia, bool ignoreInitia
                 r->scoreVec.push_back(r->score());
                 double le = calcLocalEnergy(robotID);
                 r->setLocalEnergy(le);
-                if (r->beta < 120) {
-                // if (r->score()!=0) {
+                // if (r->beta < 120) {
+                if (r->score()!=0) {
                     // could just check the last elemet in onTargetVec? same thing.
                     // or use robot->score
                     allAtTarget = false;
