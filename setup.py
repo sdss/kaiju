@@ -116,7 +116,7 @@ def runSetup(packages, requirements):
         install_requires=requirements,
         setup_requires=[
             "sdss-coordio>=1.2.1",
-            "pybind11>=2.2.4"
+            "pybind11>=2.2.4,<3"
         ],
         classifiers=[
             'Intended Audience :: Science/Research',
