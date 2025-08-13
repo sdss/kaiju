@@ -128,7 +128,7 @@ def plotOne(
             betaY = betaPoint[1]
             onTarget = robot.score() == 0
         plt.plot(
-            [basePos[0], alphaX], [basePos[1], alphaY],
+            [basePos[0], (alphaX+betaX)/2], [basePos[1], (alphaY+betaY)/2],
             color='black', linewidth=2, alpha=0.5
         )
 
