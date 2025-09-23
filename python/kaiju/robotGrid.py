@@ -1183,7 +1183,7 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
 
     def plot_state(
             self, highlightRobot=None, plotRobotIDs=True,
-            returnax=True, figname="kaijuGrid.pdf"
+            returnax=True, figname="kaijuGrid.pdf", lim = None,
         ):
         """Plot the current state of the robot grid
 
@@ -1212,19 +1212,28 @@ class RobotGrid(kaiju.cKaiju.RobotGrid):
         ax : matplotlib axes instance if returnax is True
 
         """
+
+        if lim is None:
+            xlim = None
+            ylim = None
+        else:
+            xlim = [-lim, lim]
+            ylim = [-lim, lim]
+
+
         from kaiju.utils import plotOne
         if returnax:
             ax = plotOne(
                 step=0, robotGrid=self, isSequence=False,
                 plotRobotIDs=plotRobotIDs,
-                highlightRobot=highlightRobot, returnax=True
+                highlightRobot=highlightRobot, returnax=True, xlim = xlim, ylim = ylim,
             )
             return ax
         else:
             plotOne(
                 step=0, robotGrid=self, figname=figname, isSequence=False,
                 plotRobotIDs=plotRobotIDs,
-                highlightRobot=highlightRobot
+                highlightRobot=highlightRobot, xlim = xlim, ylim = ylim,
             )
 
 
