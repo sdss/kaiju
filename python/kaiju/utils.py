@@ -1,8 +1,9 @@
 import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.patches import PathPatch
+from matplotlib.path import Path
 import numpy
 from shapely.geometry import LineString, Point
-from descartes import PolygonPatch
 from multiprocessing import Pool, cpu_count
 from subprocess import Popen
 import glob
@@ -15,6 +16,25 @@ matplotlib.use('Agg')
 # internalBuffer = 1.5
 rg = None # need global because C++ obj can't be pickled for multiprocessing
 
+
+def PolygonPatch(polygon, **kwargs):
+    """Shapely-2 compatible replacement for descartes.PolygonPatch."""
+    
+    # Copied from older version of descartes to avoid dependency on that package.
+    # New versions seem to break plotting.
+    
+    polygons = getattr(polygon, "geoms", [polygon])  # Polygon or MultiPolygon
+    vertices, codes = [], []
+    for poly in polygons:
+        for ring in (poly.exterior, *poly.interiors):
+            xy = numpy.asarray(ring.coords)[:, :2]
+            c = numpy.full(len(xy), Path.LINETO, dtype=Path.code_type)
+            c[0] = Path.MOVETO
+            vertices.append(xy)
+            codes.append(c)
+    return PathPatch(Path(numpy.concatenate(vertices), numpy.concatenate(codes)), **kwargs)
+                                                                         
+                                                                         
 def plotTraj(r, figprefix="traj_", dpi=500):
     # r is a robot
     spa = numpy.array(r.smoothedAlphaPath)
@@ -220,8 +240,11 @@ def plotPaths(robotGrid, downsample=None, filename=None):
     print("plotting steps", figs[-1])
     # down sample if nframes specified
 
-    p = Pool(cpu_count())
-    p.map(plotOne, stepfigs)
+    for stepfig in stepfigs:
+        plotOne(stepfig, robotGrid=rg)
+
+    # p = Pool(cpu_count())
+    # p.map(plotOne, stepfigs)
 
     # for stepFig in stepfigs:
     #     print("stepfig", stepFig)
