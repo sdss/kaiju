@@ -3,11 +3,13 @@ import matplotlib.pyplot as plt
 import numpy
 from kaiju import cKaiju, utils
 from shapely.geometry import LineString
-from descartes import PolygonPatch
 from multiprocessing import Pool, cpu_count
 from subprocess import Popen
 import glob
 import os
+
+from kaiju.utils import PolygonPatch
+
 
 matplotlib.use('Agg')
 

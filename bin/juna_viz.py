@@ -6,9 +6,11 @@ import numpy
 from astropy.io import fits
 import cKaiju
 from shapely.geometry import LineString
-from descartes import PolygonPatch
 from multiprocessing import Pool
 import functools
+
+from kaiju.utils import PolygonPatch
+
 
 starPng = "/Users/csayres/Downloads/sdssColor.png"
 img = plt.imread(starPng)
