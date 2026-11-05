@@ -110,6 +110,7 @@ def runSetup(packages, requirements):
         package_dir={'': 'python'},
         package_data={'kaiju': ['python/kaiju/include/*']},
         include_package_data=True,
+        python_requires=">=3.10",
         url="https://github.com/sdss/kaiju",
         keywords="astronomy software",
         ext_modules=extensions,
