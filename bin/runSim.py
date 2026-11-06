@@ -13,7 +13,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from subprocess import Popen
 from shapely.geometry import LineString
-from descartes import PolygonPatch
 import pickle
 
 

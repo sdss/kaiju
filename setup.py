@@ -110,13 +110,14 @@ def runSetup(packages, requirements):
         package_dir={'': 'python'},
         package_data={'kaiju': ['python/kaiju/include/*']},
         include_package_data=True,
+        python_requires=">=3.10",
         url="https://github.com/sdss/kaiju",
         keywords="astronomy software",
         ext_modules=extensions,
         install_requires=requirements,
         setup_requires=[
-            "sdss-coordio>=1.2.1",
-            "pybind11>=2.2.4,<3"
+            "sdss-coordio>=1.19.0b1",
+            "pybind11>=2.2.4,<3.0.0",
         ],
         classifiers=[
             'Intended Audience :: Science/Research',

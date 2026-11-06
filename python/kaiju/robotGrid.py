@@ -13,13 +13,14 @@ import fitsio
 import matplotlib.pyplot as plt
 import kaiju
 import kaiju.cKaiju
-from descartes import PolygonPatch
 from shapely.geometry import LineString
 import coordio
 from coordio.defaults import IHAT, JHAT, KHAT, calibration
 import pandas as pd
 from scipy.signal import savgol_filter
 from simplification.cutil import simplify_coords
+
+from .utils import PolygonPatch
 
 
 # positionerTable = calibration.positionerTable
