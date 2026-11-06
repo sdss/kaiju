@@ -193,7 +193,7 @@ PYBIND11_MODULE(cKaiju, m) {
         .def("growCollisionBuffer", &RobotGrid::growCollisionBuffer)
         .def("pathGenGreedy", &RobotGrid::pathGenGreedy, "stopIfDeadlock"_a = false, "ignoreInitialCollisions"_a = false)
         .def("pathGenMDP", &RobotGrid::pathGenMDP, "greed"_a, "phobia"_a, "ignoreInitialCollisions"_a = false)
-        .def("pathGenMDP2", &RobotGrid::pathGenMDP2, "greed"_a, "phobia"_a, "ignoreInitialCollisions"_a = false)
+        .def("pathGenMDP2", &RobotGrid::pathGenMDP2, "greed"_a, "phobia"_a, "ignoreInitialCollisions"_a = false, "nTries"_a = 5)
         .def("pathGenExplode", &RobotGrid::pathGenExplode)
         .def("pathGenExplodeOne", &RobotGrid::pathGenExplodeOne)
         .def("targetlessRobots", &RobotGrid::targetlessRobots)
